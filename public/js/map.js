@@ -1,87 +1,63 @@
-async function initMap() {
-  const res = await fetch('/api/config');
-  const config = await res.json();
+// Called by the Google Maps API loader once the script is ready
+function initMap() {
+  const downtown = { lat: 43.6532, lng: -79.3832 };
 
-  if (!config.mapboxToken) {
-    document.getElementById('map').innerHTML =
-      '<p class="p-8 text-gray-600">Mapbox token not configured. Add MAPBOX_PUBLIC_TOKEN to your .env file.</p>';
+  const map = new google.maps.Map(document.getElementById('map'), {
+    center: downtown,
+    zoom: 13,
+    styles: [
+      { elementType: 'geometry', stylers: [{ color: '#212121' }] },
+      { elementType: 'labels.text.stroke', stylers: [{ color: '#212121' }] },
+      { elementType: 'labels.text.fill', stylers: [{ color: '#757575' }] },
+      { featureType: 'road', elementType: 'geometry', stylers: [{ color: '#373737' }] },
+      { featureType: 'road', elementType: 'labels.text.fill', stylers: [{ color: '#8a8a8a' }] },
+      { featureType: 'road.arterial', elementType: 'geometry', stylers: [{ color: '#373737' }] },
+      { featureType: 'road.highway', elementType: 'geometry', stylers: [{ color: '#3c3c3c' }] },
+      { featureType: 'road.highway.controlled_access', elementType: 'geometry', stylers: [{ color: '#4e4e4e' }] },
+      { featureType: 'water', elementType: 'geometry', stylers: [{ color: '#000000' }] },
+      { featureType: 'water', elementType: 'labels.text.fill', stylers: [{ color: '#3d3d3d' }] },
+      { featureType: 'poi', elementType: 'geometry', stylers: [{ color: '#2c2c2c' }] },
+      { featureType: 'poi.park', elementType: 'geometry', stylers: [{ color: '#1a2e1a' }] },
+      { featureType: 'transit', elementType: 'geometry', stylers: [{ color: '#2f3948' }] },
+      { featureType: 'administrative', elementType: 'geometry', stylers: [{ color: '#757575' }] },
+      { featureType: 'administrative.country', elementType: 'labels.text.fill', stylers: [{ color: '#9e9e9e' }] },
+      { featureType: 'administrative.locality', elementType: 'labels.text.fill', stylers: [{ color: '#bdbdbd' }] },
+    ],
+  });
+
+  loadIncidentHeatmap(map);
+}
+
+async function loadIncidentHeatmap(map) {
+  let geojson;
+  try {
+    const res = await fetch('/api/incidents');
+    if (!res.ok) throw new Error(`/api/incidents returned ${res.status}`);
+    geojson = await res.json();
+  } catch (err) {
+    console.error('Failed to load incidents:', err.message);
     return;
   }
 
-  mapboxgl.accessToken = config.mapboxToken;
-
-  const map = new mapboxgl.Map({
-    container: 'map',
-    style: 'mapbox://styles/mapbox/dark-v11',
-    center: [-79.3832, 43.6532],  // downtown Toronto — Mapbox expects [lng, lat]
-    zoom: 12
+  // GeoJSON coordinates are [lng, lat] — convert to LatLng objects for the heatmap
+  const heatmapData = geojson.features.map(f => {
+    const [lng, lat] = f.geometry.coordinates;
+    return new google.maps.LatLng(lat, lng);
   });
 
-  map.addControl(new mapboxgl.NavigationControl());
-
-  map.on('load', () => {
-    loadIncidents(map);
+  new google.maps.visualization.HeatmapLayer({
+    data: heatmapData,
+    map: map,
+    radius: 20,
+    opacity: 0.7,
+    gradient: [
+      'rgba(0, 0, 0, 0)',
+      'rgba(255, 165, 0, 0.4)',
+      'rgba(255, 100, 0, 0.6)',
+      'rgba(255, 50, 0, 0.8)',
+      'rgba(255, 0, 0, 1)',
+    ],
   });
+
+  console.log(`Heatmap loaded with ${heatmapData.length} incidents.`);
 }
-
-async function loadIncidents(map) {
-  const res = await fetch('/api/incidents');
-
-  if (!res.ok) {
-    console.error('Could not load incidents:', res.status);
-    return;
-  }
-
-  const geojson = await res.json();
-  console.log(`Loaded ${geojson.features.length} incidents`);
-
-  map.addSource('incidents', {
-    type: 'geojson',
-    data: geojson
-  });
-
-  map.addLayer({
-    id: 'incidents-heat',
-    type: 'heatmap',
-    source: 'incidents',
-    maxzoom: 16,
-    paint: {
-      'heatmap-weight': 1,
-
-      // Denser clusters appear hotter as you zoom in
-      'heatmap-intensity': [
-        'interpolate', ['linear'], ['zoom'],
-        10, 0.5,
-        16, 3
-      ],
-
-      // Warm color ramp: transparent → yellow → orange → red → dark red
-      'heatmap-color': [
-        'interpolate', ['linear'], ['heatmap-density'],
-        0,   'rgba(0,0,0,0)',
-        0.2, 'rgb(254,235,177)',
-        0.4, 'rgb(254,186,92)',
-        0.6, 'rgb(241,105,19)',
-        0.8, 'rgb(210,52,19)',
-        1.0, 'rgb(128,0,38)'
-      ],
-
-      // Radius grows with zoom so hotspots become spatially precise
-      'heatmap-radius': [
-        'interpolate', ['linear'], ['zoom'],
-        10, 8,
-        14, 20,
-        16, 30
-      ],
-
-      // Fade out at high zoom where the basemap detail matters more
-      'heatmap-opacity': [
-        'interpolate', ['linear'], ['zoom'],
-        14, 0.8,
-        18, 0.2
-      ]
-    }
-  });
-}
-
-initMap();

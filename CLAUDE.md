@@ -12,19 +12,20 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project
 
-Safe Walk finds **safer** walking routes in Toronto (not just fastest). Users enter start + destination; the app computes a safety-scored route using police incident density and streetlight density, and displays it side-by-side with the fastest route on a Mapbox map.
+Safe Walk is a **Safety API built on top of Google Maps**. It adds a "safest route" option to any app using Google Maps routing. The API scores walking routes using police incident density, streetlight coverage, community reports, and AI risk predictions. A demo frontend shows a toggle between "fastest" and "safest" routes on a Google Map.
 
-TKS Moonshot. Pitch at TKS showcase May 7, 2026.
+TKS Moonshot. Pitch at Deloitte, May 9-10, 2026. All deliverables due May 7.
 
 ## Stack
 
 - **Backend**: Node.js + Express
 - **Database**: SQLite via `better-sqlite3`
 - **Frontend**: Vanilla JS + Tailwind CSS (CDN)
-- **Maps**: Mapbox GL JS
-- **Geocoding**: Mapbox Geocoding API
-- **Safe route algorithm**: Weighted A* over an OpenStreetMap road graph (fetched via Overpass/osmnx). OSRM public demo server for the fastest-route baseline.
-- **AI (later)**: Claude API for natural-language route summaries. Not AI-first.
+- **Maps**: Google Maps JavaScript API
+- **Routing**: Google Routes API (computeAlternativeRoutes for multiple paths, scored by safety engine)
+- **Geocoding**: Google Places Autocomplete
+- **Safety scoring**: Custom engine — incident density + streetlight density + time-of-day weighting
+- **AI (later)**: Claude API for risk prediction in data-sparse areas. Not AI-first.
 
 ## Folder layout
 
@@ -41,13 +42,13 @@ scripts/     One-off scripts: migrate, data sync
 npm start        # Start Express on port 3000
 npm run migrate  # Apply data/schema.sql idempotently (node scripts/migrate.js)
 npm run sync     # Fetch Toronto Police crime data (node scripts/sync-incidents.js)
+npm run sync-lights  # Fetch Toronto streetlight data (node scripts/sync-streetlights.js)
 ```
 
 ## Data sources
 
 - Toronto Police Open Data, Major Crime Indicators: https://data.torontopolice.on.ca
 - City of Toronto Open Data, streetlights: https://open.toronto.ca
-- OpenStreetMap road graph (Overpass API)
 
 ## Database schema
 
