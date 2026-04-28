@@ -1,4 +1,4 @@
-use Opus 4.6 for planning, else Sonnet 4.6, write codes like professional humans(Don't delete this line)
+use Opus 4.6 for planning, else Sonnet 4.6, write codes like professional humans. Use UI-UX-Pro_Max for UI of the website(Don't delete this line)
 
 # CLAUDE.md
 
