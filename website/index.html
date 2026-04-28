@@ -11,267 +11,782 @@
       theme: {
         extend: {
           colors: {
-            dark: { 900: '#0a0a0f', 800: '#12121a', 700: '#1a1a2e', 600: '#242440' },
-            safe: { green: '#34A853', light: '#4ade80' },
+            bg: '#08080f',
+            s1: '#111118',
+            s2: '#1a1a25',
+            green: { DEFAULT: '#34A853', light: '#4ade80' },
             accent: '#6366f1',
+            danger: '#ef4444',
+            tp: '#e8e8ed',
+            ts: '#8888a0',
+            tm: '#555568',
           },
           fontFamily: {
-            sans: ['Inter', 'system-ui', '-apple-system', 'sans-serif'],
+            sans: ['Inter', 'system-ui', 'sans-serif'],
+            mono: ['"JetBrains Mono"', 'monospace'],
           }
         }
       }
     }
   </script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
   <style>
-    body { font-family: 'Inter', system-ui, sans-serif; }
-    .gradient-text {
-      background: linear-gradient(135deg, #34A853 0%, #4ade80 50%, #6366f1 100%);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      background-clip: text;
+    *, *::before, *::after { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body { background: #08080f; color: #e8e8ed; font-family: 'Inter', system-ui, sans-serif; margin: 0; overflow-x: hidden; }
+
+    /* Grain overlay */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='1'/%3E%3C/svg%3E");
+      opacity: 0.025;
+      pointer-events: none;
+      z-index: 9999;
     }
-    .hero-glow {
-      background: radial-gradient(ellipse 60% 50% at 50% 0%, rgba(52, 168, 83, 0.08) 0%, transparent 70%);
+
+    /* Nav */
+    #nav {
+      position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+      background: rgba(17, 17, 24, 0.6);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border-bottom: 1px solid transparent;
+      transition: border-color 0.3s;
     }
-    .card-hover {
-      transition: transform 0.2s ease, box-shadow 0.2s ease;
+    #nav.scrolled { border-bottom-color: rgba(255,255,255,0.06); }
+    .nav-inner { max-width: 1200px; margin: 0 auto; padding: 0 24px; height: 64px; display: flex; align-items: center; justify-content: space-between; }
+    .nav-logo { font-size: 18px; font-weight: 700; color: #e8e8ed; text-decoration: none; letter-spacing: -0.02em; }
+    .nav-links { display: flex; align-items: center; gap: 36px; }
+    .nav-links a { font-size: 14px; color: #8888a0; text-decoration: none; transition: color 0.2s; }
+    .nav-links a:hover { color: #e8e8ed; }
+    .nav-links a.active { color: #e8e8ed; }
+    .nav-demo { font-size: 13px; font-weight: 500; color: #34A853 !important; border: 1px solid rgba(52,168,83,0.3); border-radius: 8px; padding: 8px 16px; transition: background 0.2s, border-color 0.2s !important; }
+    .nav-demo:hover { background: rgba(52,168,83,0.08) !important; border-color: rgba(52,168,83,0.5) !important; }
+    .hamburger { display: none; background: none; border: none; cursor: pointer; padding: 4px; color: #8888a0; }
+    .mobile-menu { display: none; position: fixed; inset: 0; background: #111118; z-index: 99; padding: 80px 24px 40px; flex-direction: column; gap: 8px; transform: translateX(100%); transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1); }
+    .mobile-menu.open { transform: translateX(0); }
+    .mobile-menu a { font-size: 24px; font-weight: 600; color: #8888a0; text-decoration: none; padding: 16px 0; border-bottom: 1px solid rgba(255,255,255,0.06); display: block; }
+    .mobile-menu a:hover { color: #e8e8ed; }
+
+    /* Hero */
+    .hero { position: relative; min-height: 100vh; display: flex; align-items: center; justify-content: center; overflow: hidden; }
+    #hero-canvas { position: absolute; inset: 0; width: 100%; height: 100%; }
+    .hero-content { position: relative; z-index: 2; text-align: center; padding: 0 24px; max-width: 900px; }
+    .hero-label { font-size: 11px; font-weight: 600; letter-spacing: 0.18em; text-transform: uppercase; color: #34A853; margin-bottom: 28px; display: block; }
+    .hero-h1 { font-size: clamp(2.4rem, 6vw, 4.2rem); font-weight: 800; line-height: 1.08; letter-spacing: -0.03em; color: #e8e8ed; margin: 0 0 28px; }
+    .hero-h1 .gradient-line {
+      background: linear-gradient(95deg, #34A853 0%, #4ade80 100%);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
     }
-    .card-hover:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 8px 30px rgba(52, 168, 83, 0.1);
+    .hero-sub { font-size: 18px; color: #8888a0; max-width: 560px; margin: 0 auto 40px; line-height: 1.7; }
+    .hero-buttons { display: flex; gap: 14px; justify-content: center; flex-wrap: wrap; }
+    .btn-primary { display: inline-flex; align-items: center; padding: 14px 28px; background: #34A853; color: #08080f; font-size: 15px; font-weight: 600; border-radius: 10px; text-decoration: none; transition: background 0.2s, transform 0.15s; }
+    .btn-primary:hover { background: #4ade80; transform: translateY(-1px); }
+    .btn-ghost { display: inline-flex; align-items: center; padding: 14px 28px; border: 1px solid rgba(255,255,255,0.12); color: #e8e8ed; font-size: 15px; font-weight: 500; border-radius: 10px; text-decoration: none; transition: background 0.2s, border-color 0.2s, transform 0.15s; }
+    .btn-ghost:hover { background: rgba(255,255,255,0.04); border-color: rgba(255,255,255,0.2); transform: translateY(-1px); }
+    .scroll-indicator { margin-top: 64px; display: flex; flex-direction: column; align-items: center; gap: 8px; }
+    .scroll-line { width: 1px; height: 48px; background: linear-gradient(to bottom, rgba(255,255,255,0.2), transparent); animation: scrollBob 2s ease-in-out infinite; }
+    @keyframes scrollBob { 0%, 100% { transform: translateY(0); opacity: 0.6; } 50% { transform: translateY(8px); opacity: 1; } }
+
+    /* Stats */
+    .stats-section { border-top: 1px solid rgba(255,255,255,0.06); border-bottom: 1px solid rgba(255,255,255,0.06); padding: 72px 24px; }
+    .stats-inner { max-width: 1000px; margin: 0 auto; display: grid; grid-template-columns: 1fr 1fr 1fr; }
+    .stat-item { padding: 0 48px; text-align: center; }
+    .stat-item:not(:last-child) { border-right: 1px solid rgba(255,255,255,0.06); }
+    .stat-number { font-size: clamp(2.4rem, 5vw, 3.5rem); font-weight: 800; color: #e8e8ed; letter-spacing: -0.03em; line-height: 1; display: block; }
+    .stat-label { font-size: 15px; color: #8888a0; margin-top: 12px; line-height: 1.5; }
+    .stat-source { font-size: 11px; color: #555568; margin-top: 8px; }
+
+    /* Sections */
+    section { padding: 96px 24px; }
+    .section-label { font-size: 11px; font-weight: 600; letter-spacing: 0.16em; text-transform: uppercase; color: #34A853; margin-bottom: 20px; display: block; }
+    .section-h2 { font-size: clamp(1.8rem, 3.5vw, 2.6rem); font-weight: 700; color: #e8e8ed; letter-spacing: -0.025em; line-height: 1.2; margin: 0 0 24px; }
+    .body-text { font-size: 17px; color: #8888a0; line-height: 1.8; }
+
+    /* Problem */
+    .problem-inner { max-width: 1100px; margin: 0 auto; display: grid; grid-template-columns: 1fr 1fr; gap: 80px; align-items: center; }
+    .problem-text { max-width: 480px; }
+    .problem-text p { font-size: 17px; color: #8888a0; line-height: 1.8; margin-bottom: 20px; }
+    .map-mockup { background: #111118; border: 1px solid rgba(255,255,255,0.06); border-radius: 16px; padding: 32px; position: relative; overflow: hidden; height: 280px; }
+    .map-grid { position: absolute; inset: 0; background-image: linear-gradient(rgba(255,255,255,0.025) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.025) 1px, transparent 1px); background-size: 28px 28px; }
+    .map-route { position: absolute; top: 50%; left: 15%; right: 15%; height: 2px; background: transparent; border-top: 2px dashed rgba(59,130,246,0.5); transform: translateY(-50%) rotate(-8deg); }
+    .map-route::before, .map-route::after { content: ''; position: absolute; width: 10px; height: 10px; border-radius: 50%; background: rgba(59,130,246,0.7); top: 50%; transform: translateY(-50%); }
+    .map-route::before { left: 0; }
+    .map-route::after { right: 0; }
+    .map-label { position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%); font-size: 11px; color: #555568; letter-spacing: 0.08em; text-transform: uppercase; white-space: nowrap; }
+    .map-label span { color: rgba(59,130,246,0.6); }
+
+    /* Solution */
+    .solution-section { background: #111118; }
+    .solution-inner { max-width: 900px; margin: 0 auto; }
+    .solution-intro { font-size: 17px; color: #8888a0; line-height: 1.8; max-width: 600px; margin-bottom: 72px; }
+    .steps { position: relative; padding-left: 32px; border-left: 1px solid rgba(255,255,255,0.08); }
+    .step { margin-bottom: 56px; position: relative; }
+    .step:last-child { margin-bottom: 0; }
+    .step-dot { position: absolute; left: -40px; top: 4px; width: 14px; height: 14px; border-radius: 50%; background: #34A853; box-shadow: 0 0 0 4px rgba(52,168,83,0.1), 0 0 16px rgba(52,168,83,0.3); }
+    .step-num { font-size: 11px; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; color: #34A853; margin-bottom: 10px; display: block; }
+    .step h3 { font-size: 22px; font-weight: 600; color: #e8e8ed; margin: 0 0 10px; letter-spacing: -0.015em; }
+    .step p { font-size: 16px; color: #8888a0; line-height: 1.75; margin: 0; max-width: 520px; }
+    .step-illustration { margin-top: 20px; }
+    /* Step illustrations */
+    .illus-input { display: flex; align-items: center; gap: 8px; background: #1a1a25; border: 1px solid rgba(255,255,255,0.06); border-radius: 8px; padding: 10px 14px; width: fit-content; }
+    .illus-input-dot { width: 6px; height: 6px; border-radius: 50%; background: #34A853; }
+    .illus-input-text { font-size: 12px; color: #555568; font-family: 'JetBrains Mono', monospace; }
+    .illus-bars { display: flex; gap: 6px; align-items: flex-end; height: 40px; margin-top: 12px; }
+    .illus-bar { width: 24px; border-radius: 3px 3px 0 0; }
+    .illus-toggle { display: flex; gap: 6px; margin-top: 12px; }
+    .illus-tab { font-size: 11px; padding: 5px 10px; border-radius: 5px; font-weight: 500; }
+    .illus-tab.fast { background: rgba(255,255,255,0.05); color: #555568; }
+    .illus-tab.safe { background: rgba(52,168,83,0.15); color: #34A853; border: 1px solid rgba(52,168,83,0.2); }
+
+    /* Data sources */
+    .datasources-inner { max-width: 900px; margin: 0 auto; }
+    .datasource { display: flex; gap: 28px; align-items: flex-start; padding: 32px 0; border-bottom: 1px solid rgba(255,255,255,0.06); }
+    .datasource:first-of-type { padding-top: 0; }
+    .datasource:last-of-type { border-bottom: none; }
+    .ds-bar { width: 3px; height: 48px; border-radius: 2px; flex-shrink: 0; margin-top: 4px; }
+    .ds-bar.red { background: #ef4444; box-shadow: 0 0 12px rgba(239,68,68,0.35); }
+    .ds-bar.cyan { background: #22d3ee; box-shadow: 0 0 12px rgba(34,211,238,0.35); }
+    .ds-bar.green { background: #34A853; box-shadow: 0 0 12px rgba(52,168,83,0.35); }
+    .ds-title { font-size: 17px; font-weight: 600; color: #e8e8ed; margin: 0 0 8px; }
+    .ds-desc { font-size: 15px; color: #8888a0; line-height: 1.7; margin: 0; }
+
+    /* Testimonials */
+    .testimonials-section { background: #111118; }
+    .testimonials-inner { max-width: 1000px; margin: 0 auto; }
+    .testimonials-grid { display: grid; grid-template-columns: 3fr 2fr; gap: 20px; margin-top: 56px; }
+    .testimonial { background: #1a1a25; border: 1px solid rgba(255,255,255,0.06); border-radius: 16px; padding: 40px; position: relative; overflow: hidden; }
+    .testimonial::before { content: '"'; position: absolute; top: 16px; left: 28px; font-size: 80px; color: rgba(255,255,255,0.04); font-family: Georgia, serif; line-height: 1; }
+    .testimonial-quote { font-size: 16px; color: #c8c8d8; line-height: 1.75; font-style: italic; margin-bottom: 28px; position: relative; z-index: 1; }
+    .testimonial-author { font-size: 13px; font-weight: 500; color: #e8e8ed; }
+    .testimonial-role { font-size: 12px; color: #555568; margin-top: 2px; }
+    .testimonials-note { font-size: 12px; color: #555568; margin-top: 28px; text-align: center; }
+
+    /* API preview */
+    .api-inner { max-width: 900px; margin: 0 auto; }
+    .api-intro { font-size: 17px; color: #8888a0; line-height: 1.8; max-width: 560px; margin-bottom: 40px; }
+    .code-window { background: #0c0c14; border: 1px solid rgba(255,255,255,0.08); border-radius: 14px; overflow: hidden; box-shadow: 0 0 60px rgba(52,168,83,0.06), 0 24px 60px rgba(0,0,0,0.5); }
+    .code-window-bar { background: #111118; border-bottom: 1px solid rgba(255,255,255,0.06); padding: 12px 16px; display: flex; align-items: center; gap: 12px; }
+    .code-dots { display: flex; gap: 6px; }
+    .code-dot { width: 12px; height: 12px; border-radius: 50%; }
+    .code-dot.red { background: #ff5f57; }
+    .code-dot.yellow { background: #ffbd2e; }
+    .code-dot.green { background: #28c841; }
+    .code-filename { font-size: 12px; color: #555568; font-family: 'JetBrains Mono', monospace; margin-left: 8px; }
+    .code-body { padding: 28px 28px; font-family: 'JetBrains Mono', monospace; font-size: 13px; line-height: 1.8; overflow-x: auto; }
+    .c-key { color: #e8e8ed; }
+    .c-str { color: #34A853; }
+    .c-num { color: #22d3ee; }
+    .c-com { color: #555568; }
+    .c-punc { color: #8888a0; }
+
+    /* CTA */
+    .cta-section { background: #111118; position: relative; overflow: hidden; }
+    .cta-glow { position: absolute; top: -100px; left: 50%; transform: translateX(-50%); width: 600px; height: 300px; background: radial-gradient(ellipse, rgba(52,168,83,0.06) 0%, transparent 70%); pointer-events: none; }
+    .cta-inner { max-width: 700px; margin: 0 auto; text-align: center; position: relative; z-index: 1; }
+    .cta-h2 { font-size: clamp(1.8rem, 3.5vw, 2.8rem); font-weight: 700; color: #e8e8ed; letter-spacing: -0.025em; line-height: 1.2; margin-bottom: 20px; }
+    .cta-p { font-size: 17px; color: #8888a0; line-height: 1.8; margin-bottom: 40px; }
+
+    /* Footer */
+    footer { padding: 48px 24px; border-top: 1px solid rgba(255,255,255,0.06); }
+    .footer-inner { max-width: 1200px; margin: 0 auto; display: flex; align-items: center; justify-content: space-between; gap: 32px; flex-wrap: wrap; }
+    .footer-logo { font-size: 16px; font-weight: 700; color: #e8e8ed; }
+    .footer-tagline { font-size: 12px; color: #555568; margin-top: 4px; }
+    .footer-links { display: flex; gap: 28px; }
+    .footer-links a { font-size: 13px; color: #555568; text-decoration: none; transition: color 0.2s; }
+    .footer-links a:hover { color: #8888a0; }
+    .footer-credits { font-size: 11px; color: #555568; text-align: right; line-height: 1.6; }
+
+    /* Animations initial state */
+    .anim-fade-up { opacity: 0; }
+    .anim-fade { opacity: 0; }
+
+    /* Responsive */
+    @media (max-width: 768px) {
+      .nav-links { display: none; }
+      .hamburger { display: block; }
+      .mobile-menu { display: flex; }
+      .stats-inner { grid-template-columns: 1fr; gap: 0; }
+      .stat-item { border-right: none !important; border-bottom: 1px solid rgba(255,255,255,0.06); padding: 32px 24px; }
+      .stat-item:last-child { border-bottom: none; }
+      .problem-inner { grid-template-columns: 1fr; gap: 40px; }
+      .map-mockup { height: 200px; }
+      .testimonials-grid { grid-template-columns: 1fr; }
+      .footer-inner { flex-direction: column; text-align: center; }
+      .footer-credits { text-align: center; }
+      .footer-links { justify-content: center; }
+      section { padding: 64px 20px; }
     }
-    .stat-border {
-      border-left: 2px solid #34A853;
+    @media (max-width: 480px) {
+      .hero-h1 { font-size: 2rem; }
+      .hero-buttons { flex-direction: column; align-items: center; }
+      .btn-primary, .btn-ghost { width: 100%; justify-content: center; }
     }
   </style>
 </head>
-<body class="bg-dark-900 text-gray-200">
+<body>
 
   <!-- Nav -->
-  <nav class="fixed top-0 w-full z-50 bg-dark-900/80 backdrop-blur-md border-b border-white/5">
-    <div class="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
-      <a href="/" class="text-xl font-bold text-white tracking-tight">Safe Walk</a>
-      <div class="hidden md:flex items-center gap-8 text-sm text-gray-400">
-        <a href="/website/how-it-works.html" class="hover:text-white transition">How It Works</a>
-        <a href="/website/about.html" class="hover:text-white transition">About</a>
-        <a href="/website/partners.html" class="hover:text-white transition">For Partners</a>
-        <a href="#" class="px-4 py-2 bg-safe-green/10 text-safe-green border border-safe-green/20 rounded-lg hover:bg-safe-green/20 transition text-sm font-medium">Try the Demo</a>
+  <nav id="nav">
+    <div class="nav-inner">
+      <a href="/website/index.html" class="nav-logo">Safe Walk</a>
+      <div class="nav-links">
+        <a href="/website/how-it-works.html">How It Works</a>
+        <a href="/website/about.html">About</a>
+        <a href="/website/partners.html">For Partners</a>
+        <a href="#" class="nav-demo">Try the Demo</a>
       </div>
+      <button class="hamburger" id="hamburger" aria-label="Open menu">
+        <svg width="22" height="22" viewBox="0 0 22 22" fill="none">
+          <rect y="4" width="22" height="2" rx="1" fill="currentColor"/>
+          <rect y="10" width="22" height="2" rx="1" fill="currentColor"/>
+          <rect y="16" width="22" height="2" rx="1" fill="currentColor"/>
+        </svg>
+      </button>
     </div>
   </nav>
 
+  <!-- Mobile menu -->
+  <div class="mobile-menu" id="mobile-menu">
+    <a href="/website/how-it-works.html">How It Works</a>
+    <a href="/website/about.html">About</a>
+    <a href="/website/partners.html">For Partners</a>
+    <a href="#" style="color: #34A853 !important;">Try the Demo</a>
+  </div>
+
   <!-- Hero -->
-  <section class="hero-glow pt-32 pb-20 px-6">
-    <div class="max-w-4xl mx-auto text-center">
-      <p class="text-safe-green text-sm font-medium tracking-wider uppercase mb-6">Safety API for Google Maps</p>
-      <h1 class="text-5xl md:text-7xl font-extrabold text-white leading-[1.1] mb-6">
-        Every map shows the<br>fastest route.<br>
-        <span class="gradient-text">None show the safest.</span>
+  <section class="hero">
+    <canvas id="hero-canvas"></canvas>
+    <div class="hero-content">
+      <span class="hero-label anim-fade-up">Safety API for Google Maps</span>
+      <h1 class="hero-h1 anim-fade-up">
+        Every map shows the fastest route.<br>
+        <span class="gradient-line">None show the safest.</span>
       </h1>
-      <p class="text-lg md:text-xl text-gray-400 max-w-2xl mx-auto mb-10 leading-relaxed">
-        Safe Walk is a safety layer built on top of Google Maps. It scores walking routes using police incident data, streetlight coverage, and community reports, then recommends the safest path, not just the fastest one.
-      </p>
-      <div class="flex flex-col sm:flex-row gap-4 justify-center">
-        <a href="#" class="px-8 py-4 bg-safe-green text-dark-900 font-semibold rounded-lg hover:bg-safe-light transition text-lg">Try the Demo</a>
-        <a href="/website/how-it-works.html" class="px-8 py-4 border border-white/10 text-white rounded-lg hover:bg-white/5 transition text-lg">How It Works</a>
+      <p class="hero-sub anim-fade-up">Safe Walk is a safety layer built on top of Google Maps. It scores walking routes using police incident data, streetlight coverage, and community reports, then recommends the safest path — not just the fastest one.</p>
+      <div class="hero-buttons anim-fade-up">
+        <a href="#" class="btn-primary">Try the Demo</a>
+        <a href="/website/how-it-works.html" class="btn-ghost">How It Works</a>
+      </div>
+      <div class="scroll-indicator anim-fade">
+        <div class="scroll-line"></div>
       </div>
     </div>
   </section>
 
   <!-- Stats -->
-  <section class="py-16 px-6 border-y border-white/5">
-    <div class="max-w-5xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-8">
-      <div class="stat-border pl-6">
-        <p class="text-4xl font-bold text-white">1 in 3</p>
-        <p class="text-gray-400 mt-2">Canadian women feel unsafe walking alone at night</p>
-        <p class="text-gray-600 text-sm mt-1">StatsCan General Social Survey</p>
+  <div class="stats-section">
+    <div class="stats-inner">
+      <div class="stat-item">
+        <span class="stat-number" data-count="special-1in3">1 in 3</span>
+        <p class="stat-label">Canadian women feel unsafe walking alone at night</p>
+        <p class="stat-source">StatsCan General Social Survey</p>
       </div>
-      <div class="stat-border pl-6">
-        <p class="text-4xl font-bold text-white">1,500+</p>
-        <p class="text-gray-400 mt-2">Safety incidents reported on the TTC in 2024</p>
-        <p class="text-gray-600 text-sm mt-1">Toronto Transit Commission</p>
+      <div class="stat-item">
+        <span class="stat-number" data-count="1500" data-suffix="+">0</span>
+        <p class="stat-label">Safety incidents reported on the TTC in 2024</p>
+        <p class="stat-source">Toronto Transit Commission</p>
       </div>
-      <div class="stat-border pl-6">
-        <p class="text-4xl font-bold text-white">0</p>
-        <p class="text-gray-400 mt-2">Navigation apps that factor safety into routing</p>
-        <p class="text-gray-600 text-sm mt-1">Google Maps, Apple Maps, Waze</p>
+      <div class="stat-item">
+        <span class="stat-number" data-count="0">0</span>
+        <p class="stat-label">Navigation apps that factor safety into routing</p>
+        <p class="stat-source">Google Maps, Apple Maps, Waze</p>
       </div>
     </div>
-  </section>
+  </div>
 
   <!-- Problem -->
-  <section class="py-24 px-6">
-    <div class="max-w-4xl mx-auto">
-      <p class="text-safe-green text-sm font-medium tracking-wider uppercase mb-4">The problem</p>
-      <h2 class="text-3xl md:text-4xl font-bold text-white mb-8">Navigation was built for drivers, not pedestrians</h2>
-      <div class="space-y-6 text-gray-400 text-lg leading-relaxed">
-        <p>
-          MapQuest launched in 1996 for driving directions. Google Maps followed in 2005. Waze added crowdsourced traffic. The entire history of digital navigation has been about moving cars faster.
-        </p>
-        <p>
-          When these platforms added pedestrian routing, they used the same logic: shortest distance, fastest time. Walking got bolted onto a system designed for driving.
-        </p>
-        <p>
-          But drivers are in a metal box. Pedestrians are not. A driver doesn't care about streetlights or worry about being followed. A pedestrian does. The risk profile is completely different, and the navigation tools haven't caught up.
-        </p>
+  <section>
+    <div class="problem-inner">
+      <div class="problem-text">
+        <span class="section-label anim-fade-up">The problem</span>
+        <h2 class="section-h2 anim-fade-up">Navigation was built for drivers, not pedestrians</h2>
+        <p class="anim-fade-up">MapQuest launched in 1996 for driving directions. Google Maps followed in 2005. Waze added crowdsourced traffic. The entire history of digital navigation has been about moving cars faster.</p>
+        <p class="anim-fade-up">When these platforms added pedestrian routing, they used the same logic: shortest distance, fastest time. Walking got bolted onto a system designed for driving.</p>
+        <p class="anim-fade-up">But drivers are in a metal box. Pedestrians are not. A driver doesn't care about streetlights or worry about being followed. A pedestrian does. The risk profile is completely different, and the navigation tools haven't caught up.</p>
+      </div>
+      <div class="anim-fade-up">
+        <div class="map-mockup">
+          <div class="map-grid"></div>
+          <div class="map-route"></div>
+          <div class="map-label">Today you get <span>one route</span></div>
+        </div>
       </div>
     </div>
   </section>
 
   <!-- Solution -->
-  <section class="py-24 px-6 bg-dark-800">
-    <div class="max-w-4xl mx-auto">
-      <p class="text-safe-green text-sm font-medium tracking-wider uppercase mb-4">The solution</p>
-      <h2 class="text-3xl md:text-4xl font-bold text-white mb-8">A safety layer any map can use</h2>
-      <p class="text-gray-400 text-lg leading-relaxed mb-12">
-        Safe Walk doesn't replace Google Maps. It adds what Google Maps is missing: a real-time safety score for every street segment in the city. Any app that uses Google Maps for walking directions can plug in Safe Walk's API and offer a "safest route" toggle alongside the fastest one.
-      </p>
+  <section class="solution-section">
+    <div class="solution-inner">
+      <span class="section-label anim-fade-up">The solution</span>
+      <h2 class="section-h2 anim-fade-up">A safety layer any map can use</h2>
+      <p class="solution-intro anim-fade-up">Safe Walk doesn't replace Google Maps. It adds what Google Maps is missing: a real-time safety score for every street segment in the city. Any app using Google Maps for walking directions can plug in Safe Walk's API and offer a "safest route" toggle alongside the fastest one.</p>
 
-      <!-- How it works steps -->
-      <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
-        <div class="bg-dark-700 border border-white/5 rounded-xl p-8 card-hover">
-          <div class="w-12 h-12 bg-safe-green/10 rounded-lg flex items-center justify-center mb-6">
-            <span class="text-safe-green text-xl font-bold">1</span>
+      <div class="steps">
+        <div class="step anim-fade-up">
+          <div class="step-dot"></div>
+          <span class="step-num">Step 01</span>
+          <h3>Enter your route</h3>
+          <p>Type your start and destination. Safe Walk calls the Google Routes API to get multiple walking route options.</p>
+          <div class="step-illustration">
+            <div class="illus-input">
+              <div class="illus-input-dot"></div>
+              <span class="illus-input-text">origin → destination</span>
+            </div>
           </div>
-          <h3 class="text-white font-semibold text-lg mb-3">Enter your route</h3>
-          <p class="text-gray-400">Type your start and destination. Safe Walk calls the Google Routes API to get multiple walking route options.</p>
         </div>
-        <div class="bg-dark-700 border border-white/5 rounded-xl p-8 card-hover">
-          <div class="w-12 h-12 bg-safe-green/10 rounded-lg flex items-center justify-center mb-6">
-            <span class="text-safe-green text-xl font-bold">2</span>
+
+        <div class="step anim-fade-up">
+          <div class="step-dot"></div>
+          <span class="step-num">Step 02</span>
+          <h3>We score each path</h3>
+          <p>Each route is scored against our safety graph: police incident density, streetlight coverage, time of day, and community reports.</p>
+          <div class="step-illustration">
+            <div class="illus-bars">
+              <div class="illus-bar" style="height: 80%; background: rgba(239,68,68,0.4);"></div>
+              <div class="illus-bar" style="height: 45%; background: rgba(239,68,68,0.25);"></div>
+              <div class="illus-bar" style="height: 60%; background: rgba(239,68,68,0.35);"></div>
+              <div class="illus-bar" style="height: 22%; background: rgba(52,168,83,0.5);"></div>
+              <div class="illus-bar" style="height: 18%; background: rgba(52,168,83,0.6);"></div>
+            </div>
           </div>
-          <h3 class="text-white font-semibold text-lg mb-3">We score each path</h3>
-          <p class="text-gray-400">Each route is scored against our safety graph: police incident density, streetlight coverage, time of day, and community reports.</p>
         </div>
-        <div class="bg-dark-700 border border-white/5 rounded-xl p-8 card-hover">
-          <div class="w-12 h-12 bg-safe-green/10 rounded-lg flex items-center justify-center mb-6">
-            <span class="text-safe-green text-xl font-bold">3</span>
+
+        <div class="step anim-fade-up">
+          <div class="step-dot"></div>
+          <span class="step-num">Step 03</span>
+          <h3>See the safest route</h3>
+          <p>Toggle between fastest and safest. See exactly how much safer the recommended route is, and how much longer it takes.</p>
+          <div class="step-illustration">
+            <div class="illus-toggle">
+              <div class="illus-tab fast">Fastest  14 min</div>
+              <div class="illus-tab safe">Safest  19 min</div>
+            </div>
           </div>
-          <h3 class="text-white font-semibold text-lg mb-3">See the safest route</h3>
-          <p class="text-gray-400">Toggle between fastest and safest. See exactly how much safer the recommended route is, and how much longer it takes.</p>
         </div>
       </div>
     </div>
   </section>
 
   <!-- Data Sources -->
-  <section class="py-24 px-6">
-    <div class="max-w-4xl mx-auto">
-      <p class="text-safe-green text-sm font-medium tracking-wider uppercase mb-4">Real data, not guesswork</p>
-      <h2 class="text-3xl md:text-4xl font-bold text-white mb-12">Three layers of safety intelligence</h2>
-      <div class="space-y-8">
-        <div class="flex gap-6 items-start">
-          <div class="w-1 bg-red-500 rounded-full self-stretch flex-shrink-0"></div>
-          <div>
-            <h3 class="text-white font-semibold text-lg mb-2">Police incident data</h3>
-            <p class="text-gray-400">Every reported assault, robbery, and break-and-enter from Toronto Police Open Data. Geocoded, weighted by severity and recency. An assault last month matters more than a bike theft two years ago.</p>
-          </div>
+  <section>
+    <div class="datasources-inner">
+      <span class="section-label anim-fade-up">Real data, not guesswork</span>
+      <h2 class="section-h2 anim-fade-up">Three layers of safety intelligence</h2>
+
+      <div class="datasource anim-fade-up">
+        <div class="ds-bar red"></div>
+        <div>
+          <p class="ds-title">Police incident data</p>
+          <p class="ds-desc">Every reported assault, robbery, and break-and-enter from Toronto Police Open Data. Geocoded, weighted by severity and recency. An assault last month matters more than a bike theft two years ago.</p>
         </div>
-        <div class="flex gap-6 items-start">
-          <div class="w-1 bg-cyan-400 rounded-full self-stretch flex-shrink-0"></div>
-          <div>
-            <h3 class="text-white font-semibold text-lg mb-2">Streetlight coverage</h3>
-            <p class="text-gray-400">The location of every streetlight in Toronto from City Open Data. We compute a lighting density score for every street segment. Well-lit main roads score high. Dark side streets score low. After dark, this layer matters a lot.</p>
-          </div>
+      </div>
+      <div class="datasource anim-fade-up">
+        <div class="ds-bar cyan"></div>
+        <div>
+          <p class="ds-title">Streetlight coverage</p>
+          <p class="ds-desc">The location of every streetlight in Toronto from City Open Data. We compute a lighting density score for every street segment. Well-lit main roads score high. Dark side streets score low. After dark, this layer matters a lot.</p>
         </div>
-        <div class="flex gap-6 items-start">
-          <div class="w-1 bg-safe-green rounded-full self-stretch flex-shrink-0"></div>
-          <div>
-            <h3 class="text-white font-semibold text-lg mb-2">Community reports</h3>
-            <p class="text-gray-400">Users report harassment, poor lighting, and suspicious activity directly in the app. These reports feed back into safety scores in real time, capturing the things that never make it into police data.</p>
-          </div>
+      </div>
+      <div class="datasource anim-fade-up">
+        <div class="ds-bar green"></div>
+        <div>
+          <p class="ds-title">Community reports</p>
+          <p class="ds-desc">Users report harassment, poor lighting, and suspicious activity directly in the app. These reports feed back into safety scores in real time, capturing the things that never make it into police data.</p>
         </div>
       </div>
     </div>
   </section>
 
-  <!-- Testimonials placeholder -->
-  <section class="py-24 px-6 bg-dark-800" id="testimonials">
-    <div class="max-w-4xl mx-auto">
-      <p class="text-safe-green text-sm font-medium tracking-wider uppercase mb-4">What people are saying</p>
-      <h2 class="text-3xl md:text-4xl font-bold text-white mb-12">Real experiences from real walkers</h2>
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
-        <div class="bg-dark-700 border border-white/5 rounded-xl p-8">
-          <p class="text-gray-300 text-lg leading-relaxed mb-6">"I leave Robarts at midnight twice a week. I always take the long way because I know the side streets aren't lit. If there was an app that showed me which route was actually safest, I'd use it every time."</p>
-          <div>
-            <p class="text-white font-medium">Testimonial Pending</p>
-            <p class="text-gray-500 text-sm">University of Toronto student</p>
-          </div>
+  <!-- Testimonials -->
+  <section class="testimonials-section">
+    <div class="testimonials-inner">
+      <span class="section-label anim-fade-up">What people are saying</span>
+      <h2 class="section-h2 anim-fade-up">Real experiences from real walkers</h2>
+      <div class="testimonials-grid">
+        <div class="testimonial anim-fade-up">
+          <p class="testimonial-quote">"I leave Robarts at midnight twice a week. I always take the long way because I know the side streets aren't lit. If there was an app that showed me which route was actually safest, I'd use it every time."</p>
+          <p class="testimonial-author">Early beta tester</p>
+          <p class="testimonial-role">University of Toronto student</p>
         </div>
-        <div class="bg-dark-700 border border-white/5 rounded-xl p-8">
-          <p class="text-gray-300 text-lg leading-relaxed mb-6">"When I finish my shift at 2 AM, I just pick whichever route looks busiest and hope for the best. There's no tool that actually tells me which streets are safe at that hour."</p>
-          <div>
-            <p class="text-white font-medium">Testimonial Pending</p>
-            <p class="text-gray-500 text-sm">Healthcare worker, Toronto</p>
-          </div>
+        <div class="testimonial anim-fade-up">
+          <p class="testimonial-quote">"When I finish my shift at 2 AM, I just pick whichever route looks busiest and hope for the best. There's no tool that actually tells me which streets are safe at that hour."</p>
+          <p class="testimonial-author">Early beta tester</p>
+          <p class="testimonial-role">Healthcare worker, Toronto</p>
         </div>
       </div>
-      <p class="text-gray-600 text-sm mt-8 text-center">Testimonials being collected from beta testers. Updated weekly.</p>
+      <p class="testimonials-note">Testimonials being collected from beta testers. Updated weekly.</p>
     </div>
   </section>
 
   <!-- API Preview -->
-  <section class="py-24 px-6">
-    <div class="max-w-4xl mx-auto">
-      <p class="text-safe-green text-sm font-medium tracking-wider uppercase mb-4">For developers</p>
-      <h2 class="text-3xl md:text-4xl font-bold text-white mb-8">One API call to make any route safer</h2>
-      <p class="text-gray-400 text-lg mb-8">Safe Walk works as a drop-in layer on top of Google Maps. Send us an origin and destination, get back routes ranked by safety.</p>
-      <div class="bg-dark-800 border border-white/10 rounded-xl p-6 overflow-x-auto">
-        <pre class="text-sm text-gray-300"><code>POST /api/route
-{
-  "origin": "Robarts Library, Toronto",
-  "destination": "100 Harbord St, Toronto"
-}
+  <section>
+    <div class="api-inner">
+      <span class="section-label anim-fade-up">For developers</span>
+      <h2 class="section-h2 anim-fade-up">One API call to make any route safer</h2>
+      <p class="api-intro anim-fade-up">Safe Walk works as a drop-in layer on top of Google Maps. Send us an origin and destination, get back routes ranked by safety.</p>
+      <div class="code-window anim-fade-up">
+        <div class="code-window-bar">
+          <div class="code-dots">
+            <div class="code-dot red"></div>
+            <div class="code-dot yellow"></div>
+            <div class="code-dot green"></div>
+          </div>
+          <span class="code-filename">POST /api/route</span>
+        </div>
+        <div class="code-body">
+<span class="c-com">// Request</span>
+<span class="c-punc">{</span>
+  <span class="c-key">"origin"</span><span class="c-punc">:</span> <span class="c-str">"Robarts Library, Toronto"</span><span class="c-punc">,</span>
+  <span class="c-key">"destination"</span><span class="c-punc">:</span> <span class="c-str">"100 Harbord St, Toronto"</span>
+<span class="c-punc">}</span>
 
-// Response
-{
-  "fastest": {
-    "distance": "1.2 km",
-    "duration": "14 min",
-    "safety_score": 0.42   // higher = more dangerous
-  },
-  "safest": {
-    "distance": "1.6 km",
-    "duration": "19 min",
-    "safety_score": 0.18   // much safer
-  }
-}</code></pre>
+<span class="c-com">// Response</span>
+<span class="c-punc">{</span>
+  <span class="c-key">"fastest"</span><span class="c-punc">: {</span>
+    <span class="c-key">"distance"</span><span class="c-punc">:</span> <span class="c-str">"1.2 km"</span><span class="c-punc">,</span>
+    <span class="c-key">"duration"</span><span class="c-punc">:</span> <span class="c-str">"14 min"</span><span class="c-punc">,</span>
+    <span class="c-key">"safety_score"</span><span class="c-punc">:</span> <span class="c-num">0.42</span>  <span class="c-com">// higher = more dangerous</span>
+  <span class="c-punc">},</span>
+  <span class="c-key">"safest"</span><span class="c-punc">: {</span>
+    <span class="c-key">"distance"</span><span class="c-punc">:</span> <span class="c-str">"1.6 km"</span><span class="c-punc">,</span>
+    <span class="c-key">"duration"</span><span class="c-punc">:</span> <span class="c-str">"19 min"</span><span class="c-punc">,</span>
+    <span class="c-key">"safety_score"</span><span class="c-punc">:</span> <span class="c-num">0.18</span>  <span class="c-com">// much safer</span>
+  <span class="c-punc">}</span>
+<span class="c-punc">}</span>
+        </div>
       </div>
     </div>
   </section>
 
   <!-- CTA -->
-  <section class="py-24 px-6 bg-dark-800 border-t border-white/5">
-    <div class="max-w-3xl mx-auto text-center">
-      <h2 class="text-3xl md:text-4xl font-bold text-white mb-6">Walking home shouldn't require courage</h2>
-      <p class="text-gray-400 text-lg mb-10">We're building the safety layer that navigation should have had from the start. Try the demo, report an incident, or reach out if you want to integrate Safe Walk into your platform.</p>
-      <div class="flex flex-col sm:flex-row gap-4 justify-center">
-        <a href="#" class="px-8 py-4 bg-safe-green text-dark-900 font-semibold rounded-lg hover:bg-safe-light transition text-lg">Try the Demo</a>
-        <a href="/website/partners.html" class="px-8 py-4 border border-white/10 text-white rounded-lg hover:bg-white/5 transition text-lg">Partner With Us</a>
+  <section class="cta-section">
+    <div class="cta-glow"></div>
+    <div class="cta-inner">
+      <h2 class="cta-h2 anim-fade-up">Walking home shouldn't require courage</h2>
+      <p class="cta-p anim-fade-up">We're building the safety layer that navigation should have had from the start. Try the demo, report an incident, or reach out if you want to integrate Safe Walk into your platform.</p>
+      <div class="hero-buttons anim-fade-up">
+        <a href="#" class="btn-primary">Try the Demo</a>
+        <a href="/website/partners.html" class="btn-ghost">Partner With Us</a>
       </div>
     </div>
   </section>
 
   <!-- Footer -->
-  <footer class="py-12 px-6 border-t border-white/5">
-    <div class="max-w-6xl mx-auto flex flex-col md:flex-row justify-between items-center gap-6">
+  <footer>
+    <div class="footer-inner">
       <div>
-        <p class="text-white font-bold text-lg">Safe Walk</p>
-        <p class="text-gray-500 text-sm mt-1">The safety layer for urban navigation.</p>
+        <p class="footer-logo">Safe Walk</p>
+        <p class="footer-tagline">The safety layer for urban navigation.</p>
       </div>
-      <div class="flex gap-8 text-sm text-gray-500">
-        <a href="/website/how-it-works.html" class="hover:text-gray-300 transition">How It Works</a>
-        <a href="/website/about.html" class="hover:text-gray-300 transition">About</a>
-        <a href="/website/partners.html" class="hover:text-gray-300 transition">Partners</a>
+      <div class="footer-links">
+        <a href="/website/how-it-works.html">How It Works</a>
+        <a href="/website/about.html">About</a>
+        <a href="/website/partners.html">Partners</a>
       </div>
-      <div class="text-gray-600 text-sm">
+      <div class="footer-credits">
         <p>Data: Toronto Police Open Data, City of Toronto</p>
-        <p class="mt-1">Built by Seyedborna Boyafraz</p>
+        <p>Built by Seyedborna Boyafraz</p>
       </div>
     </div>
   </footer>
+
+  <script>
+    // Nav scroll border
+    const nav = document.getElementById('nav');
+    window.addEventListener('scroll', () => {
+      nav.classList.toggle('scrolled', window.scrollY > 20);
+    }, { passive: true });
+
+    // Hamburger
+    const hamburger = document.getElementById('hamburger');
+    const mobileMenu = document.getElementById('mobile-menu');
+    hamburger.addEventListener('click', () => {
+      mobileMenu.classList.toggle('open');
+    });
+    mobileMenu.addEventListener('click', (e) => {
+      if (e.target.tagName === 'A') mobileMenu.classList.remove('open');
+    });
+
+    // Three.js hero
+    (function() {
+      const canvas = document.getElementById('hero-canvas');
+      const renderer = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: false });
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+
+      const scene = new THREE.Scene();
+      const camera = new THREE.PerspectiveCamera(50, 1, 0.1, 1000);
+      camera.position.set(0, 28, 38);
+      camera.lookAt(0, 0, 0);
+
+      function resize() {
+        const w = canvas.clientWidth, h = canvas.clientHeight;
+        renderer.setSize(w, h, false);
+        camera.aspect = w / h;
+        camera.updateProjectionMatrix();
+      }
+
+      // Grid points
+      const GRID = 30;
+      const SPACING = 2.2;
+      const totalPts = GRID * GRID;
+      const positions = new Float32Array(totalPts * 3);
+      const colors = new Float32Array(totalPts * 3);
+      const sizes = new Float32Array(totalPts);
+
+      const safeNodes = [];
+      const dangerNodes = [];
+      const nodeTypes = []; // 0=dim, 1=safe, 2=danger
+
+      const half = (GRID - 1) * SPACING * 0.5;
+
+      for (let i = 0; i < GRID; i++) {
+        for (let j = 0; j < GRID; j++) {
+          const idx = i * GRID + j;
+          positions[idx * 3] = i * SPACING - half;
+          positions[idx * 3 + 1] = 0;
+          positions[idx * 3 + 2] = j * SPACING - half;
+
+          const r = Math.random();
+          if (r < 0.05) {
+            // danger
+            colors[idx * 3] = 1.0; colors[idx * 3 + 1] = 0.27; colors[idx * 3 + 2] = 0.27;
+            sizes[idx] = 3.5;
+            nodeTypes[idx] = 2;
+            dangerNodes.push(idx);
+          } else if (r < 0.20) {
+            // safe
+            colors[idx * 3] = 0.204; colors[idx * 3 + 1] = 0.659; colors[idx * 3 + 2] = 0.325;
+            sizes[idx] = 4.0;
+            nodeTypes[idx] = 1;
+            safeNodes.push(idx);
+          } else {
+            // dim
+            colors[idx * 3] = 0.2; colors[idx * 3 + 1] = 0.2; colors[idx * 3 + 2] = 0.251;
+            sizes[idx] = 1.5;
+            nodeTypes[idx] = 0;
+          }
+        }
+      }
+
+      const ptGeo = new THREE.BufferGeometry();
+      ptGeo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+      ptGeo.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+      ptGeo.setAttribute('size', new THREE.BufferAttribute(sizes, 1));
+
+      const ptMat = new THREE.PointsMaterial({
+        size: 0.18,
+        vertexColors: true,
+        sizeAttenuation: true,
+        transparent: true,
+        opacity: 0.75,
+        blending: THREE.AdditiveBlending,
+        depthWrite: false,
+      });
+
+      const points = new THREE.Points(ptGeo, ptMat);
+      scene.add(points);
+
+      // Grid lines (only horizontal and vertical adjacents)
+      const lineVerts = [];
+      for (let i = 0; i < GRID; i++) {
+        for (let j = 0; j < GRID; j++) {
+          const idx = i * GRID + j;
+          const x = positions[idx * 3], y = positions[idx * 3 + 1], z = positions[idx * 3 + 2];
+          if (j < GRID - 1) {
+            const nidx = i * GRID + j + 1;
+            lineVerts.push(x, y, z, positions[nidx * 3], positions[nidx * 3 + 1], positions[nidx * 3 + 2]);
+          }
+          if (i < GRID - 1) {
+            const nidx = (i + 1) * GRID + j;
+            lineVerts.push(x, y, z, positions[nidx * 3], positions[nidx * 3 + 1], positions[nidx * 3 + 2]);
+          }
+        }
+      }
+      const lineGeo = new THREE.BufferGeometry();
+      lineGeo.setAttribute('position', new THREE.BufferAttribute(new Float32Array(lineVerts), 3));
+      const lineMat = new THREE.LineBasicMaterial({ color: 0x1a1a2e, transparent: true, opacity: 0.3, blending: THREE.AdditiveBlending, depthWrite: false });
+      const lines = new THREE.LineSegments(lineGeo, lineMat);
+      scene.add(lines);
+
+      // Pulse sphere
+      const pulseGeo = new THREE.SphereGeometry(0.22, 8, 8);
+      const pulseMat = new THREE.MeshBasicMaterial({ color: 0x4ade80, transparent: true, opacity: 0.9 });
+      const pulseSphere = new THREE.Mesh(pulseGeo, pulseMat);
+      scene.add(pulseSphere);
+
+      // Trail positions (small points)
+      const TRAIL_LEN = 12;
+      const trailPositions = new Float32Array(TRAIL_LEN * 3);
+      const trailAlphas = new Float32Array(TRAIL_LEN);
+      const trailGeo = new THREE.BufferGeometry();
+      trailGeo.setAttribute('position', new THREE.BufferAttribute(trailPositions, 3));
+      const trailMat = new THREE.PointsMaterial({ size: 0.12, color: 0x4ade80, transparent: true, opacity: 0.4, blending: THREE.AdditiveBlending, depthWrite: false });
+      const trailPoints = new THREE.Points(trailGeo, trailMat);
+      scene.add(trailPoints);
+
+      // Build a pulse path from safe nodes
+      function buildPath() {
+        const shuffled = safeNodes.slice().sort(() => Math.random() - 0.5);
+        return shuffled.slice(0, Math.min(7, shuffled.length));
+      }
+
+      let currentPath = buildPath();
+      let pathSegment = 0;
+      let t = 0;
+      const PULSE_SPEED = 0.008;
+      const trailHistory = [];
+
+      function getNodePos(idx) {
+        return new THREE.Vector3(positions[idx * 3], positions[idx * 3 + 1], positions[idx * 3 + 2]);
+      }
+
+      // Mouse parallax
+      let mouseX = 0, mouseY = 0;
+      let camOffX = 0, camOffY = 0;
+      window.addEventListener('mousemove', (e) => {
+        mouseX = (e.clientX / window.innerWidth - 0.5) * 2;
+        mouseY = (e.clientY / window.innerHeight - 0.5) * 2;
+      }, { passive: true });
+
+      let orbitAngle = 0;
+      const BASE_CAM_DIST = Math.sqrt(28 * 28 + 38 * 38);
+
+      function animate() {
+        requestAnimationFrame(animate);
+        resize();
+
+        // Slow camera orbit
+        orbitAngle += 0.0004;
+
+        // Damped mouse parallax
+        camOffX += (mouseX * 3 - camOffX) * 0.04;
+        camOffY += (-mouseY * 1.5 - camOffY) * 0.04;
+
+        camera.position.x = Math.sin(orbitAngle) * 38 + camOffX;
+        camera.position.z = Math.cos(orbitAngle) * 38;
+        camera.position.y = 28 + camOffY;
+        camera.lookAt(0, 0, 0);
+
+        // Pulse movement
+        if (currentPath.length >= 2) {
+          const startNode = currentPath[pathSegment];
+          const endNode = currentPath[pathSegment + 1];
+          if (endNode !== undefined) {
+            const startPos = getNodePos(startNode);
+            const endPos = getNodePos(endNode);
+            t += PULSE_SPEED;
+
+            if (t >= 1) {
+              t = 0;
+              pathSegment++;
+              if (pathSegment >= currentPath.length - 1) {
+                pathSegment = 0;
+                currentPath = buildPath();
+              }
+            }
+
+            const px = startPos.x + (endPos.x - startPos.x) * t;
+            const py = startPos.y + (endPos.y - startPos.y) * t;
+            const pz = startPos.z + (endPos.z - startPos.z) * t;
+
+            pulseSphere.position.set(px, py + 0.3, pz);
+            pulseMat.opacity = 0.7 + Math.sin(Date.now() * 0.005) * 0.2;
+
+            // Update trail
+            trailHistory.unshift({ x: px, y: py + 0.3, z: pz });
+            if (trailHistory.length > TRAIL_LEN) trailHistory.pop();
+            for (let ti = 0; ti < TRAIL_LEN; ti++) {
+              const h = trailHistory[ti] || { x: px, y: py, z: pz };
+              trailPositions[ti * 3] = h.x;
+              trailPositions[ti * 3 + 1] = h.y;
+              trailPositions[ti * 3 + 2] = h.z;
+            }
+            trailGeo.attributes.position.needsUpdate = true;
+          }
+        }
+
+        renderer.render(scene, camera);
+      }
+
+      animate();
+    })();
+
+    // GSAP ScrollTrigger
+    gsap.registerPlugin(ScrollTrigger);
+
+    // Hero entrance
+    gsap.set('.hero-label', { opacity: 0, y: 20 });
+    gsap.set('.hero-h1', { opacity: 0, y: 30 });
+    gsap.set('.hero-sub', { opacity: 0, y: 20 });
+    gsap.set('.hero-buttons', { opacity: 0, y: 16 });
+    gsap.set('.scroll-indicator', { opacity: 0 });
+
+    const heroTl = gsap.timeline({ delay: 0.3 });
+    heroTl
+      .to('.hero-label', { opacity: 1, y: 0, duration: 0.8, ease: 'power3.out' })
+      .to('.hero-h1', { opacity: 1, y: 0, duration: 0.9, ease: 'power3.out' }, '-=0.5')
+      .to('.hero-sub', { opacity: 1, y: 0, duration: 0.7, ease: 'power2.out' }, '-=0.5')
+      .to('.hero-buttons', { opacity: 1, y: 0, duration: 0.7, ease: 'power2.out' }, '-=0.4')
+      .to('.scroll-indicator', { opacity: 1, duration: 0.6 }, '-=0.2');
+
+    // Stats count-up
+    const statsEl = document.querySelector('.stats-section');
+    const statNumbers = document.querySelectorAll('.stat-number');
+
+    ScrollTrigger.create({
+      trigger: statsEl,
+      start: 'top 80%',
+      once: true,
+      onEnter: () => {
+        statNumbers.forEach(el => {
+          const target = parseInt(el.dataset.count);
+          const suffix = el.dataset.suffix || '';
+          const special = el.dataset.count === 'special-1in3';
+          if (special) {
+            // already shows "1 in 3", just animate opacity
+            gsap.from(el, { opacity: 0, duration: 0.8, ease: 'power2.out' });
+            return;
+          }
+          if (target === 0) {
+            gsap.from(el, { opacity: 0, duration: 0.6, ease: 'power2.out' });
+            return;
+          }
+          gsap.fromTo(el,
+            { innerText: 0 },
+            {
+              innerText: target,
+              duration: 2,
+              ease: 'power2.out',
+              snap: { innerText: 1 },
+              onUpdate: function() {
+                el.textContent = Math.round(this.targets()[0]._innerText || 0).toLocaleString() + suffix;
+              }
+            }
+          );
+        });
+      }
+    });
+
+    // Section scroll reveals
+    gsap.utils.toArray('.anim-fade-up').forEach(el => {
+      // skip hero elements (already animated)
+      if (el.closest('.hero')) return;
+      gsap.set(el, { opacity: 0, y: 22 });
+      ScrollTrigger.create({
+        trigger: el,
+        start: 'top 88%',
+        once: true,
+        onEnter: () => gsap.to(el, { opacity: 1, y: 0, duration: 0.75, ease: 'power2.out' })
+      });
+    });
+  </script>
 
 </body>
 </html>
