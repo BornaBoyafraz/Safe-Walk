@@ -179,7 +179,7 @@
     .code-dot.yellow { background: #ffbd2e; }
     .code-dot.green { background: #28c841; }
     .code-filename { font-size: 12px; color: #555568; font-family: 'JetBrains Mono', monospace; margin-left: 8px; }
-    .code-body { padding: 28px 28px; font-family: 'JetBrains Mono', monospace; font-size: 13px; line-height: 1.8; overflow-x: auto; }
+    .code-body { padding: 28px 28px; font-family: 'JetBrains Mono', monospace; font-size: 13px; line-height: 1.8; overflow-x: auto; white-space: pre; }
     .c-key { color: #e8e8ed; }
     .c-str { color: #34A853; }
     .c-num { color: #22d3ee; }
@@ -750,26 +750,25 @@
           const suffix = el.dataset.suffix || '';
           const special = el.dataset.count === 'special-1in3';
           if (special) {
-            // already shows "1 in 3", just animate opacity
-            gsap.from(el, { opacity: 0, duration: 0.8, ease: 'power2.out' });
+            gsap.fromTo(el, { opacity: 0 }, { opacity: 1, duration: 0.8, ease: 'power2.out' });
             return;
           }
           if (target === 0) {
-            gsap.from(el, { opacity: 0, duration: 0.6, ease: 'power2.out' });
+            gsap.fromTo(el, { opacity: 0 }, { opacity: 1, duration: 0.6, ease: 'power2.out' });
             return;
           }
-          gsap.fromTo(el,
-            { innerText: 0 },
-            {
-              innerText: target,
-              duration: 2,
-              ease: 'power2.out',
-              snap: { innerText: 1 },
-              onUpdate: function() {
-                el.textContent = Math.round(this.targets()[0]._innerText || 0).toLocaleString() + suffix;
-              }
+          const counter = { value: 0 };
+          gsap.to(counter, {
+            value: target,
+            duration: 2,
+            ease: 'power2.out',
+            onUpdate: () => {
+              el.textContent = Math.round(counter.value).toLocaleString() + suffix;
+            },
+            onComplete: () => {
+              el.textContent = target.toLocaleString() + suffix;
             }
-          );
+          });
         });
       }
     });
