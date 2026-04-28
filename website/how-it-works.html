@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>How It Works — Safe Walk</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            dark: { 900: '#0a0a0f', 800: '#12121a', 700: '#1a1a2e', 600: '#242440' },
+            safe: { green: '#34A853', light: '#4ade80' },
+            accent: '#6366f1',
+          }
+        }
+      }
+    }
+  </script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    body { font-family: 'Inter', system-ui, sans-serif; }
+    .code-block { background: #0d1117; border: 1px solid rgba(255,255,255,0.08); }
+  </style>
+</head>
+<body class="bg-dark-900 text-gray-200">
+
+  <!-- Nav -->
+  <nav class="fixed top-0 w-full z-50 bg-dark-900/80 backdrop-blur-md border-b border-white/5">
+    <div class="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
+      <a href="/website/index.html" class="text-xl font-bold text-white tracking-tight">Safe Walk</a>
+      <div class="hidden md:flex items-center gap-8 text-sm text-gray-400">
+        <a href="/website/how-it-works.html" class="text-white">How It Works</a>
+        <a href="/website/about.html" class="hover:text-white transition">About</a>
+        <a href="/website/partners.html" class="hover:text-white transition">For Partners</a>
+        <a href="#" class="px-4 py-2 bg-safe-green/10 text-safe-green border border-safe-green/20 rounded-lg hover:bg-safe-green/20 transition text-sm font-medium">Try the Demo</a>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Hero -->
+  <section class="pt-32 pb-16 px-6">
+    <div class="max-w-3xl mx-auto">
+      <p class="text-safe-green text-sm font-medium tracking-wider uppercase mb-4">How it works</p>
+      <h1 class="text-4xl md:text-5xl font-extrabold text-white leading-tight mb-6">The safety graph, explained</h1>
+      <p class="text-gray-400 text-xl leading-relaxed">Safe Walk builds a scored safety layer on top of Google Maps by combining municipal open data, community reports, and time-aware scoring into a single API that any platform can query.</p>
+    </div>
+  </section>
+
+  <!-- Architecture Overview -->
+  <section class="py-16 px-6">
+    <div class="max-w-3xl mx-auto">
+      <h2 class="text-2xl font-bold text-white mb-6">Architecture</h2>
+      <div class="space-y-5 text-gray-400 text-lg leading-relaxed">
+        <p>
+          When you request a route, Safe Walk calls the Google Routes API with <code class="text-gray-300 bg-dark-700 px-2 py-0.5 rounded text-sm">computeAlternativeRoutes: true</code> to get up to three different walking paths between your origin and destination. Each path comes back as an encoded polyline, which is a compressed list of latitude/longitude points along the route.
+        </p>
+        <p>
+          We decode each polyline, sample points along the route, and score every sampled point against our safety graph. The route with the lowest average danger score becomes the "safest" recommendation. The route Google ranks first (optimized for speed) is labeled "fastest." You see both.
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Safety Scoring -->
+  <section class="py-16 px-6 bg-dark-800">
+    <div class="max-w-3xl mx-auto">
+      <h2 class="text-2xl font-bold text-white mb-6">The safety scoring engine</h2>
+      <p class="text-gray-400 text-lg leading-relaxed mb-8">
+        Every point on every route gets a safety cost between 0 (very safe) and 1 (very dangerous). The cost is computed from three signals:
+      </p>
+
+      <div class="space-y-10">
+        <div>
+          <h3 class="text-white font-semibold text-lg mb-3">Incident density</h3>
+          <p class="text-gray-400 leading-relaxed mb-4">
+            We query all police incidents within 500 meters of the point. Each incident's contribution is weighted by three factors:
+          </p>
+          <div class="code-block rounded-xl p-6 text-sm text-gray-300 space-y-2">
+            <p><span class="text-cyan-400">Distance weight</span> = 1 / (1 + meters / 100)</p>
+            <p class="text-gray-500">An incident 50m away contributes 3x more than one at 300m.</p>
+            <p class="mt-3"><span class="text-cyan-400">Recency weight</span> = e^(-days_old / 365)</p>
+            <p class="text-gray-500">Last month's incident counts heavily. Two years ago is nearly zero.</p>
+            <p class="mt-3"><span class="text-cyan-400">Severity weight</span></p>
+            <p class="text-gray-500">Assault, Robbery, Sexual Violation = 1.0 | Break and Enter = 0.5 | Theft = 0.3 | Auto Theft = 0.2</p>
+            <p class="mt-3"><span class="text-cyan-400">Incident contribution</span> = distance x recency x severity</p>
+          </div>
+        </div>
+
+        <div>
+          <h3 class="text-white font-semibold text-lg mb-3">Streetlight coverage</h3>
+          <p class="text-gray-400 leading-relaxed">
+            We count streetlights within 100 meters of each point. Five or more nearby streetlights means the area is well-lit and the lighting danger score drops to zero. Zero streetlights means maximum lighting danger. This layer is weighted heavily after dark and almost ignored during daytime.
+          </p>
+        </div>
+
+        <div>
+          <h3 class="text-white font-semibold text-lg mb-3">Time-of-day adjustment</h3>
+          <p class="text-gray-400 leading-relaxed">
+            The scoring engine knows what time it is. During the day (7 AM to 7 PM), incident history carries most of the weight. After dark (9 PM to 5 AM), streetlight coverage becomes much more important. Dawn and dusk hours interpolate smoothly between the two modes. The transition follows Toronto's actual patterns.
+          </p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Final Score -->
+  <section class="py-16 px-6">
+    <div class="max-w-3xl mx-auto">
+      <h2 class="text-2xl font-bold text-white mb-6">The final score</h2>
+      <div class="code-block rounded-xl p-6 text-sm text-gray-300 mb-6">
+        <p><span class="text-safe-green">safety_cost</span> = incident_score x incident_weight + lighting_score x lighting_weight</p>
+        <p class="mt-2 text-gray-500">Clamped between 0.0 (safe) and 1.0 (dangerous)</p>
+        <p class="mt-4 text-gray-500">Night weights: incident = 0.6, lighting = 0.4</p>
+        <p class="text-gray-500">Day weights: incident = 0.8, lighting = 0.1</p>
+      </div>
+      <p class="text-gray-400 text-lg leading-relaxed">
+        The route's overall safety score is the average of all sampled points along the path. A route scoring 0.15 is meaningfully safer than one scoring 0.40, even though both numbers are below 0.5. The comparison between routes is what matters, and when you see both routes on the map, the difference is usually obvious: the safe route sticks to well-lit main streets while the fast route cuts through darker, higher-incident areas.
+      </p>
+    </div>
+  </section>
+
+  <!-- Data Sources -->
+  <section class="py-16 px-6 bg-dark-800">
+    <div class="max-w-3xl mx-auto">
+      <h2 class="text-2xl font-bold text-white mb-6">Data sources</h2>
+      <div class="space-y-6">
+        <div class="flex gap-4 items-start">
+          <div class="w-2 h-2 bg-red-500 rounded-full mt-2.5 flex-shrink-0"></div>
+          <div>
+            <p class="text-white font-medium">Toronto Police Service, Major Crime Indicators</p>
+            <p class="text-gray-400 text-sm mt-1">Every geocoded assault, robbery, break-and-enter, theft, and sexual violation. Updated regularly via the ArcGIS feature service at data.torontopolice.on.ca. Tens of thousands of records covering multiple years.</p>
+          </div>
+        </div>
+        <div class="flex gap-4 items-start">
+          <div class="w-2 h-2 bg-cyan-400 rounded-full mt-2.5 flex-shrink-0"></div>
+          <div>
+            <p class="text-white font-medium">City of Toronto, Street Lighting</p>
+            <p class="text-gray-400 text-sm mt-1">The location of every streetlight in the city, approximately 160,000 points. Sourced from Toronto's Open Data portal via CKAN API. Includes type and wattage where available.</p>
+          </div>
+        </div>
+        <div class="flex gap-4 items-start">
+          <div class="w-2 h-2 bg-safe-green rounded-full mt-2.5 flex-shrink-0"></div>
+          <div>
+            <p class="text-white font-medium">Community reports</p>
+            <p class="text-gray-400 text-sm mt-1">User-submitted reports of harassment, poor lighting, suspicious activity, and other safety concerns. Weighted lower than police data initially, but gain weight with corroboration from multiple users.</p>
+          </div>
+        </div>
+        <div class="flex gap-4 items-start">
+          <div class="w-2 h-2 bg-accent rounded-full mt-2.5 flex-shrink-0"></div>
+          <div>
+            <p class="text-white font-medium">Google Routes API</p>
+            <p class="text-gray-400 text-sm mt-1">Walking route geometry and alternatives. We use Google for what it's good at (pathfinding on the road network) and add what it's missing (safety scoring).</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- API Reference Preview -->
+  <section class="py-16 px-6">
+    <div class="max-w-3xl mx-auto">
+      <h2 class="text-2xl font-bold text-white mb-6">API reference</h2>
+      <p class="text-gray-400 text-lg leading-relaxed mb-8">Safe Walk exposes two main endpoints. Both return JSON.</p>
+
+      <div class="space-y-8">
+        <div>
+          <h3 class="text-white font-medium mb-3">POST /api/route</h3>
+          <p class="text-gray-400 mb-4">Returns the fastest and safest walking routes between two addresses.</p>
+          <div class="code-block rounded-xl p-6 text-sm text-gray-300 overflow-x-auto">
+<pre>// Request
+POST /api/route
+{ "origin": "string", "destination": "string" }
+
+// Response
+{
+  "fastest": {
+    "polyline": "encoded_polyline_string",
+    "distanceMeters": 1200,
+    "duration": "900s",
+    "safety_score": 0.42
+  },
+  "safest": {
+    "polyline": "encoded_polyline_string",
+    "distanceMeters": 1580,
+    "duration": "1140s",
+    "safety_score": 0.18
+  },
+  "all_routes": [ ... ]
+}</pre>
+          </div>
+        </div>
+
+        <div>
+          <h3 class="text-white font-medium mb-3">GET /api/safety-score</h3>
+          <p class="text-gray-400 mb-4">Returns the safety cost for a single point at a given hour.</p>
+          <div class="code-block rounded-xl p-6 text-sm text-gray-300 overflow-x-auto">
+<pre>// Request
+GET /api/safety-score?lat=43.6520&lng=-79.3718&hour=23
+
+// Response
+{ "safety_cost": 0.67, "lat": 43.652, "lng": -79.3718, "hour": 23 }</pre>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- What's Next -->
+  <section class="py-16 px-6 bg-dark-800">
+    <div class="max-w-3xl mx-auto">
+      <h2 class="text-2xl font-bold text-white mb-6">What's next</h2>
+      <div class="space-y-5 text-gray-400 text-lg leading-relaxed">
+        <p>
+          The current scoring engine uses statistical weighting. The next version adds an AI prediction layer using Claude to estimate risk in areas with sparse police data, based on patterns from nearby areas: time clustering, proximity to certain location types, and historical incident trajectories.
+        </p>
+        <p>
+          We're also expanding the community reporting layer and building integrations for university campus safety apps, starting with University of Toronto, TMU, and York.
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer class="py-12 px-6 border-t border-white/5">
+    <div class="max-w-6xl mx-auto flex flex-col md:flex-row justify-between items-center gap-6">
+      <div>
+        <p class="text-white font-bold text-lg">Safe Walk</p>
+        <p class="text-gray-500 text-sm mt-1">The safety layer for urban navigation.</p>
+      </div>
+      <div class="flex gap-8 text-sm text-gray-500">
+        <a href="/website/how-it-works.html" class="hover:text-gray-300 transition">How It Works</a>
+        <a href="/website/about.html" class="hover:text-gray-300 transition">About</a>
+        <a href="/website/partners.html" class="hover:text-gray-300 transition">Partners</a>
+      </div>
+      <div class="text-gray-600 text-sm">
+        <p>Built by Seyedborna Boyafraz</p>
+      </div>
+    </div>
+  </footer>
+
+</body>
+</html>

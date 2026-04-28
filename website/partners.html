@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>For Partners — Safe Walk</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            dark: { 900: '#0a0a0f', 800: '#12121a', 700: '#1a1a2e', 600: '#242440' },
+            safe: { green: '#34A853', light: '#4ade80' },
+            accent: '#6366f1',
+          }
+        }
+      }
+    }
+  </script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    body { font-family: 'Inter', system-ui, sans-serif; }
+    .card-hover { transition: transform 0.2s ease; }
+    .card-hover:hover { transform: translateY(-2px); }
+  </style>
+</head>
+<body class="bg-dark-900 text-gray-200">
+
+  <!-- Nav -->
+  <nav class="fixed top-0 w-full z-50 bg-dark-900/80 backdrop-blur-md border-b border-white/5">
+    <div class="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
+      <a href="/website/index.html" class="text-xl font-bold text-white tracking-tight">Safe Walk</a>
+      <div class="hidden md:flex items-center gap-8 text-sm text-gray-400">
+        <a href="/website/how-it-works.html" class="hover:text-white transition">How It Works</a>
+        <a href="/website/about.html" class="hover:text-white transition">About</a>
+        <a href="/website/partners.html" class="text-white">For Partners</a>
+        <a href="#" class="px-4 py-2 bg-safe-green/10 text-safe-green border border-safe-green/20 rounded-lg hover:bg-safe-green/20 transition text-sm font-medium">Try the Demo</a>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Hero -->
+  <section class="pt-32 pb-16 px-6">
+    <div class="max-w-3xl mx-auto">
+      <p class="text-safe-green text-sm font-medium tracking-wider uppercase mb-4">For partners</p>
+      <h1 class="text-4xl md:text-5xl font-extrabold text-white leading-tight mb-6">Add safety-aware routing to your platform</h1>
+      <p class="text-gray-400 text-xl leading-relaxed">Safe Walk's safety graph API gives universities, transit agencies, and navigation platforms a way to offer pedestrian safety scoring without building it themselves.</p>
+    </div>
+  </section>
+
+  <!-- Use Cases -->
+  <section class="py-16 px-6">
+    <div class="max-w-4xl mx-auto">
+      <h2 class="text-2xl font-bold text-white mb-10">Who uses Safe Walk</h2>
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+
+        <div class="bg-dark-700 border border-white/5 rounded-xl p-8 card-hover">
+          <div class="w-12 h-12 bg-blue-500/10 rounded-lg flex items-center justify-center mb-6">
+            <svg class="w-6 h-6 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path></svg>
+          </div>
+          <h3 class="text-white font-semibold text-lg mb-3">Universities</h3>
+          <p class="text-gray-400">Integrate safety-scored routes into your campus app. Students get personalized safe route recommendations from the library to their dorm, from the lab to the subway. Replace static blue light phone maps with dynamic, data-driven guidance.</p>
+        </div>
+
+        <div class="bg-dark-700 border border-white/5 rounded-xl p-8 card-hover">
+          <div class="w-12 h-12 bg-orange-500/10 rounded-lg flex items-center justify-center mb-6">
+            <svg class="w-6 h-6 text-orange-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"></path></svg>
+          </div>
+          <h3 class="text-white font-semibold text-lg mb-3">Transit agencies</h3>
+          <p class="text-gray-400">Solve the last-mile safety problem. Riders feel safe on the subway but not walking from the station to home. Show them the safest walking route from any stop, and more people take transit instead of driving.</p>
+        </div>
+
+        <div class="bg-dark-700 border border-white/5 rounded-xl p-8 card-hover">
+          <div class="w-12 h-12 bg-purple-500/10 rounded-lg flex items-center justify-center mb-6">
+            <svg class="w-6 h-6 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7"></path></svg>
+          </div>
+          <h3 class="text-white font-semibold text-lg mb-3">Navigation platforms</h3>
+          <p class="text-gray-400">Add "safest route" as a routing option alongside "fastest" and "shortest." License the safety graph via API. Same integration pattern as traffic data or toll avoidance, applied to pedestrian safety.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Why partner -->
+  <section class="py-16 px-6 bg-dark-800">
+    <div class="max-w-3xl mx-auto">
+      <h2 class="text-2xl font-bold text-white mb-8">Why build with Safe Walk instead of building it yourself</h2>
+      <div class="space-y-6">
+        <div>
+          <h3 class="text-white font-semibold mb-2">The data integration is already done</h3>
+          <p class="text-gray-400">We've built the ingestion pipeline for Toronto Police incident data, City of Toronto streetlight data, and community reports. Normalizing municipal open data across different formats, schemas, and update frequencies is unglamorous plumbing work. We've done it so you don't have to.</p>
+        </div>
+        <div>
+          <h3 class="text-white font-semibold mb-2">The scoring engine is calibrated</h3>
+          <p class="text-gray-400">Our safety scoring weights incident proximity, recency, severity, streetlight density, and time of day. It's been tested against known high-incident areas in Toronto and tuned to produce scores that match real-world risk patterns.</p>
+        </div>
+        <div>
+          <h3 class="text-white font-semibold mb-2">The community layer creates a moat</h3>
+          <p class="text-gray-400">Every user who reports an incident makes the safety graph more accurate. More accuracy means more trust, which means more reports. This feedback loop is the competitive advantage: you can't replicate a community data asset from scratch.</p>
+        </div>
+        <div>
+          <h3 class="text-white font-semibold mb-2">One API call, no infrastructure</h3>
+          <p class="text-gray-400">You don't need to host databases, build scoring engines, or manage data pipelines. Send us an origin and destination. We send back routes ranked by safety. Integrate in an afternoon.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Pricing -->
+  <section class="py-16 px-6">
+    <div class="max-w-4xl mx-auto">
+      <h2 class="text-2xl font-bold text-white mb-10">Partnership tiers</h2>
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+
+        <div class="bg-dark-700 border border-white/5 rounded-xl p-8">
+          <p class="text-safe-green text-sm font-medium uppercase tracking-wider mb-2">Campus</p>
+          <p class="text-3xl font-bold text-white mb-1">$25K</p>
+          <p class="text-gray-500 text-sm mb-6">per year</p>
+          <div class="space-y-3 text-gray-400 text-sm">
+            <p>API access for one campus</p>
+            <p>Campus-specific safety data</p>
+            <p>Integration support</p>
+            <p>Branded "powered by Safe Walk"</p>
+            <p>Monthly safety reports</p>
+          </div>
+        </div>
+
+        <div class="bg-dark-700 border border-safe-green/30 rounded-xl p-8 relative">
+          <div class="absolute -top-3 left-8 px-3 py-1 bg-safe-green text-dark-900 text-xs font-bold rounded-full">Most Popular</div>
+          <p class="text-safe-green text-sm font-medium uppercase tracking-wider mb-2">Institution</p>
+          <p class="text-3xl font-bold text-white mb-1">$50K</p>
+          <p class="text-gray-500 text-sm mb-6">per year</p>
+          <div class="space-y-3 text-gray-400 text-sm">
+            <p>API access, multi-campus</p>
+            <p>White-label integration</p>
+            <p>Priority support</p>
+            <p>Custom safety zones</p>
+            <p>Real-time incident dashboard</p>
+            <p>Quarterly strategy reviews</p>
+          </div>
+        </div>
+
+        <div class="bg-dark-700 border border-white/5 rounded-xl p-8">
+          <p class="text-safe-green text-sm font-medium uppercase tracking-wider mb-2">Enterprise</p>
+          <p class="text-3xl font-bold text-white mb-1">Custom</p>
+          <p class="text-gray-500 text-sm mb-6">usage-based</p>
+          <div class="space-y-3 text-gray-400 text-sm">
+            <p>Unlimited API queries</p>
+            <p>Multi-city safety graph</p>
+            <p>SLA guarantees</p>
+            <p>Dedicated account manager</p>
+            <p>Custom data integrations</p>
+            <p>For navigation and real estate platforms</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- CTA -->
+  <section class="py-16 px-6 bg-dark-800">
+    <div class="max-w-3xl mx-auto text-center">
+      <h2 class="text-3xl font-bold text-white mb-4">Ready to make your platform safer?</h2>
+      <p class="text-gray-400 text-lg mb-8">We're actively looking for early partners. Universities, transit agencies, and navigation platforms that want to be first to offer safety-aware pedestrian routing.</p>
+      <a href="mailto:bornaboyafraz@gmail.com" class="inline-block px-8 py-4 bg-safe-green text-dark-900 font-semibold rounded-lg hover:bg-safe-light transition text-lg">Get in Touch</a>
+      <p class="text-gray-600 text-sm mt-4">bornaboyafraz@gmail.com</p>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer class="py-12 px-6 border-t border-white/5">
+    <div class="max-w-6xl mx-auto flex flex-col md:flex-row justify-between items-center gap-6">
+      <div>
+        <p class="text-white font-bold text-lg">Safe Walk</p>
+        <p class="text-gray-500 text-sm mt-1">The safety layer for urban navigation.</p>
+      </div>
+      <div class="flex gap-8 text-sm text-gray-500">
+        <a href="/website/how-it-works.html" class="hover:text-gray-300 transition">How It Works</a>
+        <a href="/website/about.html" class="hover:text-gray-300 transition">About</a>
+        <a href="/website/partners.html" class="hover:text-gray-300 transition">Partners</a>
+      </div>
+      <div class="text-gray-600 text-sm">
+        <p>Built by Seyedborna Boyafraz</p>
+      </div>
+    </div>
+  </footer>
+
+</body>
+</html>

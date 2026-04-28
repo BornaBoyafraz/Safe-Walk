@@ -2,310 +2,482 @@
 
 ## What it is
 Safe Walk is a Safety API built on top of Google Maps. It adds a "safest
-route" option to any app using Google Maps. A developer calls our API with
-an origin and destination, and gets back routes scored on safety — not just
-speed. The safety score is computed from Toronto Police incident data,
-streetlight density, community reports, and AI risk predictions.
+route" option to any app using Google Maps routing. The API scores walking
+routes using police incident density, streetlight coverage, community
+reports, and AI risk predictions. A demo frontend shows a toggle between
+"fastest" and "safest" routes on a Google Map.
 
-For the demo: a Google Maps frontend with a toggle (fastest / safest) that
-calls the API. The judge sees two routes on a real Google Map with scores.
-
-## The problem
-- 1 in 3 women in Canada report feeling unsafe walking alone at night.
-- The TTC logged over 1,500 reported incidents in 2024.
-- Google Maps optimizes for speed, not safety. It will route a pedestrian
-  down a dark alley to save two minutes.
-- No API exists that scores routes by safety. We're building it.
-
-## Who it's for
-Primary: developers and platforms integrating walking directions (university
-campus apps, transit apps, ride-share apps).
-Secondary (for the demo): end users — students, shift workers, anyone
-walking alone at night in Toronto.
-
-## The founder
-Seyedborna (Borna) Boyafraz, TKS Toronto student, solo builder.
-Pitching at TKS showcase May 9, 2026.
+TKS Moonshot. Pitch at Deloitte, May 9-10, 2026. All deliverables due May 7.
 
 ## Tech stack
 - Backend: Node.js + Express
-- Database: SQLite with better-sqlite3
-- Frontend: Vanilla JavaScript + Tailwind CSS (CDN)
-- Map: Google Maps JavaScript API
-- Routing: Google Routes API (computeAlternativeRoutes for multiple paths)
+- Database: SQLite via better-sqlite3
+- Frontend: Vanilla JS + Tailwind CSS (CDN)
+- Maps: Google Maps JavaScript API
+- Routing: Google Routes API (computeAlternativeRoutes)
 - Geocoding: Google Places Autocomplete
-- Safety scoring: Custom engine (incident density + streetlight density +
-  time-of-day weighting)
-- AI (later session): Claude API for risk prediction in data-sparse areas
+- Safety scoring: Custom engine in server/safety-score.js
 
-## Data sources
-- Toronto Police Open Data, Major Crime Indicators:
-  https://data.torontopolice.on.ca (ArcGIS feature service)
-- City of Toronto Open Data, streetlights: https://open.toronto.ca
-- Community reports (user-submitted, stored in SQLite)
-
-## Code style — read carefully
-Write code like a thoughtful human built it, not like a template was
-generated. In practice:
-- Variable and function names that read like English.
-- Comments only where the WHY isn't obvious from the code.
-- Small focused files over one bloated route handler.
-- Real error messages, not "Error 500".
-- No emojis in code, comments, or commit messages.
-- Commit messages are real sentences.
+## Code style
+- Names that read like English. Comments only for non-obvious WHY.
+- Small focused files. Real, specific error messages.
+- No emojis anywhere. Commit messages are real sentences.
 - Prettier defaults. .env.example committed, .env never.
 
 
-## What already exists (do NOT recreate these)
+## What already exists (do NOT recreate these — read them first)
 
-- package.json — dependencies: express, better-sqlite3, dotenv
-- .env.example — MAPBOX_PUBLIC_TOKEN, MAPBOX_SECRET_TOKEN, PORT
-- .gitignore — node_modules, .env, *.db, .DS_Store, data/toronto-graph.json
-- data/schema.sql — tables: incidents (event_id, lat, lng, category,
-  offence, occurred_at, reported_at, premise_type, neighbourhood, source),
-  streetlights (asset_id, lat, lng, type, wattage, status),
-  user_reports (lat, lng, category, note, created_at, verified).
-  Includes spatial indexes.
-- scripts/migrate.js — creates safewalk.db from schema.sql
-- scripts/sync-incidents.js — fetches Toronto Police MCI data via ArcGIS,
-  paginates, upserts into incidents table
-- server/app.js — Express server, has /api/config and /api/incidents
-  (returns GeoJSON from SQLite)
-- public/index.html — currently uses Mapbox (will be replaced)
-- public/js/map.js — Mapbox heatmap layer (will be replaced)
+Backend (fully working):
+- server/app.js — Express server with:
+  - GET /api/incidents → returns all incidents as GeoJSON
+  - GET /api/streetlights?minLat&maxLat&minLng&maxLng → returns
+    streetlights in bounding box as GeoJSON
+  - POST /api/route { origin, destination } → returns { fastest, safest,
+    all_routes } where each route has: polyline (encoded), distanceMeters,
+    duration (string like "900s"), safety_score (0-1, lower = safer)
+- server/safety-score.js — safetyCost(lat, lng, hour) and scoreRoute(points, hour)
+- server/routes-api.js — calls Google Routes API, decodes polylines,
+  scores each route, returns fastest and safest
 
-Read these files to understand existing patterns before writing new code.
+Data pipeline (working):
+- data/schema.sql — incidents, streetlights, user_reports tables
+- scripts/migrate.js, sync-incidents.js, sync-streetlights.js
+- data/safewalk.db — populated with real Toronto data
 
+Marketing website (exists — must be completely redesigned this session):
+- website/index.html — landing page
+- website/about.html — founder/mission page
+- website/how-it-works.html — technical deep dive
+- website/partners.html — partnership tiers and use cases
 
-## Scope for this session
-
-Read CLAUDE.md first. Then read this file. Work through these steps in
-order. Before using any API key, stop and ask Borna for it.
-
-
-### Step 1: Update .env.example and create .env
-
-1. Update .env.example to:
-   ```
-   GOOGLE_MAPS_API_KEY=your_key_here
-   PORT=3000
-   ```
-   Remove the old Mapbox entries.
-
-2. Ask Borna for his Google Maps API key.
-
-3. Create .env with the key he provides and PORT=3000.
-
-4. Run `npm run migrate` to create the database.
-
-5. Run `npm run sync` to fetch Toronto Police incident data. Wait for it
-   to finish — it paginates through thousands of records. Log the count.
-
-Commit: "Set up Google Maps config and run initial data sync"
+The API key is currently hardcoded in public/index.html as a placeholder.
+That is NOT part of this session.
 
 
-### Step 2: Write the streetlight sync script
+## Scope for this session — Redesign the marketing website
 
-Create scripts/sync-streetlights.js that fetches streetlight data from
-the City of Toronto.
+The 4 pages in website/ currently work and have decent copy, but they look
+like a generic AI-generated template. For the Deloitte pitch, this website
+needs to look like a real funded startup built it. Think Linear.app,
+Vercel.com, Stripe.com, or Raycast.com level design quality.
 
-The City of Toronto Open Data uses CKAN. Try this approach:
-1. Hit the CKAN API to find the streetlight dataset:
-   https://ckan0.cf.opendata.inter.prod-p.toronto.ca/api/3/action/package_show?id=street-lighting
-2. From the response, find the resource with format "GeoJSON" or "CSV"
-3. Download and parse it
-4. Upsert into the streetlights table
-
-If the CKAN approach doesn't work, try:
-- Direct GeoJSON download from the dataset page
-- The datastore_search API with the resource ID
-- Or search for alternative endpoints
-
-The script should:
-- Extract lat, lng, and any metadata (type, wattage, status)
-- Upsert using asset_id for dedup (use whatever unique ID the dataset has)
-- Log how many streetlights were inserted
-- Handle errors with real messages
-
-Add npm script: "sync-lights": "node scripts/sync-streetlights.js"
-
-Run it. Confirm the count makes sense (Toronto has ~160,000 streetlights).
-
-Commit: "Ingest Toronto streetlight data"
+Read CLAUDE.md first. Then read this file. Then read ALL FOUR existing
+website pages to understand the current copy and structure. Preserve the
+content and messaging — redesign the visual execution.
 
 
-### Step 3: Replace Mapbox with Google Maps
+### Design philosophy
 
-Replace public/index.html and public/js/map.js with a Google Maps version.
+The goal is a website that a judge at Deloitte looks at and thinks "this
+is a real company" not "a student used ChatGPT to make a website." Every
+design decision should serve that goal.
 
-The new index.html should:
-- Load Google Maps JavaScript API with your API key
-- Load Tailwind via CDN
-- Have a full-window Google Map centered on downtown Toronto (43.6532, -79.3832)
-- Use a dark/night mode map style (Google Maps supports styled maps)
-- Include the script tag for map.js
+**Reference sites (study these aesthetics):**
+- linear.app — clean dark UI, purposeful animations, premium feel
+- vercel.com — bold typography, gradient accents, developer-focused
+- stripe.com — sophisticated visual hierarchy, animations that explain
+- raycast.com — dark theme, 3D elements, polished interactions
 
-The new map.js should:
-- Initialize the Google Map
-- Load incidents from /api/incidents and render them as a heatmap layer
-  (Google Maps has google.maps.visualization.HeatmapLayer)
-- Verify the heatmap renders before moving on
+**What makes a site look AI-generated (avoid ALL of these):**
+- Every section is center-aligned with identical structure
+- Generic 3-card grid layouts repeated everywhere
+- Overuse of the brand color (green on everything)
+- Cookie-cutter icon choices (lightbulb for ideas, shield for security)
+- Perfectly symmetrical everything
+- No visual rhythm or breathing room
+- Formulaic section pattern: colored label → big heading → paragraph → cards
+- Stock-feeling testimonial cards with identical layouts
+- No personality or unique visual identity
 
-Update server/app.js:
-- Remove the old /api/config endpoint (no longer need to serve Mapbox token)
-- Keep /api/incidents as-is (returns GeoJSON, the frontend converts it)
+**What makes a site look professional (do ALL of these):**
+- Vary section layouts: some left-aligned, some split, some full-width
+- Use asymmetry purposefully
+- Generous but VARIED whitespace (not uniform padding on every section)
+- Typography hierarchy with clear contrast between heading sizes
+- Subtle grain/noise texture overlay on backgrounds for depth
+- Color used sparingly and with purpose (not on everything)
+- Micro-interactions that feel natural, not decorative
+- Visual elements that are unique to THIS product, not generic
+- Sections flow into each other instead of feeling like stacked blocks
+- Code blocks that actually look good (syntax highlighting, proper fonts)
 
-Test: open http://localhost:3000, confirm you see a dark Google Map of
-Toronto with a crime heatmap overlay.
 
-Commit: "Switch from Mapbox to Google Maps with crime heatmap"
+### Technical approach
 
-
-### Step 4: Build the safety scoring engine
-
-Create server/safety-score.js — a module that scores any point in Toronto.
+Use these libraries from CDN (no build step, no npm for the website):
 
 ```
-safetyCost(lat, lng, hour) → number between 0.0 and 1.0
-  0.0 = very safe
-  1.0 = very dangerous
+Three.js:       https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js
+GSAP:           https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js
+ScrollTrigger:  https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js
+Tailwind:       https://cdn.tailwindcss.com
+Inter font:     https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap
+JetBrains Mono: https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&display=swap
 ```
 
-Implementation:
-
-1. Query nearby incidents within ~500m. Use bounding box on the spatial
-   index (lat ± 0.0045, lng ± 0.006 at Toronto's latitude).
-
-2. For each incident, compute a weighted contribution:
-   - Distance: 1 / (1 + meters / 100). Closer = more dangerous.
-   - Recency: exp(-days_old / 365). Newer = more weight.
-   - Severity: Assault = 1.0, Robbery = 1.0, Sexual Violation = 1.0,
-     Break and Enter = 0.5, Theft Over = 0.3, Auto Theft = 0.2.
-   - Contribution = distance_weight × recency_weight × severity_weight
-
-3. Sum contributions. Normalize: incident_score = min(sum / 5, 1.0).
-   (The /5 divisor means 5 weighted-equivalent nearby incidents = max score.
-   Tune this if needed.)
-
-4. Query nearby streetlights within ~100m (lat ± 0.0009, lng ± 0.0012).
-   Count them. lighting_score = max(1 - count / 5, 0).
-   (5+ nearby streetlights = fully lit = 0 danger from lighting.)
-
-5. Time-of-day weighting:
-   - Night (21:00 – 05:00): incident_weight = 0.6, lighting_weight = 0.4
-   - Day (07:00 – 19:00): incident_weight = 0.8, lighting_weight = 0.1
-   - Transition (05-07, 19-21): linear interpolation between day/night
-
-6. Final: safety_cost = incident_score × incident_weight + lighting_score × lighting_weight
-   Clamp between 0 and 1.
-
-Export:
-- safetyCost(lat, lng, hour) — single point
-- scoreRoute(points, hour) — array of {lat, lng}, returns average score
-  across all points (used to score entire routes)
-
-When run directly (node server/safety-score.js), test with known locations:
-- Score Queen & Sherbourne (known rough area) at 11pm → should be high
-- Score Yorkville & Bay (nice area, well-lit) at 11pm → should be lower
-- Score any location at 2pm → should be lower than 11pm
-
-Print the results so Borna can sanity-check them.
-
-Commit: "Build safety scoring engine"
+Each page is a self-contained HTML file. JS and CSS are inline (no separate
+files for the marketing site). All pages share the same Tailwind config,
+color palette, and nav/footer components.
 
 
-### Step 5: Build the route API with Google Routes integration
+### 3D animation spec (index.html hero only)
 
-Install the google auth library if needed for API calls, or just use
-fetch with the API key.
+Build a Three.js scene in the hero background of the landing page. The
+concept: an abstract city grid viewed from a slight angle above.
 
-Create server/routes-api.js — handles route requests.
+Specifically:
+- Create a grid of points in 3D space (x-z plane), roughly 30x30
+- Points represent intersections on an abstract map
+- Most points are dim (color: #333340, small, opacity 0.3)
+- Some points glow green (#34A853) — these are "safe" nodes
+- Some points glow dim red (#ff4444, very subtle) — danger nodes
+- Thin lines connect adjacent grid points (color: #1a1a2e, opacity 0.15)
+- Animated green "pulses" travel along paths between safe nodes every
+  few seconds, like data flowing through a network. Use a small glowing
+  sphere or bright point that moves along a path, leaving a fading trail
+- Camera: positioned above and slightly angled (not perfectly top-down),
+  with a very slow orbit. Maybe 0.001 radians per frame
+- Mouse interaction: subtle parallax. When mouse moves, the camera shifts
+  slightly in that direction (damped, not 1:1)
+- The entire scene sits behind the hero text at reduced opacity
+- Performance: use THREE.Points (not individual meshes) for the grid dots.
+  Use BufferGeometry. Keep draw calls low. Target 60fps on a MacBook
 
-The Google Routes API endpoint:
-POST https://routes.googleapis.com/directions/v2:computeRoutes
+The 3D scene should feel like looking at a living city from above at night,
+with safe routes being computed in real time. It's atmospheric, not
+literal. It should make people want to watch it for a moment.
 
-Headers:
-- Content-Type: application/json
-- X-Goog-Api-Key: <your key>
-- X-Goog-FieldMask: routes.duration,routes.distanceMeters,routes.polyline.encodedPolyline,routes.legs
+Do NOT use:
+- Generic particle clouds (the "connect nearby dots" effect is overused)
+- Spinning globes
+- Floating geometric shapes with no meaning
+- Anything that looks like a screensaver
 
-Body for walking directions with alternatives:
-```json
-{
-  "origin": { "address": "origin address" },
-  "destination": { "address": "destination address" },
-  "travelMode": "WALK",
-  "computeAlternativeRoutes": true
-}
+
+### Scroll animations (all pages)
+
+Use GSAP ScrollTrigger for section reveal animations:
+- Headings: fade up + slight translate Y (20px), stagger if multiple
+- Paragraphs: fade in with 0.1s delay after their heading
+- Cards/blocks: stagger in from below, 0.15s between each
+- Stats/numbers: animate counting up from 0 when they scroll into view
+- Use scrub: false (trigger-based, not scroll-linked)
+- Ease: "power2.out" for most, "power3.out" for hero elements
+- Duration: 0.8s for headings, 0.6s for other elements
+- All animated elements start with opacity: 0 and are revealed by GSAP
+  (set them hidden in CSS, animate to visible in JS)
+
+Do NOT overdo it. Not every element needs to animate. Body text paragraphs
+can just appear. Only headings, cards, stats, and key visual elements
+should animate. If everything flies in, nothing feels special.
+
+
+### Color palette
+
+```
+Background:    #08080f (slightly darker than current #0a0a0f)
+Surface 1:     #111118 (cards, nav)
+Surface 2:     #1a1a25 (elevated elements)
+Border:        rgba(255, 255, 255, 0.06)
+Text primary:  #e8e8ed
+Text secondary: #8888a0
+Text muted:    #555568
+Brand green:   #34A853
+Brand green light: #4ade80 (hover states, accents)
+Accent:        #6366f1 (used very sparingly — links, special highlights)
+Danger:        #ef4444 (used only in data context, never decorative)
+Code bg:       #0c0c14
 ```
 
-The response returns up to 3 routes. Each has an encodedPolyline.
-
-You need a polyline decoder. Write a simple one or use the @googlemaps/polyline-codec
-package (npm install it). Decoding gives you an array of [lat, lng] points
-along the route.
-
-The route scoring logic:
-1. Call Google Routes API with computeAlternativeRoutes: true
-2. For each returned route:
-   a. Decode the polyline to get lat/lng points
-   b. Sample every Nth point (every 5th or 10th) to avoid scoring
-      hundreds of points — performance matters
-   c. Call scoreRoute(sampled_points, current_hour) from safety-score.js
-   d. Attach the safety score to the route object
-3. Sort routes by safety score (lowest = safest)
-4. Return them all with scores, marking which is "fastest" (default)
-   and which is "safest" (lowest safety_cost)
-
-Add to server/app.js:
-
-POST /api/route
-Body: { origin: "address string", destination: "address string" }
-Response: {
-  fastest: { polyline, distance, duration, safety_score },
-  safest: { polyline, distance, duration, safety_score },
-  all_routes: [ ... ]
-}
-
-If Google returns only 1 route (it sometimes does for short distances),
-return that single route as both fastest and safest.
-
-Test with curl or Postman:
-```
-POST http://localhost:3000/api/route
-{ "origin": "Robarts Library, Toronto", "destination": "100 Harbord St, Toronto" }
-```
-
-Confirm you get back routes with different safety scores. Print the
-scores for each route so Borna can see the difference.
-
-Commit: "Integrate Google Routes API with safety scoring"
+Use the green sparingly. It should feel like an accent that draws the eye
+to specific things (CTAs, active nav, key stats), not a color that's
+painted on everything.
 
 
-### Step 6: Add streetlight API endpoint
+### Step-by-step instructions
 
-Add GET /api/streetlights to server/app.js that returns streetlight
-positions as GeoJSON (same pattern as /api/incidents). Limit to a
-bounding box query parameter to avoid returning all 160K at once:
 
-GET /api/streetlights?minLat=43.64&maxLat=43.67&minLng=-79.41&maxLng=-79.37
+#### Step 1: Redesign index.html (landing page)
 
-This will be used by the frontend tomorrow to show streetlights on
-the map when zoomed in.
+This is the most important page. A judge will spend 10 seconds here and
+decide if this looks like a real company or a school project.
 
-Commit: "Add streetlights API endpoint with bounding box filter"
+**Nav:**
+- Fixed, glass-morphism (backdrop-blur-xl, bg surface/60% opacity)
+- Logo "Safe Walk" on the left — clean, no icon, just bold text
+- Links: How It Works, About, For Partners
+- CTA button: "Try the Demo" — subtle green border, not a filled button
+- On scroll, nav gets a subtle bottom border (1px, border color)
+- Mobile: hamburger menu that slides in from right
+
+**Hero:**
+- Three.js canvas takes full viewport height behind everything
+- Content is centered vertically in the viewport
+- Small label above headline: "Safety API for Google Maps" in green,
+  uppercase, letter-spaced, small
+- Headline: "Every map shows the fastest route. None show the safest."
+  White, bold, large (text-6xl on desktop). The second sentence should
+  have a gradient treatment (green to light green) — but make it subtle,
+  not a rainbow
+- Subheadline: Keep the current copy but make it text-lg, max-w-2xl,
+  text-secondary color, relaxed leading
+- Two buttons: "Try the Demo" (filled green, rounded-lg) and
+  "How It Works" (ghost/outline, white text)
+- Below the buttons, a subtle scroll indicator (thin line or chevron
+  that gently bobs)
+
+**Stats section:**
+- NOT the current boxed layout with left green borders
+- Instead: full-width, three stats in a row, separated by thin vertical
+  dividers (1px, border color)
+- Each stat: large number (text-5xl, white, font-bold) with animated
+  count-up, label below in secondary text, source in muted text below that
+- The stats: "1 in 3" (women feel unsafe), "1,500+" (TTC incidents),
+  "0" (nav apps with safety routing)
+- On scroll into view, numbers count up from 0 (GSAP)
+
+**Problem section:**
+- Left-aligned, max-w-3xl
+- Green label, then heading, then paragraphs
+- Keep the current copy — it's good
+- Add a subtle visual element on the right side: maybe a faded/ghosted
+  screenshot of Google Maps with a single blue route line, implying
+  "this is all you get today." Don't actually embed a screenshot — create
+  an abstract representation: a dark card with a simplified map grid and
+  a single blue dotted line. CSS-only, no image files
+
+**Solution section:**
+- Different layout from the problem section — full width dark surface bg
+- Heading and intro text left-aligned
+- Three steps: but NOT identical cards in a row. Instead, use a vertical
+  timeline-style layout or staggered layout where each step alternates
+  left/right or has different visual treatment
+- Step 1 (Enter route): show an abstract input field illustration
+- Step 2 (Score paths): show an abstract visualization — lines being scored
+- Step 3 (See safest): show the toggle concept
+- These can be simple CSS illustrations, not images. Rectangles, lines,
+  and dots arranged to suggest the concept
+
+**Data sources section:**
+- Keep the three colored dots + descriptions layout but improve it
+- Instead of tiny dots, use small colored bars on the left (2px wide, 40px tall)
+- Better spacing and typography
+- Maybe add very subtle colored glow behind each source's colored bar
+
+**Testimonials section:**
+- The testimonials currently say "Testimonial Pending" — keep them but
+  make the section look intentional, like an early-stage company that's
+  actively collecting feedback
+- Instead of "Testimonial Pending" as the name, use "Early beta tester"
+  or similar
+- Two cards, slightly different sizes (one wider than the other)
+- Subtle quote marks or italic styling to differentiate quotes from
+  regular text
+- Keep the note at the bottom: "Testimonials being collected from beta
+  testers."
+
+**API preview section:**
+- Keep the code block but make it look professional
+- Use JetBrains Mono for the code font
+- Add syntax highlighting with colors (strings in green, keys in white,
+  numbers in cyan, comments in muted text)
+- The code block should have a top bar like a terminal (three dots or
+  a filename tab)
+- Subtle glow/shadow around the code block
+
+**CTA section:**
+- "Walking home shouldn't require courage" — powerful line, keep it
+- Two buttons same as hero
+- Maybe add a subtle gradient or glow behind this section to make it
+  feel like a crescendo
+
+**Footer:**
+- Clean, minimal
+- Logo left, links center, credits right
+- Data source credits
+- Very thin top border
+
+Commit: "Redesign landing page with Three.js hero and scroll animations"
+
+
+#### Step 2: Redesign how-it-works.html
+
+This page explains the technical depth. Judges and partners will read this.
+
+**Hero:**
+- No Three.js on this page (only landing page gets the 3D scene)
+- Instead, use a subtle animated gradient background that shifts slowly
+  (CSS animation on a background gradient)
+- Same pattern: label, headline, subheadline
+
+**Architecture section:**
+- Keep the copy
+- Add an animated flow diagram using CSS/SVG: show the data flow from
+  "Google Routes API" → "Polyline decode" → "Safety scoring" → "Ranked
+  routes returned." Use connected boxes with animated dashed lines between
+  them. GSAP can animate the line dash offset to show data flowing
+
+**Safety scoring section:**
+- This is the most important section on this page
+- Keep all the formulas and explanations
+- But present them in styled code/formula blocks with proper formatting
+- Each of the three signals (incident density, streetlight coverage,
+  time-of-day) should have its own distinct visual treatment
+- For incident density: show the distance weight, recency weight, severity
+  weight formulas in separate styled blocks
+- Color-code the formula components: variable names in cyan, operators
+  in white, descriptions in muted text
+- Maybe add a small visual for each: a declining curve for distance decay,
+  a clock for time-of-day
+
+**Final score section:**
+- Show the master formula prominently, almost like a hero element
+- Green for the safety_cost label
+- Day vs night weights shown as a toggle or side-by-side comparison
+
+**Data sources section:**
+- Similar treatment to landing page but more detailed
+- Each source gets a full card with description
+
+**API reference section:**
+- Two endpoints, styled like real API docs (think Stripe API docs)
+- Endpoint path in a header bar
+- Request/response in separate code blocks with syntax highlighting
+- Maybe a tab interface: Request | Response
+
+**What's next section:**
+- Keep the copy about AI prediction layer and university partnerships
+
+Commit: "Redesign how-it-works page with flow diagrams and styled formulas"
+
+
+#### Step 3: Redesign about.html
+
+This page tells the founder story. It should feel personal and authentic.
+
+**Hero:**
+- No 3D. Subtle gradient or solid dark background
+- The headline is great: "Built because the walk home shouldn't be the
+  most dangerous part of your night" — keep it
+
+**Founder section:**
+- This should NOT look like a generic "about the team" section
+- Left-aligned, generous line height, comfortable reading width (max-w-2xl)
+- The text is personal and good — let it breathe with great typography
+- Maybe a subtle pull quote highlighted from the text: "Is the shortcut
+  worth the risk?" in a larger, slightly styled format inline
+
+**Mission section:**
+- Keep the copy
+- Add a subtle background element: abstract map lines or a grid pattern
+  at very low opacity
+
+**10X vision section:**
+- This section is important for TKS judges
+- Make "going from zero to something" feel impactful visually
+- Maybe show a before/after: "0 safety signals" on the left, big arrow,
+  "thousands per route" on the right. Simple, typographic treatment
+
+**Values section:**
+- Four values. Don't use the typical icon-card grid
+- Instead: vertical list, each value is a row with the title on the left
+  and description on the right, separated by a thin line
+- Clean, editorial layout (like a manifesto page)
+
+**Contact section:**
+- Email link. Clean and simple. Maybe a large email address that's also
+  a mailto: link
+
+Commit: "Redesign about page with editorial layout"
+
+
+#### Step 4: Redesign partners.html
+
+This page needs to convince potential partners. Professional and business-
+oriented.
+
+**Hero:**
+- Clean and direct: "Add safety-aware routing to your platform"
+
+**Use cases section:**
+- Three use cases: universities, transit, nav platforms
+- Don't use identical cards. Use a larger featured card for one (maybe
+  universities since that's the immediate target) and two smaller ones
+- Or use a tab/accordion interface where clicking a use case expands
+  its details
+
+**Why partner section:**
+- Four reasons. Use a numbered list style (large numbers 01, 02, 03, 04)
+  with descriptions to the right. Think design-agency-style layout
+- Not cards. Horizontal rows with numbers as the visual anchor
+
+**Pricing section:**
+- Three tiers. This one CAN use cards since pricing tiers are expected
+  in card format
+- But differentiate them: the featured tier (Institution) should be taller
+  or have a distinct visual treatment (subtle green border, slight
+  elevation)
+- Price numbers should be bold and large
+- Features listed cleanly below each price
+
+**CTA section:**
+- "Ready to make your platform safer?"
+- Single email CTA, clean
+
+Commit: "Redesign partners page with professional business layout"
+
+
+#### Step 5: Cross-page consistency and polish
+
+Review all four pages together:
+
+1. Nav and footer are identical across all pages (copy-paste the exact
+   same markup). Active page should be highlighted in the nav (white text
+   instead of gray)
+
+2. All internal links work correctly:
+   - Logo links to /website/index.html on all pages
+   - Nav links use /website/ prefix on all pages
+   - Footer links match nav links
+
+3. "Try the Demo" buttons link to "#" for now (placeholder)
+
+4. Email links use mailto:bornaboyafraz@gmail.com
+
+5. Test at different viewport widths. Pages should look good at:
+   - Desktop: 1440px (primary target)
+   - Laptop: 1024px
+   - Tablet: 768px (should still be usable, doesn't need to be perfect)
+   - Mobile: 375px (nav collapses, content stacks, still readable)
+
+6. Three.js performance: the 3D scene on the landing page should not
+   cause frame drops. If it does, reduce point count or simplify
+
+7. Check that GSAP animations don't cause layout shift (elements should
+   be positioned before animation, just invisible)
+
+8. All code blocks use JetBrains Mono
+
+9. No console errors on any page
+
+10. Page titles are descriptive:
+    - "Safe Walk — The Safety Layer for Urban Navigation"
+    - "How It Works — Safe Walk"
+    - "About — Safe Walk"
+    - "For Partners — Safe Walk"
+
+Commit: "Ensure cross-page consistency and responsive layout"
 
 
 ## Ground rules
-- Ask Borna for any API key when you need it. Do not hardcode keys.
+- Read CLAUDE.md first.
+- Read all four existing website files before making any changes — preserve
+  the copy and messaging, redesign the visuals.
 - Commit after each step with the commit message specified.
-- If a step takes more than 45 minutes, stop and explain what's blocking.
-- Do NOT build the frontend toggle UI, community reports form, AI
-  predictions, or marketing pages. Those are later sessions.
-- Match existing code patterns (error handling, DB access, file structure).
-- When done, tell Borna:
-  (a) How many incidents and streetlights are in the database
-  (b) What the Google Maps heatmap looks like
-  (c) Safety scores for the test locations (Queen/Sherbourne vs Yorkville)
-  (d) The route comparison output (fastest vs safest scores for the test)
-  (e) Any issues or questions before tomorrow's frontend session
+- Do NOT touch anything outside the website/ folder in this session.
+- Do NOT build the demo frontend, API endpoints, or any backend code.
+- Every page must work as a standalone HTML file opened in a browser
+  (all assets from CDN, no local dependencies, no build step).
+- The website should look like it was built by a design-focused startup,
+  not generated by AI. When in doubt, look at how linear.app does it.
+- When done, tell Borna which pages were updated and any issues found.

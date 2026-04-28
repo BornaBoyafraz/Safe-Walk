@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Safe Walk — The Safety Layer for Urban Navigation</title>
+  <meta name="description" content="Safe Walk scores walking routes on safety, not just speed. Built on top of Google Maps using police data, streetlight coverage, and community reports.">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            dark: { 900: '#0a0a0f', 800: '#12121a', 700: '#1a1a2e', 600: '#242440' },
+            safe: { green: '#34A853', light: '#4ade80' },
+            accent: '#6366f1',
+          },
+          fontFamily: {
+            sans: ['Inter', 'system-ui', '-apple-system', 'sans-serif'],
+          }
+        }
+      }
+    }
+  </script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    body { font-family: 'Inter', system-ui, sans-serif; }
+    .gradient-text {
+      background: linear-gradient(135deg, #34A853 0%, #4ade80 50%, #6366f1 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .hero-glow {
+      background: radial-gradient(ellipse 60% 50% at 50% 0%, rgba(52, 168, 83, 0.08) 0%, transparent 70%);
+    }
+    .card-hover {
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+    .card-hover:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 30px rgba(52, 168, 83, 0.1);
+    }
+    .stat-border {
+      border-left: 2px solid #34A853;
+    }
+  </style>
+</head>
+<body class="bg-dark-900 text-gray-200">
+
+  <!-- Nav -->
+  <nav class="fixed top-0 w-full z-50 bg-dark-900/80 backdrop-blur-md border-b border-white/5">
+    <div class="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
+      <a href="/" class="text-xl font-bold text-white tracking-tight">Safe Walk</a>
+      <div class="hidden md:flex items-center gap-8 text-sm text-gray-400">
+        <a href="/website/how-it-works.html" class="hover:text-white transition">How It Works</a>
+        <a href="/website/about.html" class="hover:text-white transition">About</a>
+        <a href="/website/partners.html" class="hover:text-white transition">For Partners</a>
+        <a href="#" class="px-4 py-2 bg-safe-green/10 text-safe-green border border-safe-green/20 rounded-lg hover:bg-safe-green/20 transition text-sm font-medium">Try the Demo</a>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Hero -->
+  <section class="hero-glow pt-32 pb-20 px-6">
+    <div class="max-w-4xl mx-auto text-center">
+      <p class="text-safe-green text-sm font-medium tracking-wider uppercase mb-6">Safety API for Google Maps</p>
+      <h1 class="text-5xl md:text-7xl font-extrabold text-white leading-[1.1] mb-6">
+        Every map shows the<br>fastest route.<br>
+        <span class="gradient-text">None show the safest.</span>
+      </h1>
+      <p class="text-lg md:text-xl text-gray-400 max-w-2xl mx-auto mb-10 leading-relaxed">
+        Safe Walk is a safety layer built on top of Google Maps. It scores walking routes using police incident data, streetlight coverage, and community reports, then recommends the safest path, not just the fastest one.
+      </p>
+      <div class="flex flex-col sm:flex-row gap-4 justify-center">
+        <a href="#" class="px-8 py-4 bg-safe-green text-dark-900 font-semibold rounded-lg hover:bg-safe-light transition text-lg">Try the Demo</a>
+        <a href="/website/how-it-works.html" class="px-8 py-4 border border-white/10 text-white rounded-lg hover:bg-white/5 transition text-lg">How It Works</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- Stats -->
+  <section class="py-16 px-6 border-y border-white/5">
+    <div class="max-w-5xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-8">
+      <div class="stat-border pl-6">
+        <p class="text-4xl font-bold text-white">1 in 3</p>
+        <p class="text-gray-400 mt-2">Canadian women feel unsafe walking alone at night</p>
+        <p class="text-gray-600 text-sm mt-1">StatsCan General Social Survey</p>
+      </div>
+      <div class="stat-border pl-6">
+        <p class="text-4xl font-bold text-white">1,500+</p>
+        <p class="text-gray-400 mt-2">Safety incidents reported on the TTC in 2024</p>
+        <p class="text-gray-600 text-sm mt-1">Toronto Transit Commission</p>
+      </div>
+      <div class="stat-border pl-6">
+        <p class="text-4xl font-bold text-white">0</p>
+        <p class="text-gray-400 mt-2">Navigation apps that factor safety into routing</p>
+        <p class="text-gray-600 text-sm mt-1">Google Maps, Apple Maps, Waze</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Problem -->
+  <section class="py-24 px-6">
+    <div class="max-w-4xl mx-auto">
+      <p class="text-safe-green text-sm font-medium tracking-wider uppercase mb-4">The problem</p>
+      <h2 class="text-3xl md:text-4xl font-bold text-white mb-8">Navigation was built for drivers, not pedestrians</h2>
+      <div class="space-y-6 text-gray-400 text-lg leading-relaxed">
+        <p>
+          MapQuest launched in 1996 for driving directions. Google Maps followed in 2005. Waze added crowdsourced traffic. The entire history of digital navigation has been about moving cars faster.
+        </p>
+        <p>
+          When these platforms added pedestrian routing, they used the same logic: shortest distance, fastest time. Walking got bolted onto a system designed for driving.
+        </p>
+        <p>
+          But drivers are in a metal box. Pedestrians are not. A driver doesn't care about streetlights or worry about being followed. A pedestrian does. The risk profile is completely different, and the navigation tools haven't caught up.
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Solution -->
+  <section class="py-24 px-6 bg-dark-800">
+    <div class="max-w-4xl mx-auto">
+      <p class="text-safe-green text-sm font-medium tracking-wider uppercase mb-4">The solution</p>
+      <h2 class="text-3xl md:text-4xl font-bold text-white mb-8">A safety layer any map can use</h2>
+      <p class="text-gray-400 text-lg leading-relaxed mb-12">
+        Safe Walk doesn't replace Google Maps. It adds what Google Maps is missing: a real-time safety score for every street segment in the city. Any app that uses Google Maps for walking directions can plug in Safe Walk's API and offer a "safest route" toggle alongside the fastest one.
+      </p>
+
+      <!-- How it works steps -->
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+        <div class="bg-dark-700 border border-white/5 rounded-xl p-8 card-hover">
+          <div class="w-12 h-12 bg-safe-green/10 rounded-lg flex items-center justify-center mb-6">
+            <span class="text-safe-green text-xl font-bold">1</span>
+          </div>
+          <h3 class="text-white font-semibold text-lg mb-3">Enter your route</h3>
+          <p class="text-gray-400">Type your start and destination. Safe Walk calls the Google Routes API to get multiple walking route options.</p>
+        </div>
+        <div class="bg-dark-700 border border-white/5 rounded-xl p-8 card-hover">
+          <div class="w-12 h-12 bg-safe-green/10 rounded-lg flex items-center justify-center mb-6">
+            <span class="text-safe-green text-xl font-bold">2</span>
+          </div>
+          <h3 class="text-white font-semibold text-lg mb-3">We score each path</h3>
+          <p class="text-gray-400">Each route is scored against our safety graph: police incident density, streetlight coverage, time of day, and community reports.</p>
+        </div>
+        <div class="bg-dark-700 border border-white/5 rounded-xl p-8 card-hover">
+          <div class="w-12 h-12 bg-safe-green/10 rounded-lg flex items-center justify-center mb-6">
+            <span class="text-safe-green text-xl font-bold">3</span>
+          </div>
+          <h3 class="text-white font-semibold text-lg mb-3">See the safest route</h3>
+          <p class="text-gray-400">Toggle between fastest and safest. See exactly how much safer the recommended route is, and how much longer it takes.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Data Sources -->
+  <section class="py-24 px-6">
+    <div class="max-w-4xl mx-auto">
+      <p class="text-safe-green text-sm font-medium tracking-wider uppercase mb-4">Real data, not guesswork</p>
+      <h2 class="text-3xl md:text-4xl font-bold text-white mb-12">Three layers of safety intelligence</h2>
+      <div class="space-y-8">
+        <div class="flex gap-6 items-start">
+          <div class="w-1 bg-red-500 rounded-full self-stretch flex-shrink-0"></div>
+          <div>
+            <h3 class="text-white font-semibold text-lg mb-2">Police incident data</h3>
+            <p class="text-gray-400">Every reported assault, robbery, and break-and-enter from Toronto Police Open Data. Geocoded, weighted by severity and recency. An assault last month matters more than a bike theft two years ago.</p>
+          </div>
+        </div>
+        <div class="flex gap-6 items-start">
+          <div class="w-1 bg-cyan-400 rounded-full self-stretch flex-shrink-0"></div>
+          <div>
+            <h3 class="text-white font-semibold text-lg mb-2">Streetlight coverage</h3>
+            <p class="text-gray-400">The location of every streetlight in Toronto from City Open Data. We compute a lighting density score for every street segment. Well-lit main roads score high. Dark side streets score low. After dark, this layer matters a lot.</p>
+          </div>
+        </div>
+        <div class="flex gap-6 items-start">
+          <div class="w-1 bg-safe-green rounded-full self-stretch flex-shrink-0"></div>
+          <div>
+            <h3 class="text-white font-semibold text-lg mb-2">Community reports</h3>
+            <p class="text-gray-400">Users report harassment, poor lighting, and suspicious activity directly in the app. These reports feed back into safety scores in real time, capturing the things that never make it into police data.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Testimonials placeholder -->
+  <section class="py-24 px-6 bg-dark-800" id="testimonials">
+    <div class="max-w-4xl mx-auto">
+      <p class="text-safe-green text-sm font-medium tracking-wider uppercase mb-4">What people are saying</p>
+      <h2 class="text-3xl md:text-4xl font-bold text-white mb-12">Real experiences from real walkers</h2>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+        <div class="bg-dark-700 border border-white/5 rounded-xl p-8">
+          <p class="text-gray-300 text-lg leading-relaxed mb-6">"I leave Robarts at midnight twice a week. I always take the long way because I know the side streets aren't lit. If there was an app that showed me which route was actually safest, I'd use it every time."</p>
+          <div>
+            <p class="text-white font-medium">Testimonial Pending</p>
+            <p class="text-gray-500 text-sm">University of Toronto student</p>
+          </div>
+        </div>
+        <div class="bg-dark-700 border border-white/5 rounded-xl p-8">
+          <p class="text-gray-300 text-lg leading-relaxed mb-6">"When I finish my shift at 2 AM, I just pick whichever route looks busiest and hope for the best. There's no tool that actually tells me which streets are safe at that hour."</p>
+          <div>
+            <p class="text-white font-medium">Testimonial Pending</p>
+            <p class="text-gray-500 text-sm">Healthcare worker, Toronto</p>
+          </div>
+        </div>
+      </div>
+      <p class="text-gray-600 text-sm mt-8 text-center">Testimonials being collected from beta testers. Updated weekly.</p>
+    </div>
+  </section>
+
+  <!-- API Preview -->
+  <section class="py-24 px-6">
+    <div class="max-w-4xl mx-auto">
+      <p class="text-safe-green text-sm font-medium tracking-wider uppercase mb-4">For developers</p>
+      <h2 class="text-3xl md:text-4xl font-bold text-white mb-8">One API call to make any route safer</h2>
+      <p class="text-gray-400 text-lg mb-8">Safe Walk works as a drop-in layer on top of Google Maps. Send us an origin and destination, get back routes ranked by safety.</p>
+      <div class="bg-dark-800 border border-white/10 rounded-xl p-6 overflow-x-auto">
+        <pre class="text-sm text-gray-300"><code>POST /api/route
+{
+  "origin": "Robarts Library, Toronto",
+  "destination": "100 Harbord St, Toronto"
+}
+
+// Response
+{
+  "fastest": {
+    "distance": "1.2 km",
+    "duration": "14 min",
+    "safety_score": 0.42   // higher = more dangerous
+  },
+  "safest": {
+    "distance": "1.6 km",
+    "duration": "19 min",
+    "safety_score": 0.18   // much safer
+  }
+}</code></pre>
+      </div>
+    </div>
+  </section>
+
+  <!-- CTA -->
+  <section class="py-24 px-6 bg-dark-800 border-t border-white/5">
+    <div class="max-w-3xl mx-auto text-center">
+      <h2 class="text-3xl md:text-4xl font-bold text-white mb-6">Walking home shouldn't require courage</h2>
+      <p class="text-gray-400 text-lg mb-10">We're building the safety layer that navigation should have had from the start. Try the demo, report an incident, or reach out if you want to integrate Safe Walk into your platform.</p>
+      <div class="flex flex-col sm:flex-row gap-4 justify-center">
+        <a href="#" class="px-8 py-4 bg-safe-green text-dark-900 font-semibold rounded-lg hover:bg-safe-light transition text-lg">Try the Demo</a>
+        <a href="/website/partners.html" class="px-8 py-4 border border-white/10 text-white rounded-lg hover:bg-white/5 transition text-lg">Partner With Us</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer class="py-12 px-6 border-t border-white/5">
+    <div class="max-w-6xl mx-auto flex flex-col md:flex-row justify-between items-center gap-6">
+      <div>
+        <p class="text-white font-bold text-lg">Safe Walk</p>
+        <p class="text-gray-500 text-sm mt-1">The safety layer for urban navigation.</p>
+      </div>
+      <div class="flex gap-8 text-sm text-gray-500">
+        <a href="/website/how-it-works.html" class="hover:text-gray-300 transition">How It Works</a>
+        <a href="/website/about.html" class="hover:text-gray-300 transition">About</a>
+        <a href="/website/partners.html" class="hover:text-gray-300 transition">Partners</a>
+      </div>
+      <div class="text-gray-600 text-sm">
+        <p>Data: Toronto Police Open Data, City of Toronto</p>
+        <p class="mt-1">Built by Seyedborna Boyafraz</p>
+      </div>
+    </div>
+  </footer>
+
+</body>
+</html>
