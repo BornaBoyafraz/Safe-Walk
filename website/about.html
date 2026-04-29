@@ -29,7 +29,7 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
   <style>
     *, *::before, *::after { box-sizing: border-box; }
-    body { background: #08080f; color: #e8e8ed; font-family: 'Inter', system-ui, sans-serif; margin: 0; overflow-x: hidden; }
+    body { background: #08080f; color: #e8e8ed; font-family: 'Inter', system-ui, sans-serif; margin: 0; overflow-x: hidden; -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; }
 
     body::before {
       content: ''; position: fixed; inset: 0;
@@ -69,11 +69,12 @@
     .content-section.alt { background: #111118; }
     .inner { max-width: 720px; margin: 0 auto; }
     .section-h2 { font-size: clamp(1.4rem, 2.8vw, 1.9rem); font-weight: 700; color: #e8e8ed; letter-spacing: -0.02em; margin: 0 0 32px; }
-    .prose p { font-size: 17px; color: #8888a0; line-height: 1.85; margin-bottom: 24px; }
+    .prose p { font-size: 18px; color: #8888a0; line-height: 1.85; margin-bottom: 24px; }
     .prose p:last-child { margin-bottom: 0; }
 
     /* Pull quote */
-    .pull-quote { border-left: 3px solid #34A853; padding: 4px 0 4px 28px; margin: 36px 0; }
+    .pull-quote { border-left: 3px solid #34A853; padding: 4px 0 4px 28px; margin: 36px 0; position: relative; }
+    .pull-quote::before { content: '\201C'; position: absolute; top: -14px; left: 20px; font-size: 80px; color: rgba(255,255,255,0.06); font-family: Georgia, serif; line-height: 1; pointer-events: none; }
     .pull-quote p { font-size: 21px; font-weight: 600; color: #e8e8ed; line-height: 1.5; font-style: italic; margin: 0; letter-spacing: -0.01em; }
 
     /* Mission with grid bg */
@@ -129,6 +130,11 @@
       .footer-credits { text-align: center; }
       .footer-links { justify-content: center; }
     }
+    .mobile-menu a.mobile-active { color: #e8e8ed; }
+    .mobile-menu a.mobile-demo { color: #34A853; }
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
+    }
   </style>
 </head>
 <body>
@@ -142,7 +148,7 @@
         <a href="/website/partners.html">For Partners</a>
         <a href="#" class="nav-demo">Try the Demo</a>
       </div>
-      <button class="hamburger" id="hamburger" aria-label="Open menu">
+      <button class="hamburger" id="hamburger" aria-label="Open menu" aria-expanded="false">
         <svg width="22" height="22" viewBox="0 0 22 22" fill="none">
           <rect y="4" width="22" height="2" rx="1" fill="currentColor"/>
           <rect y="10" width="22" height="2" rx="1" fill="currentColor"/>
@@ -154,9 +160,9 @@
 
   <div class="mobile-menu" id="mobile-menu">
     <a href="/website/how-it-works.html">How It Works</a>
-    <a href="/website/about.html" style="color: #e8e8ed !important;">About</a>
+    <a href="/website/about.html" class="mobile-active">About</a>
     <a href="/website/partners.html">For Partners</a>
-    <a href="#" style="color: #34A853 !important;">Try the Demo</a>
+    <a href="#" class="mobile-demo">Try the Demo</a>
   </div>
 
   <!-- Hero -->
@@ -276,8 +282,22 @@
 
     const hamburger = document.getElementById('hamburger');
     const mobileMenu = document.getElementById('mobile-menu');
-    hamburger.addEventListener('click', () => mobileMenu.classList.toggle('open'));
-    mobileMenu.addEventListener('click', e => { if (e.target.tagName === 'A') mobileMenu.classList.remove('open'); });
+    hamburger.addEventListener('click', () => {
+      const isOpen = mobileMenu.classList.toggle('open');
+      hamburger.setAttribute('aria-expanded', isOpen);
+    });
+    mobileMenu.addEventListener('click', e => {
+      if (e.target.tagName === 'A') {
+        mobileMenu.classList.remove('open');
+        hamburger.setAttribute('aria-expanded', 'false');
+      }
+    });
+    document.addEventListener('keydown', e => {
+      if (e.key === 'Escape' && mobileMenu.classList.contains('open')) {
+        mobileMenu.classList.remove('open');
+        hamburger.setAttribute('aria-expanded', 'false');
+      }
+    });
 
     gsap.registerPlugin(ScrollTrigger);
 

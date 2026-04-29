@@ -37,7 +37,7 @@
   <style>
     *, *::before, *::after { box-sizing: border-box; }
     html { scroll-behavior: smooth; }
-    body { background: #08080f; color: #e8e8ed; font-family: 'Inter', system-ui, sans-serif; margin: 0; overflow-x: hidden; }
+    body { background: #08080f; color: #e8e8ed; font-family: 'Inter', system-ui, sans-serif; margin: 0; overflow-x: hidden; -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; }
 
     /* Grain overlay */
     body::before {
@@ -188,7 +188,7 @@
 
     /* CTA */
     .cta-section { background: #111118; position: relative; overflow: hidden; }
-    .cta-glow { position: absolute; top: -100px; left: 50%; transform: translateX(-50%); width: 600px; height: 300px; background: radial-gradient(ellipse, rgba(52,168,83,0.06) 0%, transparent 70%); pointer-events: none; }
+    .cta-glow { position: absolute; top: -100px; left: 50%; transform: translateX(-50%); width: 700px; height: 350px; background: radial-gradient(ellipse, rgba(52,168,83,0.09) 0%, transparent 70%); pointer-events: none; }
     .cta-inner { max-width: 700px; margin: 0 auto; text-align: center; position: relative; z-index: 1; }
     .cta-h2 { font-size: clamp(1.8rem, 3.5vw, 2.8rem); font-weight: 700; color: #e8e8ed; letter-spacing: -0.025em; line-height: 1.2; margin-bottom: 20px; }
     .cta-p { font-size: 17px; color: #8888a0; line-height: 1.8; margin-bottom: 40px; }
@@ -206,6 +206,13 @@
     /* Animations initial state */
     .anim-fade-up { opacity: 0; }
     .anim-fade { opacity: 0; }
+    .mobile-menu a.mobile-active { color: #e8e8ed; }
+    .mobile-menu a.mobile-demo { color: #34A853; }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
+      .scroll-line { animation: none; }
+    }
 
     /* Responsive */
     @media (max-width: 768px) {
@@ -242,7 +249,7 @@
         <a href="/website/partners.html">For Partners</a>
         <a href="#" class="nav-demo">Try the Demo</a>
       </div>
-      <button class="hamburger" id="hamburger" aria-label="Open menu">
+      <button class="hamburger" id="hamburger" aria-label="Open menu" aria-expanded="false">
         <svg width="22" height="22" viewBox="0 0 22 22" fill="none">
           <rect y="4" width="22" height="2" rx="1" fill="currentColor"/>
           <rect y="10" width="22" height="2" rx="1" fill="currentColor"/>
@@ -257,7 +264,7 @@
     <a href="/website/how-it-works.html">How It Works</a>
     <a href="/website/about.html">About</a>
     <a href="/website/partners.html">For Partners</a>
-    <a href="#" style="color: #34A853 !important;">Try the Demo</a>
+    <a href="#" class="mobile-demo">Try the Demo</a>
   </div>
 
   <!-- Hero -->
@@ -508,17 +515,36 @@
     const hamburger = document.getElementById('hamburger');
     const mobileMenu = document.getElementById('mobile-menu');
     hamburger.addEventListener('click', () => {
-      mobileMenu.classList.toggle('open');
+      const isOpen = mobileMenu.classList.toggle('open');
+      hamburger.setAttribute('aria-expanded', isOpen);
     });
-    mobileMenu.addEventListener('click', (e) => {
-      if (e.target.tagName === 'A') mobileMenu.classList.remove('open');
+    mobileMenu.addEventListener('click', e => {
+      if (e.target.tagName === 'A') {
+        mobileMenu.classList.remove('open');
+        hamburger.setAttribute('aria-expanded', 'false');
+      }
+    });
+    document.addEventListener('keydown', e => {
+      if (e.key === 'Escape' && mobileMenu.classList.contains('open')) {
+        mobileMenu.classList.remove('open');
+        hamburger.setAttribute('aria-expanded', 'false');
+      }
     });
 
     // Three.js hero
     (function() {
+      if (window.matchMedia('(max-width: 768px)').matches ||
+          window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+
       const canvas = document.getElementById('hero-canvas');
-      const renderer = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: false });
-      renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+      let renderer;
+      try {
+        renderer = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: false });
+      } catch (e) {
+        canvas.style.display = 'none';
+        return;
+      }
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
 
       const scene = new THREE.Scene();
       const camera = new THREE.PerspectiveCamera(50, 1, 0.1, 1000);
@@ -531,19 +557,17 @@
         camera.aspect = w / h;
         camera.updateProjectionMatrix();
       }
+      resize();
+      window.addEventListener('resize', resize, { passive: true });
 
-      // Grid points
       const GRID = 30;
       const SPACING = 2.2;
       const totalPts = GRID * GRID;
       const positions = new Float32Array(totalPts * 3);
       const colors = new Float32Array(totalPts * 3);
-      const sizes = new Float32Array(totalPts);
 
       const safeNodes = [];
-      const dangerNodes = [];
-      const nodeTypes = []; // 0=dim, 1=safe, 2=danger
-
+      const nodeTypes = [];
       const half = (GRID - 1) * SPACING * 0.5;
 
       for (let i = 0; i < GRID; i++) {
@@ -552,24 +576,16 @@
           positions[idx * 3] = i * SPACING - half;
           positions[idx * 3 + 1] = 0;
           positions[idx * 3 + 2] = j * SPACING - half;
-
           const r = Math.random();
           if (r < 0.05) {
-            // danger
             colors[idx * 3] = 1.0; colors[idx * 3 + 1] = 0.27; colors[idx * 3 + 2] = 0.27;
-            sizes[idx] = 3.5;
             nodeTypes[idx] = 2;
-            dangerNodes.push(idx);
           } else if (r < 0.20) {
-            // safe
             colors[idx * 3] = 0.204; colors[idx * 3 + 1] = 0.659; colors[idx * 3 + 2] = 0.325;
-            sizes[idx] = 4.0;
             nodeTypes[idx] = 1;
             safeNodes.push(idx);
           } else {
-            // dim
             colors[idx * 3] = 0.2; colors[idx * 3 + 1] = 0.2; colors[idx * 3 + 2] = 0.251;
-            sizes[idx] = 1.5;
             nodeTypes[idx] = 0;
           }
         }
@@ -578,32 +594,24 @@
       const ptGeo = new THREE.BufferGeometry();
       ptGeo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
       ptGeo.setAttribute('color', new THREE.BufferAttribute(colors, 3));
-      ptGeo.setAttribute('size', new THREE.BufferAttribute(sizes, 1));
-
       const ptMat = new THREE.PointsMaterial({
-        size: 0.18,
-        vertexColors: true,
-        sizeAttenuation: true,
-        transparent: true,
-        opacity: 0.75,
-        blending: THREE.AdditiveBlending,
-        depthWrite: false,
+        size: 0.18, vertexColors: true, sizeAttenuation: true,
+        transparent: true, opacity: 0.75,
+        blending: THREE.AdditiveBlending, depthWrite: false,
       });
+      scene.add(new THREE.Points(ptGeo, ptMat));
 
-      const points = new THREE.Points(ptGeo, ptMat);
-      scene.add(points);
-
-      // Grid lines (only horizontal and vertical adjacents)
+      // Grid lines — every other row/col halves draw calls
       const lineVerts = [];
       for (let i = 0; i < GRID; i++) {
         for (let j = 0; j < GRID; j++) {
           const idx = i * GRID + j;
           const x = positions[idx * 3], y = positions[idx * 3 + 1], z = positions[idx * 3 + 2];
-          if (j < GRID - 1) {
+          if (j < GRID - 1 && i % 2 === 0) {
             const nidx = i * GRID + j + 1;
             lineVerts.push(x, y, z, positions[nidx * 3], positions[nidx * 3 + 1], positions[nidx * 3 + 2]);
           }
-          if (i < GRID - 1) {
+          if (i < GRID - 1 && j % 2 === 0) {
             const nidx = (i + 1) * GRID + j;
             lineVerts.push(x, y, z, positions[nidx * 3], positions[nidx * 3 + 1], positions[nidx * 3 + 2]);
           }
@@ -611,78 +619,67 @@
       }
       const lineGeo = new THREE.BufferGeometry();
       lineGeo.setAttribute('position', new THREE.BufferAttribute(new Float32Array(lineVerts), 3));
-      const lineMat = new THREE.LineBasicMaterial({ color: 0x1a1a2e, transparent: true, opacity: 0.3, blending: THREE.AdditiveBlending, depthWrite: false });
-      const lines = new THREE.LineSegments(lineGeo, lineMat);
-      scene.add(lines);
+      scene.add(new THREE.LineSegments(lineGeo, new THREE.LineBasicMaterial({
+        color: 0x1a1a2e, transparent: true, opacity: 0.12,
+        blending: THREE.AdditiveBlending, depthWrite: false,
+      })));
 
-      // Pulse sphere
       const pulseGeo = new THREE.SphereGeometry(0.22, 8, 8);
       const pulseMat = new THREE.MeshBasicMaterial({ color: 0x4ade80, transparent: true, opacity: 0.9 });
       const pulseSphere = new THREE.Mesh(pulseGeo, pulseMat);
       scene.add(pulseSphere);
 
-      // Trail positions (small points)
-      const TRAIL_LEN = 12;
+      const TRAIL_LEN = 8;
       const trailPositions = new Float32Array(TRAIL_LEN * 3);
-      const trailAlphas = new Float32Array(TRAIL_LEN);
       const trailGeo = new THREE.BufferGeometry();
       trailGeo.setAttribute('position', new THREE.BufferAttribute(trailPositions, 3));
-      const trailMat = new THREE.PointsMaterial({ size: 0.12, color: 0x4ade80, transparent: true, opacity: 0.4, blending: THREE.AdditiveBlending, depthWrite: false });
-      const trailPoints = new THREE.Points(trailGeo, trailMat);
-      scene.add(trailPoints);
+      scene.add(new THREE.Points(trailGeo, new THREE.PointsMaterial({
+        size: 0.10, color: 0x4ade80, transparent: true, opacity: 0.35,
+        blending: THREE.AdditiveBlending, depthWrite: false,
+      })));
 
-      // Build a pulse path from safe nodes
       function buildPath() {
-        const shuffled = safeNodes.slice().sort(() => Math.random() - 0.5);
-        return shuffled.slice(0, Math.min(7, shuffled.length));
+        return safeNodes.slice().sort(() => Math.random() - 0.5).slice(0, 7);
       }
 
-      let currentPath = buildPath();
-      let pathSegment = 0;
-      let t = 0;
+      let currentPath = buildPath(), pathSegment = 0, t = 0;
       const PULSE_SPEED = 0.008;
       const trailHistory = [];
 
-      function getNodePos(idx) {
-        return new THREE.Vector3(positions[idx * 3], positions[idx * 3 + 1], positions[idx * 3 + 2]);
+      // Reusable vectors — avoid allocations in the animation loop
+      const _sv = new THREE.Vector3();
+      const _ev = new THREE.Vector3();
+      function getNodePos(idx, out) {
+        out.set(positions[idx * 3], positions[idx * 3 + 1], positions[idx * 3 + 2]);
       }
 
-      // Mouse parallax
-      let mouseX = 0, mouseY = 0;
-      let camOffX = 0, camOffY = 0;
-      window.addEventListener('mousemove', (e) => {
+      let mouseX = 0, mouseY = 0, camOffX = 0, camOffY = 0;
+      window.addEventListener('mousemove', e => {
         mouseX = (e.clientX / window.innerWidth - 0.5) * 2;
         mouseY = (e.clientY / window.innerHeight - 0.5) * 2;
       }, { passive: true });
 
       let orbitAngle = 0;
-      const BASE_CAM_DIST = Math.sqrt(28 * 28 + 38 * 38);
 
       function animate() {
+        if (document.hidden) return;
         requestAnimationFrame(animate);
-        resize();
 
-        // Slow camera orbit
         orbitAngle += 0.0004;
-
-        // Damped mouse parallax
         camOffX += (mouseX * 3 - camOffX) * 0.04;
         camOffY += (-mouseY * 1.5 - camOffY) * 0.04;
-
         camera.position.x = Math.sin(orbitAngle) * 38 + camOffX;
         camera.position.z = Math.cos(orbitAngle) * 38;
         camera.position.y = 28 + camOffY;
         camera.lookAt(0, 0, 0);
 
-        // Pulse movement
         if (currentPath.length >= 2) {
           const startNode = currentPath[pathSegment];
           const endNode = currentPath[pathSegment + 1];
           if (endNode !== undefined) {
-            const startPos = getNodePos(startNode);
-            const endPos = getNodePos(endNode);
+            getNodePos(startNode, _sv);
+            getNodePos(endNode, _ev);
             t += PULSE_SPEED;
-
             if (t >= 1) {
               t = 0;
               pathSegment++;
@@ -691,15 +688,12 @@
                 currentPath = buildPath();
               }
             }
-
-            const px = startPos.x + (endPos.x - startPos.x) * t;
-            const py = startPos.y + (endPos.y - startPos.y) * t;
-            const pz = startPos.z + (endPos.z - startPos.z) * t;
-
+            const px = _sv.x + (_ev.x - _sv.x) * t;
+            const py = _sv.y + (_ev.y - _sv.y) * t;
+            const pz = _sv.z + (_ev.z - _sv.z) * t;
             pulseSphere.position.set(px, py + 0.3, pz);
             pulseMat.opacity = 0.7 + Math.sin(Date.now() * 0.005) * 0.2;
 
-            // Update trail
             trailHistory.unshift({ x: px, y: py + 0.3, z: pz });
             if (trailHistory.length > TRAIL_LEN) trailHistory.pop();
             for (let ti = 0; ti < TRAIL_LEN; ti++) {
@@ -715,26 +709,29 @@
         renderer.render(scene, camera);
       }
 
+      document.addEventListener('visibilitychange', () => { if (!document.hidden) animate(); });
       animate();
     })();
 
     // GSAP ScrollTrigger
     gsap.registerPlugin(ScrollTrigger);
 
-    // Hero entrance
-    gsap.set('.hero-label', { opacity: 0, y: 20 });
-    gsap.set('.hero-h1', { opacity: 0, y: 30 });
-    gsap.set('.hero-sub', { opacity: 0, y: 20 });
-    gsap.set('.hero-buttons', { opacity: 0, y: 16 });
-    gsap.set('.scroll-indicator', { opacity: 0 });
+    // Hero entrance — wait for Inter to load to avoid reflow on first paint
+    document.fonts.ready.then(() => {
+      gsap.set('.hero-label', { opacity: 0, y: 20 });
+      gsap.set('.hero-h1', { opacity: 0, y: 30 });
+      gsap.set('.hero-sub', { opacity: 0, y: 20 });
+      gsap.set('.hero-buttons', { opacity: 0, y: 16 });
+      gsap.set('.scroll-indicator', { opacity: 0 });
 
-    const heroTl = gsap.timeline({ delay: 0.3 });
-    heroTl
-      .to('.hero-label', { opacity: 1, y: 0, duration: 0.8, ease: 'power3.out' })
-      .to('.hero-h1', { opacity: 1, y: 0, duration: 0.9, ease: 'power3.out' }, '-=0.5')
-      .to('.hero-sub', { opacity: 1, y: 0, duration: 0.7, ease: 'power2.out' }, '-=0.5')
-      .to('.hero-buttons', { opacity: 1, y: 0, duration: 0.7, ease: 'power2.out' }, '-=0.4')
-      .to('.scroll-indicator', { opacity: 1, duration: 0.6 }, '-=0.2');
+      const heroTl = gsap.timeline({ delay: 0.2 });
+      heroTl
+        .to('.hero-label', { opacity: 1, y: 0, duration: 0.8, ease: 'power3.out' })
+        .to('.hero-h1', { opacity: 1, y: 0, duration: 0.9, ease: 'power3.out' }, '-=0.5')
+        .to('.hero-sub', { opacity: 1, y: 0, duration: 0.7, ease: 'power2.out' }, '-=0.5')
+        .to('.hero-buttons', { opacity: 1, y: 0, duration: 0.7, ease: 'power2.out' }, '-=0.4')
+        .to('.scroll-indicator', { opacity: 1, duration: 0.6 }, '-=0.2');
+    });
 
     // Stats count-up
     const statsEl = document.querySelector('.stats-section');
