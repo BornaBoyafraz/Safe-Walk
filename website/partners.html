@@ -10,159 +10,640 @@
       theme: {
         extend: {
           colors: {
-            bg: '#08080f', s1: '#111118', s2: '#1a1a25',
+            bg: '#08080f',
+            s1: '#111118',
+            s2: '#1a1a25',
             green: { DEFAULT: '#34A853', light: '#4ade80' },
-            accent: '#6366f1', danger: '#ef4444',
-            tp: '#e8e8ed', ts: '#8888a0', tm: '#555568',
+            accent: '#6366f1',
+            danger: '#ef4444',
+            tp: '#e8e8ed',
+            ts: '#8888a0',
+            tm: '#555568'
           },
           fontFamily: {
             sans: ['Inter', 'system-ui', 'sans-serif'],
-            mono: ['"JetBrains Mono"', 'monospace'],
+            mono: ['"JetBrains Mono"', 'monospace']
           }
         }
       }
-    }
+    };
   </script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
   <style>
     *, *::before, *::after { box-sizing: border-box; }
-    body { background: #08080f; color: #e8e8ed; font-family: 'Inter', system-ui, sans-serif; margin: 0; overflow-x: hidden; -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; }
-
-    body::before {
-      content: ''; position: fixed; inset: 0;
-      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='1'/%3E%3C/svg%3E");
-      opacity: 0.025; pointer-events: none; z-index: 9999;
+    :root {
+      --bg: #08080f;
+      --surface: #111118;
+      --surface-2: #1a1a25;
+      --border: rgba(255, 255, 255, 0.06);
+      --text: #e8e8ed;
+      --secondary: #8888a0;
+      --muted: #555568;
+      --green: #34A853;
+      --green-light: #4ade80;
+      --accent: #6366f1;
+      --danger: #ef4444;
+      --code: #0c0c14;
     }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      overflow-x: hidden;
+      background:
+        radial-gradient(circle at 78% 18%, rgba(52, 168, 83, 0.06), transparent 34rem),
+        radial-gradient(circle at 14% 72%, rgba(99, 102, 241, 0.04), transparent 32rem),
+        var(--bg);
+      color: var(--text);
+      font-family: Inter, system-ui, sans-serif;
+      letter-spacing: 0;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      z-index: 9999;
+      pointer-events: none;
+      opacity: 0.028;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
+      mix-blend-mode: screen;
+    }
+    a { color: inherit; }
 
-    /* Nav */
-    #nav { position: fixed; top: 0; left: 0; right: 0; z-index: 100; background: rgba(17,17,24,0.6); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); border-bottom: 1px solid transparent; transition: border-color 0.3s; }
-    #nav.scrolled { border-bottom-color: rgba(255,255,255,0.06); }
-    .nav-inner { max-width: 1200px; margin: 0 auto; padding: 0 24px; height: 64px; display: flex; align-items: center; justify-content: space-between; }
-    .nav-logo { font-size: 18px; font-weight: 700; color: #e8e8ed; text-decoration: none; letter-spacing: -0.02em; }
-    .nav-links { display: flex; align-items: center; gap: 36px; }
-    .nav-links a { font-size: 14px; color: #8888a0; text-decoration: none; transition: color 0.2s; }
-    .nav-links a:hover { color: #e8e8ed; }
-    .nav-links a.active { color: #e8e8ed; }
-    .nav-demo { font-size: 13px; font-weight: 500; color: #34A853 !important; border: 1px solid rgba(52,168,83,0.3); border-radius: 8px; padding: 8px 16px; transition: background 0.2s, border-color 0.2s !important; }
-    .nav-demo:hover { background: rgba(52,168,83,0.08) !important; border-color: rgba(52,168,83,0.5) !important; }
-    .hamburger { display: none; background: none; border: none; cursor: pointer; padding: 4px; color: #8888a0; }
-    .mobile-menu { display: none; position: fixed; inset: 0; background: #111118; z-index: 99; padding: 80px 24px 40px; flex-direction: column; gap: 8px; transform: translateX(100%); transition: transform 0.3s cubic-bezier(0.16,1,0.3,1); }
+    #nav {
+      position: fixed;
+      inset: 0 0 auto;
+      z-index: 100;
+      border-bottom: 1px solid transparent;
+      background: rgba(17, 17, 24, 0.58);
+      backdrop-filter: blur(22px);
+      -webkit-backdrop-filter: blur(22px);
+      transition: border-color 0.25s ease, background 0.25s ease;
+    }
+    #nav.scrolled { border-bottom-color: var(--border); background: rgba(17, 17, 24, 0.78); }
+    .nav-inner {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      max-width: 1220px;
+      height: 66px;
+      margin: 0 auto;
+      padding: 0 24px;
+    }
+    .nav-logo { color: var(--text); font-size: 17px; font-weight: 750; text-decoration: none; letter-spacing: 0; }
+    .nav-links { display: flex; align-items: center; gap: 34px; }
+    .nav-links a {
+      color: var(--secondary);
+      font-size: 13px;
+      font-weight: 500;
+      text-decoration: none;
+      transition: color 0.18s ease;
+    }
+    .nav-links a:hover, .nav-links a.active { color: var(--text); }
+    .nav-links .nav-demo {
+      color: var(--green-light);
+      padding: 8px 14px;
+      border: 1px solid rgba(52, 168, 83, 0.32);
+      border-radius: 8px;
+      box-shadow: inset 0 0 18px rgba(52, 168, 83, 0.03);
+    }
+    .nav-links .nav-demo:hover { border-color: rgba(74, 222, 128, 0.56); background: rgba(52, 168, 83, 0.07); }
+    .hamburger {
+      display: none;
+      width: 38px;
+      height: 38px;
+      padding: 0;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: rgba(255, 255, 255, 0.03);
+      color: var(--text);
+      cursor: pointer;
+    }
+    .hamburger span {
+      display: block;
+      width: 16px;
+      height: 1px;
+      margin: 5px auto;
+      background: currentColor;
+      transition: transform 0.2s ease, opacity 0.2s ease;
+    }
+    .hamburger[aria-expanded="true"] span:nth-child(1) { transform: translateY(6px) rotate(45deg); }
+    .hamburger[aria-expanded="true"] span:nth-child(2) { opacity: 0; }
+    .hamburger[aria-expanded="true"] span:nth-child(3) { transform: translateY(-6px) rotate(-45deg); }
+    .mobile-menu {
+      position: fixed;
+      inset: 0 0 0 auto;
+      z-index: 90;
+      display: none;
+      width: min(360px, 100%);
+      padding: 88px 24px 28px;
+      border-left: 1px solid var(--border);
+      background: rgba(17, 17, 24, 0.96);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      transform: translateX(100%);
+      transition: transform 0.32s cubic-bezier(0.16, 1, 0.3, 1);
+    }
     .mobile-menu.open { transform: translateX(0); }
-    .mobile-menu a { font-size: 24px; font-weight: 600; color: #8888a0; text-decoration: none; padding: 16px 0; border-bottom: 1px solid rgba(255,255,255,0.06); display: block; }
+    .mobile-menu a {
+      display: block;
+      padding: 18px 0;
+      border-bottom: 1px solid var(--border);
+      color: var(--secondary);
+      font-size: 22px;
+      font-weight: 650;
+      text-decoration: none;
+    }
+    .mobile-menu a.mobile-active { color: var(--text); }
+    .mobile-menu a.mobile-demo { color: var(--green-light); }
 
-    /* Hero */
-    .hero { padding: 148px 24px 96px; position: relative; overflow: hidden; }
+    .hero {
+      position: relative;
+      min-height: 82vh;
+      display: flex;
+      align-items: center;
+      overflow: hidden;
+      padding: 134px 24px 90px;
+      border-bottom: 1px solid var(--border);
+    }
     .hero::before {
-      content: ''; position: absolute; top: 0; left: 50%; transform: translateX(-50%);
-      width: 800px; height: 300px;
-      background: radial-gradient(ellipse at 50% 0%, rgba(52,168,83,0.05) 0%, transparent 65%);
+      content: '';
+      position: absolute;
+      inset: 0;
+      background:
+        linear-gradient(135deg, rgba(52, 168, 83, 0.09), transparent 32%, transparent 66%, rgba(99, 102, 241, 0.055)),
+        radial-gradient(ellipse at 72% 32%, rgba(255, 255, 255, 0.04), transparent 34rem);
       pointer-events: none;
     }
-    .hero-inner { max-width: 860px; margin: 0 auto; position: relative; z-index: 1; }
-    .section-label { font-size: 11px; font-weight: 600; letter-spacing: 0.16em; text-transform: uppercase; color: #34A853; margin-bottom: 20px; display: block; }
-    .hero-h1 { font-size: clamp(2rem, 4.5vw, 3.2rem); font-weight: 800; color: #e8e8ed; letter-spacing: -0.03em; line-height: 1.1; margin: 0 0 24px; }
-    .hero-sub { font-size: 18px; color: #8888a0; line-height: 1.75; max-width: 580px; margin: 0; }
+    .hero-inner {
+      position: relative;
+      z-index: 1;
+      display: grid;
+      grid-template-columns: minmax(0, 0.82fr) minmax(320px, 0.48fr);
+      gap: 72px;
+      align-items: end;
+      width: min(1120px, 100%);
+      margin: 0 auto;
+    }
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 24px;
+      color: var(--green-light);
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+    }
+    .eyebrow::before {
+      content: '';
+      width: 6px;
+      height: 6px;
+      border-radius: 999px;
+      background: var(--green);
+      box-shadow: 0 0 18px rgba(52, 168, 83, 0.8);
+    }
+    .hero h1 {
+      margin: 0;
+      color: var(--text);
+      font-size: clamp(2.8rem, 7vw, 6rem);
+      font-weight: 800;
+      line-height: 0.99;
+      letter-spacing: 0;
+      text-wrap: balance;
+    }
+    .hero p {
+      margin: 0;
+      color: var(--secondary);
+      font-size: 18px;
+      line-height: 1.78;
+    }
+    .hero-metrics {
+      display: grid;
+      gap: 14px;
+      padding: 24px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: rgba(17, 17, 24, 0.64);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+    }
+    .metric-row {
+      display: flex;
+      justify-content: space-between;
+      gap: 20px;
+      padding-bottom: 14px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+      color: var(--secondary);
+      font-family: "JetBrains Mono", monospace;
+      font-size: 12px;
+    }
+    .metric-row:last-child { padding-bottom: 0; border-bottom: 0; }
+    .metric-row strong { color: var(--green-light); font-weight: 500; }
 
-    /* Sections */
-    .content-section { padding: 80px 24px; }
-    .content-section.alt { background: #111118; }
-    .wide { max-width: 1100px; margin: 0 auto; }
-    .inner { max-width: 860px; margin: 0 auto; }
-    .section-h2 { font-size: clamp(1.5rem, 3vw, 2rem); font-weight: 700; color: #e8e8ed; letter-spacing: -0.02em; margin: 0 0 48px; }
+    .section { position: relative; padding: 104px 24px; }
+    .section.alt {
+      border-block: 1px solid var(--border);
+      background: linear-gradient(180deg, rgba(17, 17, 24, 0.92), rgba(12, 12, 20, 0.95));
+    }
+    .inner { width: min(1120px, 100%); margin: 0 auto; }
+    .section-label {
+      display: block;
+      margin-bottom: 18px;
+      color: var(--green-light);
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+    }
+    .section-title {
+      margin: 0;
+      color: var(--text);
+      font-size: clamp(2rem, 4.2vw, 3.8rem);
+      font-weight: 790;
+      line-height: 1.06;
+      letter-spacing: 0;
+      text-wrap: balance;
+    }
+    .section-intro {
+      max-width: 610px;
+      margin: 18px 0 0;
+      color: var(--secondary);
+      font-size: 16px;
+      line-height: 1.82;
+    }
 
-    /* Use cases */
-    .use-cases-grid { display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: auto auto; gap: 16px; }
-    .use-case-featured { grid-column: 1 / -1; background: #1a1a25; border: 1px solid rgba(255,255,255,0.07); border-radius: 16px; padding: 48px 52px; display: grid; grid-template-columns: 1fr 1fr; gap: 48px; align-items: center; }
-    .use-case-featured-badge { font-size: 10px; font-weight: 600; letter-spacing: 0.14em; text-transform: uppercase; color: #34A853; margin-bottom: 12px; display: block; }
-    .use-case-featured h3 { font-size: 24px; font-weight: 700; color: #e8e8ed; letter-spacing: -0.02em; margin: 0 0 16px; }
-    .use-case-featured p { font-size: 16px; color: #8888a0; line-height: 1.75; margin: 0; }
-    .use-case-featured-visual { background: rgba(52,168,83,0.04); border: 1px solid rgba(52,168,83,0.1); border-radius: 12px; padding: 32px; }
-    .uc-visual-label { font-size: 11px; color: #555568; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 16px; }
-    .uc-route-item { display: flex; align-items: center; gap: 10px; padding: 10px 0; border-bottom: 1px solid rgba(255,255,255,0.04); }
-    .uc-route-item:last-child { border-bottom: none; }
-    .uc-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
-    .uc-route-label { font-size: 13px; color: #8888a0; }
-    .uc-route-score { font-size: 13px; font-family: 'JetBrains Mono', monospace; margin-left: auto; }
+    .use-case-layout {
+      display: grid;
+      grid-template-columns: minmax(0, 1.15fr) minmax(300px, 0.72fr);
+      gap: 22px;
+      margin-top: 54px;
+    }
+    .use-case-feature {
+      position: relative;
+      display: grid;
+      grid-template-columns: minmax(0, 0.76fr) minmax(280px, 0.62fr);
+      gap: 46px;
+      align-items: center;
+      min-height: 420px;
+      padding: 44px;
+      border: 1px solid rgba(52, 168, 83, 0.18);
+      border-radius: 8px;
+      background:
+        radial-gradient(ellipse at 80% 10%, rgba(52, 168, 83, 0.11), transparent 26rem),
+        rgba(255, 255, 255, 0.026);
+      overflow: hidden;
+    }
+    .use-case-feature h3,
+    .use-case-panel h3 {
+      margin: 0 0 14px;
+      color: var(--text);
+      font-size: 25px;
+      font-weight: 760;
+      letter-spacing: 0;
+    }
+    .use-case-feature p,
+    .use-case-panel p {
+      margin: 0;
+      color: var(--secondary);
+      font-size: 15px;
+      line-height: 1.78;
+    }
+    .case-tag {
+      display: inline-block;
+      margin-bottom: 16px;
+      color: var(--green-light);
+      font-family: "JetBrains Mono", monospace;
+      font-size: 11px;
+    }
+    .route-score {
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: rgba(8, 8, 15, 0.55);
+      overflow: hidden;
+    }
+    .route-score-header {
+      display: flex;
+      justify-content: space-between;
+      padding: 13px 15px;
+      border-bottom: 1px solid var(--border);
+      color: var(--muted);
+      font-family: "JetBrains Mono", monospace;
+      font-size: 11px;
+    }
+    .route-item {
+      display: grid;
+      grid-template-columns: 10px minmax(0, 1fr) auto;
+      gap: 12px;
+      align-items: center;
+      padding: 14px 15px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.045);
+    }
+    .route-item:last-child { border-bottom: 0; }
+    .route-dot {
+      width: 9px;
+      height: 9px;
+      border-radius: 999px;
+    }
+    .route-label {
+      min-width: 0;
+      color: var(--secondary);
+      font-size: 13px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .route-value {
+      font-family: "JetBrains Mono", monospace;
+      font-size: 12px;
+    }
+    .use-case-side {
+      display: grid;
+      gap: 22px;
+    }
+    .use-case-panel {
+      min-height: 199px;
+      padding: 32px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: rgba(255, 255, 255, 0.024);
+      transition: transform 0.18s ease, border-color 0.18s ease;
+    }
+    .use-case-panel:hover {
+      transform: translateY(-2px);
+      border-color: rgba(255, 255, 255, 0.13);
+    }
+    .panel-tag {
+      display: inline-block;
+      margin-bottom: 16px;
+      color: var(--muted);
+      font-family: "JetBrains Mono", monospace;
+      font-size: 11px;
+    }
 
-    .use-case-small { background: #1a1a25; border: 1px solid rgba(255,255,255,0.06); border-radius: 14px; padding: 36px; transition: transform 0.2s ease, border-color 0.2s ease; cursor: default; }
-    .use-case-small:hover { transform: translateY(-2px); border-color: rgba(255,255,255,0.12); }
-    .use-case-small h3 { font-size: 19px; font-weight: 600; color: #e8e8ed; letter-spacing: -0.015em; margin: 0 0 12px; }
-    .use-case-small p { font-size: 15px; color: #8888a0; line-height: 1.7; margin: 0; }
-    .use-case-tag { font-size: 10px; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; padding: 3px 8px; border-radius: 4px; margin-bottom: 16px; display: inline-block; }
-    .tag-orange { background: rgba(251,146,60,0.1); color: #fb923c; }
-    .tag-purple { background: rgba(139,92,246,0.1); color: #a78bfa; }
+    .reason-list {
+      margin-top: 54px;
+      border-top: 1px solid var(--border);
+    }
+    .reason-row {
+      display: grid;
+      grid-template-columns: 118px minmax(0, 0.42fr) minmax(0, 0.58fr);
+      gap: 44px;
+      align-items: start;
+      padding: 38px 0;
+      border-bottom: 1px solid var(--border);
+    }
+    .reason-num {
+      color: rgba(255, 255, 255, 0.08);
+      font-size: clamp(2.7rem, 7vw, 5.5rem);
+      font-weight: 800;
+      line-height: 0.88;
+      letter-spacing: 0;
+    }
+    .reason-title {
+      color: var(--text);
+      font-size: 19px;
+      font-weight: 740;
+      line-height: 1.35;
+    }
+    .reason-desc {
+      color: var(--secondary);
+      font-size: 15px;
+      line-height: 1.78;
+    }
 
-    /* Why partner — numbered list */
-    .reason-list { margin-top: 8px; }
-    .reason-row { display: flex; gap: 40px; padding: 36px 0; border-bottom: 1px solid rgba(255,255,255,0.06); align-items: flex-start; }
-    .reason-row:first-child { border-top: 1px solid rgba(255,255,255,0.06); }
-    .reason-num { font-size: 3.5rem; font-weight: 800; color: rgba(255,255,255,0.07); letter-spacing: -0.04em; line-height: 1; flex-shrink: 0; width: 80px; text-align: right; }
-    .reason-content { flex: 1; padding-top: 8px; }
-    .reason-title { font-size: 18px; font-weight: 600; color: #e8e8ed; letter-spacing: -0.015em; margin-bottom: 10px; }
-    .reason-desc { font-size: 15px; color: #8888a0; line-height: 1.75; }
+    .pricing-head {
+      display: grid;
+      grid-template-columns: minmax(0, 0.76fr) minmax(280px, 0.44fr);
+      gap: 64px;
+      align-items: end;
+      margin-bottom: 54px;
+    }
+    .pricing-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 18px;
+      align-items: stretch;
+    }
+    .pricing-card {
+      display: flex;
+      min-height: 500px;
+      flex-direction: column;
+      padding: 32px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: rgba(255, 255, 255, 0.026);
+    }
+    .pricing-card.featured {
+      position: relative;
+      min-height: 534px;
+      border-color: rgba(52, 168, 83, 0.32);
+      background:
+        radial-gradient(ellipse at 50% 0%, rgba(52, 168, 83, 0.10), transparent 22rem),
+        rgba(255, 255, 255, 0.03);
+      box-shadow: 0 0 70px rgba(52, 168, 83, 0.065), 0 28px 76px rgba(0, 0, 0, 0.28);
+      transform: translateY(-18px);
+    }
+    .tier-tag {
+      color: var(--green-light);
+      font-family: "JetBrains Mono", monospace;
+      font-size: 11px;
+    }
+    .featured .tier-tag { color: var(--text); }
+    .pricing-card h3 {
+      margin: 18px 0 24px;
+      color: var(--text);
+      font-size: 24px;
+      font-weight: 760;
+    }
+    .price {
+      color: var(--text);
+      font-size: clamp(2.5rem, 5vw, 4.1rem);
+      font-weight: 800;
+      line-height: 1;
+      letter-spacing: 0;
+    }
+    .period {
+      margin: 9px 0 28px;
+      color: var(--muted);
+      font-size: 13px;
+    }
+    .features {
+      display: grid;
+      gap: 0;
+      margin: auto 0 0;
+      padding: 22px 0 0;
+      border-top: 1px solid var(--border);
+      list-style: none;
+    }
+    .features li {
+      display: grid;
+      grid-template-columns: 14px minmax(0, 1fr);
+      gap: 10px;
+      padding: 9px 0;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.045);
+      color: var(--secondary);
+      font-size: 14px;
+      line-height: 1.5;
+    }
+    .features li:last-child { border-bottom: 0; }
+    .features li::before {
+      content: '';
+      width: 6px;
+      height: 6px;
+      margin-top: 7px;
+      border-radius: 999px;
+      background: var(--green);
+      box-shadow: 0 0 12px rgba(52, 168, 83, 0.45);
+    }
+    .popular-badge {
+      position: absolute;
+      top: 18px;
+      right: 18px;
+      padding: 5px 8px;
+      border: 1px solid rgba(52, 168, 83, 0.22);
+      border-radius: 6px;
+      background: rgba(52, 168, 83, 0.10);
+      color: var(--green-light);
+      font-family: "JetBrains Mono", monospace;
+      font-size: 10px;
+    }
 
-    /* Pricing */
-    .pricing-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; align-items: start; margin-top: 48px; }
-    .pricing-card { background: #1a1a25; border: 1px solid rgba(255,255,255,0.06); border-radius: 16px; padding: 36px; }
-    .pricing-card.featured { border-color: rgba(52,168,83,0.25); box-shadow: 0 0 48px rgba(52,168,83,0.06), 0 4px 24px rgba(0,0,0,0.3); transform: translateY(-6px); }
-    .pricing-tier { font-size: 10px; font-weight: 600; letter-spacing: 0.16em; text-transform: uppercase; color: #34A853; margin-bottom: 20px; display: block; }
-    .pricing-price { font-size: 2.8rem; font-weight: 800; color: #e8e8ed; letter-spacing: -0.04em; line-height: 1; }
-    .pricing-period { font-size: 13px; color: #555568; margin-top: 6px; margin-bottom: 28px; }
-    .pricing-features { list-style: none; margin: 0; padding: 0; border-top: 1px solid rgba(255,255,255,0.06); padding-top: 24px; }
-    .pricing-features li { font-size: 14px; color: #8888a0; padding: 8px 0; border-bottom: 1px solid rgba(255,255,255,0.04); display: flex; align-items: center; gap: 10px; }
-    .pricing-features li:last-child { border-bottom: none; }
-    .pricing-features li::before { content: '—'; color: #34A853; font-size: 12px; flex-shrink: 0; }
-    .featured-badge { display: inline-block; font-size: 10px; font-weight: 600; background: rgba(52,168,83,0.15); color: #34A853; padding: 3px 8px; border-radius: 4px; letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 12px; }
+    .cta-section {
+      padding: 108px 24px 118px;
+      background:
+        radial-gradient(ellipse at 50% 0%, rgba(52, 168, 83, 0.105), transparent 42rem),
+        var(--bg);
+      text-align: center;
+    }
+    .cta-inner {
+      width: min(760px, 100%);
+      margin: 0 auto;
+    }
+    .cta-inner h2 {
+      margin: 0;
+      color: var(--text);
+      font-size: clamp(2rem, 4.4vw, 4.2rem);
+      font-weight: 800;
+      line-height: 1.04;
+      letter-spacing: 0;
+      text-wrap: balance;
+    }
+    .cta-inner p {
+      margin: 22px auto 34px;
+      max-width: 610px;
+      color: var(--secondary);
+      font-size: 17px;
+      line-height: 1.82;
+    }
+    .button-primary {
+      display: inline-flex;
+      min-height: 48px;
+      align-items: center;
+      justify-content: center;
+      padding: 0 22px;
+      border-radius: 8px;
+      background: var(--green);
+      color: #061008;
+      font-size: 14px;
+      font-weight: 730;
+      text-decoration: none;
+      box-shadow: 0 18px 42px rgba(52, 168, 83, 0.16);
+      transition: background 0.18s ease, transform 0.18s ease;
+    }
+    .button-primary:hover { background: var(--green-light); transform: translateY(-1px); }
+    .email-note {
+      margin-top: 16px;
+      color: var(--muted);
+      font-family: "JetBrains Mono", monospace;
+      font-size: 12px;
+    }
 
-    /* CTA */
-    .cta-section { padding: 96px 24px; }
-    .cta-inner { max-width: 680px; margin: 0 auto; text-align: center; }
-    .cta-h2 { font-size: clamp(1.8rem, 3.5vw, 2.6rem); font-weight: 700; color: #e8e8ed; letter-spacing: -0.025em; line-height: 1.2; margin-bottom: 16px; }
-    .cta-p { font-size: 17px; color: #8888a0; line-height: 1.8; margin-bottom: 36px; }
-    .btn-primary { display: inline-flex; align-items: center; padding: 14px 32px; background: #34A853; color: #08080f; font-size: 15px; font-weight: 600; border-radius: 10px; text-decoration: none; transition: background 0.2s, transform 0.15s; }
-    .btn-primary:hover { background: #4ade80; transform: translateY(-1px); }
-    .cta-email { font-size: 13px; color: #555568; margin-top: 16px; }
+    footer {
+      padding: 46px 24px;
+      border-top: 1px solid var(--border);
+      background: rgba(8, 8, 15, 0.86);
+    }
+    .footer-inner {
+      display: grid;
+      grid-template-columns: 1fr auto 1fr;
+      gap: 34px;
+      align-items: center;
+      width: min(1220px, 100%);
+      margin: 0 auto;
+    }
+    .footer-logo { margin: 0; color: var(--text); font-size: 15px; font-weight: 760; }
+    .footer-tagline { margin: 6px 0 0; color: var(--muted); font-size: 12px; }
+    .footer-links { display: flex; gap: 26px; justify-content: center; }
+    .footer-links a { color: var(--muted); font-size: 13px; text-decoration: none; transition: color 0.18s ease; }
+    .footer-links a:hover { color: var(--secondary); }
+    .footer-credits { color: var(--muted); font-size: 11px; line-height: 1.7; text-align: right; }
+    .footer-credits p { margin: 0; }
 
-    /* Footer */
-    footer { padding: 48px 24px; border-top: 1px solid rgba(255,255,255,0.06); }
-    .footer-inner { max-width: 1200px; margin: 0 auto; display: flex; align-items: center; justify-content: space-between; gap: 32px; flex-wrap: wrap; }
-    .footer-logo { font-size: 16px; font-weight: 700; color: #e8e8ed; }
-    .footer-tagline { font-size: 12px; color: #555568; margin-top: 4px; }
-    .footer-links { display: flex; gap: 28px; }
-    .footer-links a { font-size: 13px; color: #555568; text-decoration: none; transition: color 0.2s; }
-    .footer-links a:hover { color: #8888a0; }
-    .footer-credits { font-size: 11px; color: #555568; text-align: right; line-height: 1.6; }
+    .anim-fade-up, .anim-stagger > * { opacity: 0; }
 
-    .anim-fade-up { opacity: 0; }
-
-    @media (max-width: 900px) {
-      .use-cases-grid { grid-template-columns: 1fr; }
-      .use-case-featured { grid-column: auto; grid-template-columns: 1fr; gap: 28px; }
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; scroll-behavior: auto !important; }
+    }
+    @media (max-width: 1080px) {
+      .hero-inner,
+      .use-case-layout,
+      .use-case-feature,
+      .pricing-head {
+        grid-template-columns: 1fr;
+      }
       .pricing-grid { grid-template-columns: 1fr; }
-      .pricing-card.featured { transform: none; }
+      .pricing-card,
+      .pricing-card.featured {
+        min-height: auto;
+        transform: none;
+      }
+    }
+    @media (max-width: 820px) {
+      .reason-row {
+        grid-template-columns: 72px minmax(0, 1fr);
+        gap: 24px;
+      }
+      .reason-desc { grid-column: 2; }
     }
     @media (max-width: 768px) {
       .nav-links { display: none; }
       .hamburger { display: block; }
-      .mobile-menu { display: flex; }
-      .reason-row { gap: 20px; }
-      .reason-num { font-size: 2.5rem; width: 56px; }
-      .footer-inner { flex-direction: column; text-align: center; }
+      .mobile-menu { display: block; }
+      .hero { min-height: 74vh; padding-top: 118px; }
+      .hero h1 { font-size: clamp(2.45rem, 13vw, 4.5rem); }
+      .section, .cta-section { padding: 78px 20px; }
+      .footer-inner {
+        grid-template-columns: 1fr;
+        justify-items: center;
+        text-align: center;
+      }
       .footer-credits { text-align: center; }
-      .footer-links { justify-content: center; }
     }
-    .mobile-menu a.mobile-active { color: #e8e8ed; }
-    .mobile-menu a.mobile-demo { color: #34A853; }
-    @media (prefers-reduced-motion: reduce) {
-      *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
+    @media (max-width: 520px) {
+      .use-case-feature,
+      .use-case-panel,
+      .pricing-card {
+        padding: 24px;
+      }
+      .route-label { white-space: normal; }
+      .reason-row {
+        grid-template-columns: 1fr;
+        gap: 12px;
+      }
+      .reason-desc { grid-column: auto; }
+      .footer-links { flex-wrap: wrap; row-gap: 12px; }
+      .button-primary { width: 100%; }
     }
   </style>
 </head>
 <body>
-
   <nav id="nav">
     <div class="nav-inner">
       <a href="/website/index.html" class="nav-logo">Safe Walk</a>
@@ -172,12 +653,10 @@
         <a href="/website/partners.html" class="active">For Partners</a>
         <a href="#" class="nav-demo">Try the Demo</a>
       </div>
-      <button class="hamburger" id="hamburger" aria-label="Open menu" aria-expanded="false">
-        <svg width="22" height="22" viewBox="0 0 22 22" fill="none">
-          <rect y="4" width="22" height="2" rx="1" fill="currentColor"/>
-          <rect y="10" width="22" height="2" rx="1" fill="currentColor"/>
-          <rect y="16" width="22" height="2" rx="1" fill="currentColor"/>
-        </svg>
+      <button class="hamburger" id="hamburger" type="button" aria-label="Open menu" aria-expanded="false" aria-controls="mobile-menu">
+        <span></span>
+        <span></span>
+        <span></span>
       </button>
     </div>
   </nav>
@@ -189,166 +668,173 @@
     <a href="#" class="mobile-demo">Try the Demo</a>
   </div>
 
-  <!-- Hero -->
-  <section class="hero">
-    <div class="hero-inner">
-      <span class="section-label anim-fade-up">For partners</span>
-      <h1 class="hero-h1 anim-fade-up">Add safety-aware routing to your platform</h1>
-      <p class="hero-sub anim-fade-up">Safe Walk's safety graph API gives universities, transit agencies, and navigation platforms a way to offer pedestrian safety scoring without building it themselves.</p>
-    </div>
-  </section>
-
-  <!-- Use Cases -->
-  <div class="content-section">
-    <div class="wide">
-      <span class="section-label anim-fade-up">Use cases</span>
-      <h2 class="section-h2 anim-fade-up">Who uses Safe Walk</h2>
-      <div class="use-cases-grid">
-
-        <!-- Featured: Universities -->
-        <div class="use-case-featured anim-fade-up">
-          <div>
-            <span class="use-case-featured-badge">Primary target</span>
-            <h3>Universities</h3>
-            <p>Integrate safety-scored routes into your campus app. Students get personalized safe route recommendations from the library to their dorm, from the lab to the subway. Replace static blue light phone maps with dynamic, data-driven guidance.</p>
-          </div>
-          <div class="use-case-featured-visual">
-            <div class="uc-visual-label">Sample route scores</div>
-            <div class="uc-route-item">
-              <div class="uc-dot" style="background: #34A853;"></div>
-              <span class="uc-route-label">Bloor St via King's College Rd</span>
-              <span class="uc-route-score" style="color: #34A853;">0.14</span>
-            </div>
-            <div class="uc-route-item">
-              <div class="uc-dot" style="background: #fb923c;"></div>
-              <span class="uc-route-label">Russell St shortcut</span>
-              <span class="uc-route-score" style="color: #fb923c;">0.51</span>
-            </div>
-            <div class="uc-route-item">
-              <div class="uc-dot" style="background: #ef4444;"></div>
-              <span class="uc-route-label">Spadina via Harbord</span>
-              <span class="uc-route-score" style="color: #ef4444;">0.68</span>
-            </div>
-          </div>
+  <main>
+    <section class="hero">
+      <div class="hero-inner">
+        <div>
+          <span class="eyebrow anim-fade-up">For partners</span>
+          <h1 class="anim-fade-up">Add safety-aware routing to your platform</h1>
         </div>
-
-        <!-- Transit agencies -->
-        <div class="use-case-small anim-fade-up">
-          <span class="use-case-tag tag-orange">Transit agencies</span>
-          <h3>Solve the last-mile safety problem</h3>
-          <p>Riders feel safe on the subway but not walking from the station to home. Show them the safest walking route from any stop, and more people take transit instead of driving.</p>
-        </div>
-
-        <!-- Navigation platforms -->
-        <div class="use-case-small anim-fade-up">
-          <span class="use-case-tag tag-purple">Navigation platforms</span>
-          <h3>A new routing mode, API-first</h3>
-          <p>Add "safest route" as a routing option alongside "fastest" and "shortest." License the safety graph via API. Same integration pattern as traffic data or toll avoidance, applied to pedestrian safety.</p>
+        <div>
+          <p class="anim-fade-up">Safe Walk's safety graph API gives universities, transit agencies, and navigation platforms a way to offer pedestrian safety scoring without building it themselves.</p>
+          <div class="hero-metrics anim-stagger">
+            <div class="metric-row"><span>integration</span><strong>one route call</strong></div>
+            <div class="metric-row"><span>data layers</span><strong>incidents + lights</strong></div>
+            <div class="metric-row"><span>output</span><strong>fastest + safest</strong></div>
+          </div>
         </div>
       </div>
-    </div>
-  </div>
+    </section>
 
-  <!-- Why Partner -->
-  <div class="content-section alt">
-    <div class="inner">
-      <span class="section-label anim-fade-up">Why build with Safe Walk</span>
-      <h2 class="section-h2 anim-fade-up" style="margin-bottom: 8px;">Why build with Safe Walk instead of building it yourself</h2>
-      <div class="reason-list">
-        <div class="reason-row anim-fade-up">
-          <div class="reason-num">01</div>
-          <div class="reason-content">
+    <section class="section">
+      <div class="inner">
+        <span class="section-label anim-fade-up">Use cases</span>
+        <h2 class="section-title anim-fade-up">Who uses Safe Walk</h2>
+        <p class="section-intro anim-fade-up">The API is designed for platforms that already move people through cities and need safety intelligence without rebuilding maps, data pipelines, or scoring infrastructure.</p>
+
+        <div class="use-case-layout anim-stagger">
+          <article class="use-case-feature">
+            <div>
+              <span class="case-tag">PRIMARY TARGET / UNIVERSITIES</span>
+              <h3>Universities</h3>
+              <p>Integrate safety-scored routes into your campus app. Students get personalized safe route recommendations from the library to their dorm, from the lab to the subway. Replace static blue light phone maps with dynamic, data-driven guidance.</p>
+            </div>
+            <div class="route-score">
+              <div class="route-score-header">
+                <span>sample route scores</span>
+                <span>lower is safer</span>
+              </div>
+              <div class="route-item">
+                <div class="route-dot" style="background: #34A853; box-shadow: 0 0 14px rgba(52,168,83,0.48);"></div>
+                <span class="route-label">Bloor St via King's College Rd</span>
+                <span class="route-value" style="color: #4ade80;">0.14</span>
+              </div>
+              <div class="route-item">
+                <div class="route-dot" style="background: #fb923c; box-shadow: 0 0 14px rgba(251,146,60,0.38);"></div>
+                <span class="route-label">Russell St shortcut</span>
+                <span class="route-value" style="color: #fb923c;">0.51</span>
+              </div>
+              <div class="route-item">
+                <div class="route-dot" style="background: #ef4444; box-shadow: 0 0 14px rgba(239,68,68,0.38);"></div>
+                <span class="route-label">Spadina via Harbord</span>
+                <span class="route-value" style="color: #ef4444;">0.68</span>
+              </div>
+            </div>
+          </article>
+
+          <div class="use-case-side">
+            <article class="use-case-panel">
+              <span class="panel-tag">TRANSIT AGENCIES</span>
+              <h3>Solve the last-mile safety problem</h3>
+              <p>Riders feel safe on the subway but not walking from the station to home. Show them the safest walking route from any stop, and more people take transit instead of driving.</p>
+            </article>
+            <article class="use-case-panel">
+              <span class="panel-tag">NAVIGATION PLATFORMS</span>
+              <h3>A new routing mode, API-first</h3>
+              <p>Add "safest route" as a routing option alongside "fastest" and "shortest." License the safety graph via API. Same integration pattern as traffic data or toll avoidance, applied to pedestrian safety.</p>
+            </article>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section alt">
+      <div class="inner">
+        <span class="section-label anim-fade-up">Why build with Safe Walk</span>
+        <h2 class="section-title anim-fade-up">Why build with Safe Walk instead of building it yourself</h2>
+        <div class="reason-list anim-stagger">
+          <div class="reason-row">
+            <div class="reason-num">01</div>
             <div class="reason-title">The data integration is already done</div>
             <div class="reason-desc">We've built the ingestion pipeline for Toronto Police incident data, City of Toronto streetlight data, and community reports. Normalizing municipal open data across different formats, schemas, and update frequencies is unglamorous plumbing work. We've done it so you don't have to.</div>
           </div>
-        </div>
-        <div class="reason-row anim-fade-up">
-          <div class="reason-num">02</div>
-          <div class="reason-content">
+          <div class="reason-row">
+            <div class="reason-num">02</div>
             <div class="reason-title">The scoring engine is calibrated</div>
             <div class="reason-desc">Our safety scoring weights incident proximity, recency, severity, streetlight density, and time of day. It's been tested against known high-incident areas in Toronto and tuned to produce scores that match real-world risk patterns.</div>
           </div>
-        </div>
-        <div class="reason-row anim-fade-up">
-          <div class="reason-num">03</div>
-          <div class="reason-content">
+          <div class="reason-row">
+            <div class="reason-num">03</div>
             <div class="reason-title">The community layer creates a moat</div>
             <div class="reason-desc">Every user who reports an incident makes the safety graph more accurate. More accuracy means more trust, which means more reports. This feedback loop is the competitive advantage: you can't replicate a community data asset from scratch.</div>
           </div>
-        </div>
-        <div class="reason-row anim-fade-up">
-          <div class="reason-num">04</div>
-          <div class="reason-content">
+          <div class="reason-row">
+            <div class="reason-num">04</div>
             <div class="reason-title">One API call, no infrastructure</div>
             <div class="reason-desc">You don't need to host databases, build scoring engines, or manage data pipelines. Send us an origin and destination. We send back routes ranked by safety. Integrate in an afternoon.</div>
           </div>
         </div>
       </div>
-    </div>
-  </div>
+    </section>
 
-  <!-- Pricing -->
-  <div class="content-section">
-    <div class="wide">
-      <span class="section-label anim-fade-up">Partnership tiers</span>
-      <h2 class="section-h2 anim-fade-up" style="margin-bottom: 0;">Pricing</h2>
-      <div class="pricing-grid">
-
-        <div class="pricing-card anim-fade-up">
-          <span class="pricing-tier">Campus</span>
-          <div class="pricing-price">$25K</div>
-          <div class="pricing-period">per year</div>
-          <ul class="pricing-features">
-            <li>API access for one campus</li>
-            <li>Campus-specific safety data</li>
-            <li>Integration support</li>
-            <li>Branded "powered by Safe Walk"</li>
-            <li>Monthly safety reports</li>
-          </ul>
+    <section class="section">
+      <div class="inner">
+        <div class="pricing-head">
+          <div>
+            <span class="section-label anim-fade-up">Partnership tiers</span>
+            <h2 class="section-title anim-fade-up">Pricing</h2>
+          </div>
+          <p class="section-intro anim-fade-up">Start with a campus deployment, expand across an institution, or license the safety graph for high-volume navigation products.</p>
         </div>
 
-        <div class="pricing-card featured anim-fade-up">
-          <div class="featured-badge">Most Popular</div>
-          <span class="pricing-tier">Institution</span>
-          <div class="pricing-price">$50K</div>
-          <div class="pricing-period">per year</div>
-          <ul class="pricing-features">
-            <li>API access, multi-campus</li>
-            <li>White-label integration</li>
-            <li>Priority support</li>
-            <li>Custom safety zones</li>
-            <li>Real-time incident dashboard</li>
-            <li>Quarterly strategy reviews</li>
-          </ul>
-        </div>
+        <div class="pricing-grid anim-stagger">
+          <article class="pricing-card">
+            <span class="tier-tag">CAMPUS</span>
+            <h3>Single campus pilot</h3>
+            <div class="price">$25K</div>
+            <div class="period">per year</div>
+            <ul class="features">
+              <li>API access for one campus</li>
+              <li>Campus-specific safety data</li>
+              <li>Integration support</li>
+              <li>Branded "powered by Safe Walk"</li>
+              <li>Monthly safety reports</li>
+            </ul>
+          </article>
 
-        <div class="pricing-card anim-fade-up">
-          <span class="pricing-tier">Enterprise</span>
-          <div class="pricing-price">Custom</div>
-          <div class="pricing-period">usage-based</div>
-          <ul class="pricing-features">
-            <li>Unlimited API queries</li>
-            <li>Multi-city safety graph</li>
-            <li>SLA guarantees</li>
-            <li>Dedicated account manager</li>
-            <li>Custom data integrations</li>
-            <li>For navigation and real estate platforms</li>
-          </ul>
-        </div>
+          <article class="pricing-card featured">
+            <span class="popular-badge">MOST POPULAR</span>
+            <span class="tier-tag">INSTITUTION</span>
+            <h3>Multi-campus rollout</h3>
+            <div class="price">$50K</div>
+            <div class="period">per year</div>
+            <ul class="features">
+              <li>API access, multi-campus</li>
+              <li>White-label integration</li>
+              <li>Priority support</li>
+              <li>Custom safety zones</li>
+              <li>Real-time incident dashboard</li>
+              <li>Quarterly strategy reviews</li>
+            </ul>
+          </article>
 
+          <article class="pricing-card">
+            <span class="tier-tag">ENTERPRISE</span>
+            <h3>Platform license</h3>
+            <div class="price">Custom</div>
+            <div class="period">usage-based</div>
+            <ul class="features">
+              <li>Unlimited API queries</li>
+              <li>Multi-city safety graph</li>
+              <li>SLA guarantees</li>
+              <li>Dedicated account manager</li>
+              <li>Custom data integrations</li>
+              <li>For navigation and real estate platforms</li>
+            </ul>
+          </article>
+        </div>
       </div>
-    </div>
-  </div>
+    </section>
 
-  <!-- CTA -->
-  <div class="content-section alt">
-    <div class="cta-inner">
-      <h2 class="cta-h2 anim-fade-up">Ready to make your platform safer?</h2>
-      <p class="cta-p anim-fade-up">We're actively looking for early partners — universities, transit agencies, and navigation platforms that want to be first to offer safety-aware pedestrian routing.</p>
-      <a href="mailto:bornaboyafraz@gmail.com" class="btn-primary anim-fade-up">Get in Touch</a>
-      <p class="cta-email anim-fade-up">bornaboyafraz@gmail.com</p>
-    </div>
-  </div>
+    <section class="cta-section">
+      <div class="cta-inner">
+        <h2 class="anim-fade-up">Ready to make your platform safer?</h2>
+        <p class="anim-fade-up">We're actively looking for early partners — universities, transit agencies, and navigation platforms that want to be first to offer safety-aware pedestrian routing.</p>
+        <a href="mailto:bornaboyafraz@gmail.com" class="button-primary anim-fade-up">Get in Touch</a>
+        <div class="email-note anim-fade-up">bornaboyafraz@gmail.com</div>
+      </div>
+    </section>
+  </main>
 
   <footer>
     <div class="footer-inner">
@@ -370,22 +856,25 @@
 
   <script>
     const nav = document.getElementById('nav');
-    window.addEventListener('scroll', () => nav.classList.toggle('scrolled', window.scrollY > 20), { passive: true });
-
     const hamburger = document.getElementById('hamburger');
     const mobileMenu = document.getElementById('mobile-menu');
+
+    window.addEventListener('scroll', () => {
+      nav.classList.toggle('scrolled', window.scrollY > 20);
+    }, { passive: true });
+
     hamburger.addEventListener('click', () => {
       const isOpen = mobileMenu.classList.toggle('open');
-      hamburger.setAttribute('aria-expanded', isOpen);
+      hamburger.setAttribute('aria-expanded', String(isOpen));
     });
-    mobileMenu.addEventListener('click', e => {
-      if (e.target.tagName === 'A') {
+    mobileMenu.addEventListener('click', event => {
+      if (event.target.tagName === 'A') {
         mobileMenu.classList.remove('open');
         hamburger.setAttribute('aria-expanded', 'false');
       }
     });
-    document.addEventListener('keydown', e => {
-      if (e.key === 'Escape' && mobileMenu.classList.contains('open')) {
+    document.addEventListener('keydown', event => {
+      if (event.key === 'Escape' && mobileMenu.classList.contains('open')) {
         mobileMenu.classList.remove('open');
         hamburger.setAttribute('aria-expanded', 'false');
       }
@@ -393,16 +882,40 @@
 
     gsap.registerPlugin(ScrollTrigger);
 
-    gsap.utils.toArray('.anim-fade-up').forEach(el => {
-      gsap.set(el, { opacity: 0, y: 22 });
+    document.fonts.ready.then(() => {
+      gsap.utils.toArray('.hero .anim-fade-up').forEach((element, index) => {
+        gsap.set(element, { opacity: 0, y: index === 1 ? 30 : 20 });
+      });
+      gsap.to('.hero .anim-fade-up', {
+        opacity: 1,
+        y: 0,
+        duration: 0.85,
+        stagger: 0.12,
+        ease: 'power3.out'
+      });
+    });
+
+    gsap.utils.toArray('.anim-fade-up').forEach(element => {
+      if (element.closest('.hero')) return;
+      gsap.set(element, { opacity: 0, y: 22 });
       ScrollTrigger.create({
-        trigger: el,
+        trigger: element,
         start: 'top 88%',
         once: true,
-        onEnter: () => gsap.to(el, { opacity: 1, y: 0, duration: 0.75, ease: 'power2.out' })
+        onEnter: () => gsap.to(element, { opacity: 1, y: 0, duration: 0.74, ease: 'power2.out' })
+      });
+    });
+
+    gsap.utils.toArray('.anim-stagger').forEach(group => {
+      const children = Array.from(group.children);
+      gsap.set(children, { opacity: 0, y: 24 });
+      ScrollTrigger.create({
+        trigger: group,
+        start: 'top 86%',
+        once: true,
+        onEnter: () => gsap.to(children, { opacity: 1, y: 0, duration: 0.62, stagger: 0.15, ease: 'power2.out' })
       });
     });
   </script>
-
 </body>
 </html>
