@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>For Partners — Safe Walk</title>
-  <script src="https://cdn.tailwindcss.com"></script>
+  <script defer src="https://cdn.tailwindcss.com"></script>
   <script>
     tailwind.config = {
       theme: {
@@ -31,8 +31,8 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
+  <script defer src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+  <script defer src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
   <style>
     *, *::before, *::after { box-sizing: border-box; }
     :root {
@@ -643,14 +643,14 @@
     }
   </style>
 </head>
-<body>
+<body data-page="partners">
   <nav id="nav">
     <div class="nav-inner">
       <a href="/website/index.html" class="nav-logo">Safe Walk</a>
       <div class="nav-links">
-        <a href="/website/how-it-works.html">How It Works</a>
-        <a href="/website/about.html">About</a>
-        <a href="/website/partners.html" class="active">For Partners</a>
+        <a href="/website/how-it-works.html" data-nav="how-it-works">How It Works</a>
+        <a href="/website/about.html" data-nav="about">About</a>
+        <a href="/website/partners.html" data-nav="partners">For Partners</a>
         <a href="#" class="nav-demo">Try the Demo</a>
       </div>
       <button class="hamburger" id="hamburger" type="button" aria-label="Open menu" aria-expanded="false" aria-controls="mobile-menu">
@@ -662,9 +662,9 @@
   </nav>
 
   <div class="mobile-menu" id="mobile-menu">
-    <a href="/website/how-it-works.html">How It Works</a>
-    <a href="/website/about.html">About</a>
-    <a href="/website/partners.html" class="mobile-active">For Partners</a>
+    <a href="/website/how-it-works.html" data-nav="how-it-works">How It Works</a>
+    <a href="/website/about.html" data-nav="about">About</a>
+    <a href="/website/partners.html" data-nav="partners">For Partners</a>
     <a href="#" class="mobile-demo">Try the Demo</a>
   </div>
 
@@ -845,7 +845,7 @@
       <div class="footer-links">
         <a href="/website/how-it-works.html">How It Works</a>
         <a href="/website/about.html">About</a>
-        <a href="/website/partners.html">Partners</a>
+        <a href="/website/partners.html">For Partners</a>
       </div>
       <div class="footer-credits">
         <p>Data: Toronto Police Open Data, City of Toronto</p>
@@ -855,9 +855,30 @@
   </footer>
 
   <script>
+    function revealWithoutAnimation() {
+      document.querySelectorAll('.anim-fade-up, .anim-stagger > *').forEach(element => {
+        element.style.opacity = '1';
+        element.style.transform = 'none';
+      });
+    }
+
+    window.setTimeout(() => {
+      const heroStillHidden = Array.from(document.querySelectorAll('.hero .anim-fade-up'))
+        .some(element => Number(getComputedStyle(element).opacity) < 0.1);
+      if (!window.safeWalkAnimated || heroStillHidden) revealWithoutAnimation();
+    }, 1800);
+
+    window.addEventListener('DOMContentLoaded', () => {
     const nav = document.getElementById('nav');
     const hamburger = document.getElementById('hamburger');
     const mobileMenu = document.getElementById('mobile-menu');
+    const currentPage = document.body.dataset.page;
+
+    document.querySelectorAll('[data-nav]').forEach(link => {
+      if (link.dataset.nav === currentPage) {
+        link.classList.add(link.closest('.mobile-menu') ? 'mobile-active' : 'active');
+      }
+    });
 
     window.addEventListener('scroll', () => {
       nav.classList.toggle('scrolled', window.scrollY > 20);
@@ -880,41 +901,51 @@
       }
     });
 
-    gsap.registerPlugin(ScrollTrigger);
+    if (!window.gsap || !window.ScrollTrigger) {
+      revealWithoutAnimation();
+    } else {
+      window.safeWalkAnimated = true;
+      gsap.registerPlugin(ScrollTrigger);
 
-    document.fonts.ready.then(() => {
-      gsap.utils.toArray('.hero .anim-fade-up').forEach((element, index) => {
-        gsap.set(element, { opacity: 0, y: index === 1 ? 30 : 20 });
-      });
-      gsap.to('.hero .anim-fade-up', {
-        opacity: 1,
-        y: 0,
-        duration: 0.85,
-        stagger: 0.12,
-        ease: 'power3.out'
-      });
-    });
+      const fontsReady = document.fonts && document.fonts.ready
+        ? Promise.race([document.fonts.ready, new Promise(resolve => setTimeout(resolve, 500))])
+        : Promise.resolve();
 
-    gsap.utils.toArray('.anim-fade-up').forEach(element => {
-      if (element.closest('.hero')) return;
-      gsap.set(element, { opacity: 0, y: 22 });
-      ScrollTrigger.create({
-        trigger: element,
-        start: 'top 88%',
-        once: true,
-        onEnter: () => gsap.to(element, { opacity: 1, y: 0, duration: 0.74, ease: 'power2.out' })
+      fontsReady.then(() => {
+        gsap.utils.toArray('.hero .anim-fade-up').forEach((element, index) => {
+          gsap.set(element, { opacity: 0, y: index === 1 ? 30 : 20 });
+        });
+        gsap.to('.hero .anim-fade-up', {
+          opacity: 1,
+          y: 0,
+          duration: 0.85,
+          stagger: 0.12,
+          ease: 'power3.out'
+        });
       });
-    });
 
-    gsap.utils.toArray('.anim-stagger').forEach(group => {
-      const children = Array.from(group.children);
-      gsap.set(children, { opacity: 0, y: 24 });
-      ScrollTrigger.create({
-        trigger: group,
-        start: 'top 86%',
-        once: true,
-        onEnter: () => gsap.to(children, { opacity: 1, y: 0, duration: 0.62, stagger: 0.15, ease: 'power2.out' })
+      gsap.utils.toArray('.anim-fade-up').forEach(element => {
+        if (element.closest('.hero')) return;
+        gsap.set(element, { opacity: 0, y: 22 });
+        ScrollTrigger.create({
+          trigger: element,
+          start: 'top 88%',
+          once: true,
+          onEnter: () => gsap.to(element, { opacity: 1, y: 0, duration: 0.74, ease: 'power2.out' })
+        });
       });
+
+      gsap.utils.toArray('.anim-stagger').forEach(group => {
+        const children = Array.from(group.children);
+        gsap.set(children, { opacity: 0, y: 24 });
+        ScrollTrigger.create({
+          trigger: group,
+          start: 'top 86%',
+          once: true,
+          onEnter: () => gsap.to(children, { opacity: 1, y: 0, duration: 0.62, stagger: 0.15, ease: 'power2.out' })
+        });
+      });
+    }
     });
   </script>
 </body>
