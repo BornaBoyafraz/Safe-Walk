@@ -18,6 +18,10 @@ try {
 
 app.use(express.json());
 
+app.get('/api/config', (req, res) => {
+  res.json({ googleMapsApiKey: process.env.GOOGLE_MAPS_API_KEY });
+});
+
 app.get('/api/incidents', (req, res) => {
   if (!db) {
     return res.status(503).json({ error: 'Database not initialized. Run npm run migrate && npm run sync.' });

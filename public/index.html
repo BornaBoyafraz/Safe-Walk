@@ -3,20 +3,160 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Safe Walk</title>
+  <title>Safe Walk — Find Your Safest Route</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
     body { margin: 0; padding: 0; }
-    #map { position: absolute; top: 0; bottom: 0; width: 100%; }
+
+    .tab-active  { background: rgba(255,255,255,0.12); color: #fff; }
+    .tab-inactive { background: transparent; color: #6b7280; }
+    .tab-inactive:hover { background: rgba(255,255,255,0.06); color: #9ca3af; }
+
+    /* Override Google Places autocomplete dropdown to match dark theme */
+    .pac-container {
+      background: #16213e;
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 8px;
+      margin-top: 4px;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+      font-family: inherit;
+    }
+    .pac-item {
+      color: #9ca3af;
+      border-top: 1px solid rgba(255,255,255,0.05);
+      padding: 8px 12px;
+      cursor: pointer;
+    }
+    .pac-item:first-child { border-top: none; }
+    .pac-item:hover, .pac-item-selected { background: rgba(255,255,255,0.06); }
+    .pac-item-query { color: #fff; font-size: 0.875rem; }
+    .pac-matched { color: #34A853; font-weight: 600; }
+    .pac-icon { display: none; }
   </style>
   <script src="js/map.js"></script>
-  <script
-    src="https://maps.googleapis.com/maps/api/js?key=GOOGLE_MAPS_API_KEY&libraries=visualization&callback=initMap"
-    async
-    defer
-  ></script>
 </head>
-<body>
-  <div id="map"></div>
+<body class="bg-black overflow-hidden">
+  <div class="flex flex-col-reverse sm:flex-row h-screen">
+
+    <!-- Sidebar -->
+    <aside class="w-full sm:w-96 flex-shrink-0 bg-[#1a1a2e] flex flex-col h-[45%] sm:h-full overflow-y-auto border-r border-white/5">
+
+      <!-- Header -->
+      <div class="px-6 pt-5 pb-4 border-b border-white/5 flex-shrink-0">
+        <h1 class="text-white text-lg font-bold tracking-tight">Safe Walk</h1>
+        <p class="text-gray-500 text-xs mt-0.5">Safest walking routes in Toronto</p>
+      </div>
+
+      <!-- Route inputs -->
+      <div class="px-5 pt-4 pb-3 space-y-2 flex-shrink-0">
+        <div class="relative">
+          <span class="absolute left-3.5 top-1/2 -translate-y-1/2 w-2 h-2 rounded-full bg-white ring-2 ring-white/20 pointer-events-none"></span>
+          <input
+            id="from-input"
+            type="text"
+            placeholder="From"
+            autocomplete="off"
+            class="w-full bg-white/5 text-white placeholder-gray-600 text-sm rounded-lg pl-8 pr-4 py-2.5 border border-white/10 focus:outline-none focus:border-white/25 transition"
+          />
+        </div>
+        <div class="relative">
+          <span class="absolute left-3.5 top-1/2 -translate-y-1/2 w-2 h-2 rounded-full bg-[#34A853] pointer-events-none"></span>
+          <input
+            id="to-input"
+            type="text"
+            placeholder="To"
+            autocomplete="off"
+            class="w-full bg-white/5 text-white placeholder-gray-600 text-sm rounded-lg pl-8 pr-4 py-2.5 border border-white/10 focus:outline-none focus:border-white/25 transition"
+          />
+        </div>
+        <button
+          id="find-btn"
+          class="w-full bg-[#34A853] hover:bg-[#2d9249] disabled:opacity-40 disabled:cursor-not-allowed text-white font-semibold text-sm rounded-lg py-2.5 transition-colors"
+        >
+          Find Route
+        </button>
+      </div>
+
+      <!-- Mode tabs -->
+      <div class="px-5 pb-3 flex-shrink-0">
+        <div class="flex rounded-lg overflow-hidden border border-white/10 text-sm font-medium">
+          <button id="tab-safest"  class="tab-active  flex-1 py-2">Safest</button>
+          <button id="tab-fastest" class="tab-inactive flex-1 py-2">Fastest</button>
+        </div>
+      </div>
+
+      <!-- Heatmap toggle -->
+      <div class="px-5 pb-4 flex items-center justify-between flex-shrink-0">
+        <span class="text-gray-500 text-xs">Crime heatmap</span>
+        <label class="relative inline-flex items-center cursor-pointer">
+          <input type="checkbox" id="heatmap-toggle" class="sr-only peer" />
+          <div class="w-9 h-5 bg-white/10 peer-checked:bg-[#34A853] rounded-full transition-colors
+                      after:content-[''] after:absolute after:top-0.5 after:left-0.5
+                      after:bg-white after:rounded-full after:h-4 after:w-4
+                      after:transition-all peer-checked:after:translate-x-4"></div>
+        </label>
+      </div>
+
+      <!-- Divider -->
+      <div class="mx-5 border-t border-white/5 flex-shrink-0"></div>
+
+      <!-- Error message -->
+      <div id="error-msg" class="hidden mx-5 mt-4 p-3 bg-red-500/10 border border-red-500/20 rounded-lg text-red-400 text-xs leading-relaxed flex-shrink-0"></div>
+
+      <!-- Empty state -->
+      <div id="empty-state" class="flex-1 flex flex-col items-center justify-center px-6 text-center py-6">
+        <div class="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center mb-3">
+          <svg class="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+              d="M9 12.75L11.25 15 15 9.75m-3-7.036A11.959 11.959 0 013.598 6 11.955 11.955 0
+                 003 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03
+                 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196
+                 0-6.1-1.248-8.25-3.285z"/>
+          </svg>
+        </div>
+        <p class="text-gray-600 text-xs leading-relaxed">Enter a start and destination<br>to find your safest walking route</p>
+      </div>
+
+      <!-- Loading state -->
+      <div id="loading" class="hidden flex-1 flex flex-col items-center justify-center px-6 text-center py-6">
+        <div class="w-7 h-7 border-2 border-white/10 border-t-[#34A853] rounded-full animate-spin mb-3"></div>
+        <p class="text-gray-500 text-xs">Finding your safe route...</p>
+      </div>
+
+      <!-- Info panel -->
+      <div id="info-panel" class="hidden px-5 pt-4 pb-3 space-y-3">
+        <div class="grid grid-cols-2 gap-2">
+          <div class="bg-white/5 rounded-lg p-3">
+            <p class="text-gray-500 text-xs mb-1">Walk time</p>
+            <p id="info-time" class="text-white text-base font-semibold">—</p>
+          </div>
+          <div class="bg-white/5 rounded-lg p-3">
+            <p class="text-gray-500 text-xs mb-1">Distance</p>
+            <p id="info-distance" class="text-white text-base font-semibold">—</p>
+          </div>
+        </div>
+
+        <div class="bg-white/5 rounded-lg p-3">
+          <div class="flex items-center justify-between mb-2">
+            <p class="text-gray-500 text-xs">Safety score</p>
+            <p id="safety-pct" class="text-xs font-semibold">—</p>
+          </div>
+          <div class="h-1.5 bg-white/10 rounded-full overflow-hidden">
+            <div id="safety-bar-fill" class="h-full rounded-full transition-all duration-500" style="width:0%"></div>
+          </div>
+        </div>
+
+        <p id="comparison-text" class="hidden text-gray-500 text-xs leading-relaxed"></p>
+      </div>
+
+      <!-- Footer -->
+      <div class="mt-auto px-5 py-3 border-t border-white/5 flex-shrink-0">
+        <p class="text-gray-700 text-xs">Data: Toronto Police Open Data · City of Toronto</p>
+      </div>
+    </aside>
+
+    <!-- Map -->
+    <div id="map" class="flex-1 h-[55%] sm:h-full"></div>
+  </div>
 </body>
 </html>
