@@ -391,6 +391,29 @@
       background-size: 28px 28px;
     }
     .curve-svg, .clock-svg { position: absolute; inset: 22px; width: calc(100% - 44px); height: calc(100% - 44px); }
+    .time-bar { width: 100%; padding: 16px 22px; }
+    .time-bar-track {
+      height: 22px;
+      border-radius: 6px;
+      background: linear-gradient(90deg,
+        rgba(99, 102, 241, 0.42) 0%,
+        rgba(99, 102, 241, 0.42) 20.8%,
+        rgba(52, 168, 83, 0.36) 29.2%,
+        rgba(52, 168, 83, 0.36) 79.2%,
+        rgba(99, 102, 241, 0.42) 87.5%,
+        rgba(99, 102, 241, 0.42) 100%
+      );
+      border: 1px solid rgba(255, 255, 255, 0.06);
+      margin-bottom: 10px;
+    }
+    .time-bar-labels {
+      display: flex;
+      justify-content: space-between;
+      font-size: 10px;
+      letter-spacing: 0.04em;
+      color: var(--muted);
+      font-family: "JetBrains Mono", monospace;
+    }
     .light-dots {
       position: absolute;
       inset: 24px;
@@ -808,15 +831,13 @@
               <h3>The model changes after dark</h3>
               <p>The scoring engine knows what time it is. During the day (7 AM to 7 PM), incident history carries most of the weight. After dark (9 PM to 5 AM), streetlight coverage becomes much more important. Dawn and dusk hours interpolate smoothly between the two modes, following Toronto's actual patterns.</p>
             </div>
-            <div class="mini-visual">
-              <svg class="clock-svg" viewBox="0 0 220 180" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <circle cx="110" cy="90" r="58" stroke="rgba(255,255,255,0.08)" stroke-width="2"/>
-                <path d="M110 90 L110 42" stroke="#6366f1" stroke-width="4" stroke-linecap="round"/>
-                <path d="M110 90 L146 116" stroke="#4ade80" stroke-width="4" stroke-linecap="round"/>
-                <path d="M52 90 A58 58 0 0 1 168 90" stroke="rgba(52,168,83,0.32)" stroke-width="9" stroke-linecap="round"/>
-                <path d="M168 90 A58 58 0 0 1 52 90" stroke="rgba(99,102,241,0.38)" stroke-width="9" stroke-linecap="round"/>
-              </svg>
-              <span class="visual-label">day and night weights interpolate</span>
+            <div class="mini-visual" style="display:flex;align-items:center;justify-content:center;">
+              <div class="time-bar">
+                <div class="time-bar-track"></div>
+                <div class="time-bar-labels">
+                  <span>12am</span><span>6am</span><span>noon</span><span>6pm</span><span>12am</span>
+                </div>
+              </div>
             </div>
           </article>
         </div>
