@@ -3,3 +3,6 @@ node_modules/
 *.db
 .DS_Store
 data/toronto-graph.json
+CLAUDE.md
+prompt.MD
+.claude/
