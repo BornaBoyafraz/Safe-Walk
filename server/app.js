@@ -10,7 +10,8 @@ const PORT = process.env.PORT || 3000;
 const DB_PATH = path.join(__dirname, '..', 'data', 'safewalk.db');
 let db;
 try {
-  db = new Database(DB_PATH, { readonly: true });
+  // Not readonly — needed to insert user reports
+  db = new Database(DB_PATH);
   db.pragma('journal_mode = WAL');
 } catch (err) {
   console.warn('Database not found. Run `npm run migrate` and `npm run sync` first.');
@@ -119,6 +120,55 @@ app.post('/api/route', async (req, res) => {
     }
     res.status(502).json({ error: `Route computation failed: ${err.message}` });
   }
+});
+
+const VALID_REPORT_CATEGORIES = ['harassment', 'poor_lighting', 'suspicious_activity', 'other'];
+
+app.post('/api/report', (req, res) => {
+  if (!db) {
+    return res.status(503).json({ error: 'Database not initialized.' });
+  }
+
+  const { lat, lng, category, note } = req.body;
+
+  if (typeof lat !== 'number' || typeof lng !== 'number' || !isFinite(lat) || !isFinite(lng)) {
+    return res.status(400).json({ error: 'lat and lng must be finite numbers.' });
+  }
+  if (!VALID_REPORT_CATEGORIES.includes(category)) {
+    return res.status(400).json({ error: `category must be one of: ${VALID_REPORT_CATEGORIES.join(', ')}.` });
+  }
+  if (note !== undefined && typeof note !== 'string') {
+    return res.status(400).json({ error: 'note must be a string.' });
+  }
+
+  const result = db.prepare(`
+    INSERT INTO user_reports (lat, lng, category, note) VALUES (?, ?, ?, ?)
+  `).run(lat, lng, category, note?.trim() || null);
+
+  res.status(201).json({ id: result.lastInsertRowid });
+});
+
+app.get('/api/reports', (req, res) => {
+  if (!db) {
+    return res.status(503).json({ error: 'Database not initialized.' });
+  }
+
+  // Return reports from the last 90 days
+  const rows = db.prepare(`
+    SELECT lat, lng, category, note, created_at
+    FROM user_reports
+    WHERE created_at >= datetime('now', '-90 days')
+    ORDER BY created_at DESC
+  `).all();
+
+  res.json({
+    type: 'FeatureCollection',
+    features: rows.map(row => ({
+      type: 'Feature',
+      geometry: { type: 'Point', coordinates: [row.lng, row.lat] },
+      properties: { category: row.category, note: row.note, created_at: row.created_at },
+    })),
+  });
 });
 
 app.use(express.static(path.join(__dirname, '..', 'public')));

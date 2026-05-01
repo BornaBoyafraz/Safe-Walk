@@ -11,6 +11,10 @@ let activeMode      = 'safest';
 let heatmapLayer    = null;
 let incidentCache   = null;
 let streetlightMarkers = [];
+let reportMarkers   = [];
+let reportingMode   = false;
+let pendingReportLatLng = null;
+let mapClickListener = null;
 
 // ─── Bootstrap ────────────────────────────────────────────────────────────────
 // Fetch the API key from the server, then inject the Maps script dynamically
@@ -44,6 +48,8 @@ function initMap() {
   setupFindButton();
   setupModeTabs();
   setupHeatmapToggle();
+  setupReportsToggle();
+  setupReportFlow();
   setupStreetlightLayer();
 }
 
@@ -394,6 +400,179 @@ async function onMapIdle() {
 function clearStreetlights() {
   streetlightMarkers.forEach(m => m.setMap(null));
   streetlightMarkers = [];
+}
+
+// ─── Community reports layer ──────────────────────────────────────────────────
+function setupReportsToggle() {
+  document.getElementById('reports-toggle').addEventListener('change', async e => {
+    if (!e.target.checked) {
+      clearReportMarkers();
+      return;
+    }
+    await loadReportMarkers();
+  });
+}
+
+async function loadReportMarkers() {
+  try {
+    const res = await fetch('/api/reports');
+    if (!res.ok) return;
+    const geojson = await res.json();
+
+    clearReportMarkers();
+
+    const iconColors = {
+      harassment: '#EA4335',
+      suspicious_activity: '#FBBC04',
+      poor_lighting: '#00E5FF',
+      other: '#9ca3af',
+    };
+
+    reportMarkers = geojson.features.map(f => {
+      const [lng, lat] = f.geometry.coordinates;
+      const { category, note } = f.properties;
+      const color = iconColors[category] || '#9ca3af';
+
+      const marker = new google.maps.Marker({
+        position: { lat, lng },
+        map,
+        icon: {
+          path: google.maps.SymbolPath.CIRCLE,
+          scale: 7,
+          fillColor: color,
+          fillOpacity: 0.9,
+          strokeColor: '#1a1a2e',
+          strokeWeight: 1.5,
+        },
+        title: category.replace('_', ' ') + (note ? ': ' + note : ''),
+      });
+      return marker;
+    });
+  } catch (err) {
+    console.error('Failed to load community reports:', err.message);
+  }
+}
+
+function clearReportMarkers() {
+  reportMarkers.forEach(m => m.setMap(null));
+  reportMarkers = [];
+}
+
+// ─── Report incident flow ─────────────────────────────────────────────────────
+function setupReportFlow() {
+  document.getElementById('report-btn').addEventListener('click', startReporting);
+  document.getElementById('report-submit').addEventListener('click', submitReport);
+  document.getElementById('report-cancel').addEventListener('click', cancelReporting);
+}
+
+function startReporting() {
+  reportingMode = true;
+  pendingReportLatLng = null;
+
+  document.getElementById('report-panel').classList.remove('hidden');
+  document.getElementById('report-prompt').textContent = 'Click anywhere on the map to place your report.';
+  document.getElementById('report-fields').classList.add('hidden');
+  document.getElementById('report-category').value = '';
+  document.getElementById('report-note').value = '';
+
+  // Change cursor to crosshair
+  map.setOptions({ draggableCursor: 'crosshair' });
+
+  mapClickListener = map.addListener('click', e => {
+    pendingReportLatLng = e.latLng;
+
+    // Drop a temporary marker
+    if (window._tempReportMarker) window._tempReportMarker.setMap(null);
+    window._tempReportMarker = new google.maps.Marker({
+      position: e.latLng,
+      map,
+      icon: {
+        path: google.maps.SymbolPath.CIRCLE,
+        scale: 8,
+        fillColor: '#4285F4',
+        fillOpacity: 1,
+        strokeColor: '#ffffff',
+        strokeWeight: 2,
+      },
+      zIndex: 20,
+    });
+
+    document.getElementById('report-prompt').textContent = 'Location set. What happened here?';
+    document.getElementById('report-fields').classList.remove('hidden');
+  });
+}
+
+async function submitReport() {
+  if (!pendingReportLatLng) {
+    document.getElementById('report-prompt').textContent = 'Click on the map first to set a location.';
+    return;
+  }
+
+  const category = document.getElementById('report-category').value;
+  if (!category) {
+    document.getElementById('report-prompt').textContent = 'Please select a category.';
+    return;
+  }
+
+  const note = document.getElementById('report-note').value.trim();
+  const btn = document.getElementById('report-submit');
+  btn.disabled = true;
+  btn.textContent = 'Submitting...';
+
+  try {
+    const res = await fetch('/api/report', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        lat: pendingReportLatLng.lat(),
+        lng: pendingReportLatLng.lng(),
+        category,
+        note: note || undefined,
+      }),
+    });
+
+    if (!res.ok) {
+      const data = await res.json();
+      throw new Error(data.error);
+    }
+
+    cancelReporting();
+
+    // If reports layer is on, refresh it to show the new pin
+    if (document.getElementById('reports-toggle').checked) {
+      await loadReportMarkers();
+    }
+
+    // Brief success message
+    const panel = document.getElementById('report-panel');
+    panel.classList.remove('hidden');
+    document.getElementById('report-prompt').textContent = 'Report submitted. Thank you.';
+    document.getElementById('report-fields').classList.add('hidden');
+    setTimeout(() => panel.classList.add('hidden'), 2500);
+  } catch (err) {
+    document.getElementById('report-prompt').textContent = 'Submit failed: ' + err.message;
+    btn.disabled = false;
+    btn.textContent = 'Submit';
+  }
+}
+
+function cancelReporting() {
+  reportingMode = false;
+  pendingReportLatLng = null;
+
+  if (mapClickListener) {
+    google.maps.event.removeListener(mapClickListener);
+    mapClickListener = null;
+  }
+  if (window._tempReportMarker) {
+    window._tempReportMarker.setMap(null);
+    window._tempReportMarker = null;
+  }
+
+  map.setOptions({ draggableCursor: null });
+  document.getElementById('report-panel').classList.add('hidden');
+  document.getElementById('report-submit').disabled = false;
+  document.getElementById('report-submit').textContent = 'Submit';
 }
 
 // ─── Dark map style ────────────────────────────────────────────────────────────
