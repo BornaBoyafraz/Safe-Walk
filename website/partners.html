@@ -6,732 +6,835 @@
   <title>For Partners — Safe Walk</title>
   <meta name="description" content="Add safety-aware routing to your platform. Safe Walk pricing, integration tiers, and use cases for universities, transit agencies, and navigation apps.">
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%2308080f'/%3E%3Ccircle cx='9' cy='23' r='3.2' fill='%2334A853'/%3E%3Ccircle cx='23' cy='9' r='3.2' fill='%234ade80'/%3E%3Cpath d='M9 23 C9 13 23 19 23 9' stroke='%2334A853' stroke-width='2' stroke-linecap='round' fill='none'/%3E%3C/svg%3E">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
   <script defer src="https://cdn.tailwindcss.com"></script>
   <script>
     tailwind.config = {
       theme: {
         extend: {
           colors: {
-            bg: '#08080f',
-            s1: '#111118',
-            s2: '#1a1a25',
-            green: { DEFAULT: '#34A853', light: '#4ade80' },
+            bg: { DEFAULT: '#08080f', card: '#111118', elevated: '#1a1a25' },
+            brd: { DEFAULT: 'rgba(255,255,255,0.06)' },
+            txt: { primary: '#e8e8ed', secondary: '#8888a0', muted: '#555568' },
+            safe: { green: '#34A853', light: '#4ade80' },
             accent: '#6366f1',
             danger: '#ef4444',
-            tp: '#e8e8ed',
-            ts: '#8888a0',
-            tm: '#555568'
+            code: '#0c0c14',
           },
-          fontFamily: {
-            sans: ['Inter', 'system-ui', 'sans-serif'],
-            mono: ['"JetBrains Mono"', 'monospace']
-          }
+          fontFamily: { sans: ['Inter', 'system-ui', '-apple-system', 'sans-serif'] }
         }
       }
     };
   </script>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
   <script defer src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
   <script defer src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
   <style>
-    *, *::before, *::after { box-sizing: border-box; }
+    * { box-sizing: border-box; }
     :root {
       --bg: #08080f;
-      --surface: #111118;
-      --surface-2: #1a1a25;
+      --card: #111118;
+      --elevated: #1a1a25;
       --border: rgba(255, 255, 255, 0.06);
-      --text: #e8e8ed;
-      --secondary: #8888a0;
-      --muted: #555568;
-      --green: #34A853;
-      --green-light: #4ade80;
+      --text-primary: #e8e8ed;
+      --text-secondary: #8888a0;
+      --text-muted: #555568;
+      --safe-green: #34A853;
+      --safe-light: #4ade80;
       --accent: #6366f1;
       --danger: #ef4444;
       --code: #0c0c14;
     }
+
     html { scroll-behavior: smooth; }
+
     body {
       margin: 0;
-      overflow-x: hidden;
-      background:
-        radial-gradient(circle at 78% 18%, rgba(52, 168, 83, 0.06), transparent 34rem),
-        radial-gradient(circle at 14% 72%, rgba(99, 102, 241, 0.04), transparent 32rem),
-        var(--bg);
-      color: var(--text);
-      font-family: Inter, system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--text-primary);
+      font-family: Inter, system-ui, -apple-system, sans-serif;
       letter-spacing: 0;
       -webkit-font-smoothing: antialiased;
       -moz-osx-font-smoothing: grayscale;
     }
+
     body::before {
       content: '';
       position: fixed;
       inset: 0;
       z-index: 9999;
       pointer-events: none;
-      opacity: 0.028;
-      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
-      mix-blend-mode: screen;
+      opacity: 0.025;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+      background-size: 256px 256px;
     }
-    a { color: inherit; }
 
-    #nav {
+    a { color: inherit; text-decoration: none; }
+
+    /* Navigation */
+    nav {
       position: fixed;
-      inset: 0 0 auto;
-      z-index: 100;
-      border-bottom: 1px solid transparent;
-      background: rgba(17, 17, 24, 0.58);
-      backdrop-filter: blur(22px);
-      -webkit-backdrop-filter: blur(22px);
-      transition: border-color 0.25s ease, background 0.25s ease;
-    }
-    #nav.scrolled { border-bottom-color: var(--border); background: rgba(17, 17, 24, 0.78); }
-    .nav-inner {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      max-width: 1220px;
-      height: 66px;
-      margin: 0 auto;
-      padding: 0 24px;
-    }
-    .nav-logo { color: var(--text); font-size: 17px; font-weight: 750; text-decoration: none; letter-spacing: 0; }
-    .nav-links { display: flex; align-items: center; gap: 34px; }
-    .nav-links a {
-      color: var(--secondary);
-      font-size: 13px;
-      font-weight: 500;
-      text-decoration: none;
-      transition: color 0.18s ease;
-    }
-    .nav-links a:hover, .nav-links a.active { color: var(--text); }
-    .nav-links .nav-demo {
-      color: var(--green-light);
-      padding: 8px 14px;
-      border: 1px solid rgba(52, 168, 83, 0.32);
-      border-radius: 8px;
-      box-shadow: inset 0 0 18px rgba(52, 168, 83, 0.03);
-    }
-    .nav-links .nav-demo:hover { border-color: rgba(74, 222, 128, 0.56); background: rgba(52, 168, 83, 0.07); }
-    .hamburger {
-      display: none;
-      width: 38px;
-      height: 38px;
-      padding: 0;
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      background: rgba(255, 255, 255, 0.03);
-      color: var(--text);
-      cursor: pointer;
-    }
-    .hamburger span {
-      display: block;
-      width: 16px;
-      height: 1px;
-      margin: 5px auto;
-      background: currentColor;
-      transition: transform 0.2s ease, opacity 0.2s ease;
-    }
-    .hamburger[aria-expanded="true"] span:nth-child(1) { transform: translateY(6px) rotate(45deg); }
-    .hamburger[aria-expanded="true"] span:nth-child(2) { opacity: 0; }
-    .hamburger[aria-expanded="true"] span:nth-child(3) { transform: translateY(-6px) rotate(-45deg); }
-    .mobile-menu {
-      position: fixed;
-      inset: 0 0 0 auto;
-      z-index: 90;
-      display: none;
-      width: min(360px, 100%);
-      padding: 88px 24px 28px;
-      border-left: 1px solid var(--border);
-      background: rgba(17, 17, 24, 0.96);
+      top: 0;
+      z-index: 50;
+      width: 100%;
+      background: rgba(8, 8, 15, 0.6);
       backdrop-filter: blur(20px);
       -webkit-backdrop-filter: blur(20px);
-      transform: translateX(100%);
-      transition: transform 0.32s cubic-bezier(0.16, 1, 0.3, 1);
+      border-bottom: 1px solid transparent;
+      transition: border-color 0.3s ease;
     }
-    .mobile-menu.open { transform: translateX(0); }
-    .mobile-menu a {
-      display: block;
-      padding: 18px 0;
-      border-bottom: 1px solid var(--border);
-      color: var(--secondary);
-      font-size: 22px;
-      font-weight: 650;
-      text-decoration: none;
-    }
-    .mobile-menu a.mobile-active { color: var(--text); }
-    .mobile-menu a.mobile-demo { color: var(--green-light); }
 
+    nav.scrolled {
+      border-bottom-color: var(--border);
+    }
+
+    .nav-inner {
+      max-width: 1344px;
+      margin: 0 auto;
+      padding: 0 24px;
+      height: 64px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .nav-logo {
+      font-size: 18px;
+      font-weight: 700;
+      letter-spacing: -0.5px;
+      color: white;
+    }
+
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: 32px;
+    }
+
+    .nav-links a {
+      font-size: 14px;
+      font-weight: 500;
+      color: var(--text-secondary);
+      transition: color 0.2s ease;
+    }
+
+    .nav-links a:hover {
+      color: var(--text-primary);
+    }
+
+    .nav-links a.active {
+      color: white;
+    }
+
+    .nav-demo {
+      padding: 8px 16px;
+      border: 1px solid rgba(52, 168, 83, 0.3);
+      border-radius: 6px;
+      color: var(--safe-green);
+      font-size: 13px;
+      font-weight: 600;
+      transition: all 0.2s ease;
+    }
+
+    .nav-demo:hover {
+      background: rgba(52, 168, 83, 0.08);
+      border-color: rgba(52, 168, 83, 0.5);
+    }
+
+    #mobile-toggle {
+      display: none;
+      background: none;
+      border: none;
+      color: var(--text-primary);
+      cursor: pointer;
+      padding: 8px;
+    }
+
+    .mobile-menu {
+      display: none;
+      position: fixed;
+      top: 64px;
+      right: 0;
+      width: 100%;
+      background: rgba(8, 8, 15, 0.95);
+      backdrop-filter: blur(20px);
+      border-top: 1px solid var(--border);
+      flex-direction: column;
+      padding: 16px 24px;
+      gap: 8px;
+      z-index: 40;
+    }
+
+    .mobile-menu.open {
+      display: flex;
+    }
+
+    .mobile-menu a {
+      padding: 12px 0;
+      border-bottom: 1px solid var(--border);
+      color: var(--text-secondary);
+      font-size: 16px;
+      transition: color 0.2s ease;
+    }
+
+    .mobile-menu a:last-child {
+      border-bottom: none;
+    }
+
+    .mobile-menu a:hover {
+      color: var(--text-primary);
+    }
+
+    /* Hero section */
     .hero {
       position: relative;
-      min-height: 82vh;
-      display: flex;
-      align-items: center;
-      overflow: hidden;
-      padding: 134px 24px 90px;
-      border-bottom: 1px solid var(--border);
+      padding: 128px 24px 64px;
+      text-align: center;
     }
-    .hero::before {
-      content: '';
-      position: absolute;
-      inset: 0;
-      background:
-        linear-gradient(135deg, rgba(52, 168, 83, 0.09), transparent 32%, transparent 66%, rgba(99, 102, 241, 0.055)),
-        radial-gradient(ellipse at 72% 32%, rgba(255, 255, 255, 0.04), transparent 34rem);
-      pointer-events: none;
-    }
+
     .hero-inner {
-      position: relative;
-      z-index: 1;
-      display: grid;
-      grid-template-columns: minmax(0, 0.82fr) minmax(320px, 0.48fr);
-      gap: 72px;
-      align-items: end;
-      width: min(1120px, 100%);
+      max-width: 900px;
       margin: 0 auto;
     }
-    .eyebrow {
-      display: inline-flex;
-      align-items: center;
-      gap: 10px;
-      margin-bottom: 24px;
-      color: var(--green-light);
-      font-size: 11px;
+
+    .hero-label {
+      display: inline-block;
+      padding: 8px 16px;
+      background: rgba(52, 168, 83, 0.12);
+      border: 1px solid rgba(52, 168, 83, 0.25);
+      border-radius: 6px;
+      color: var(--safe-light);
+      font-size: 12px;
       font-weight: 700;
-      letter-spacing: 0.16em;
+      letter-spacing: 0.08em;
       text-transform: uppercase;
+      margin-bottom: 24px;
     }
-    .eyebrow::before {
-      content: '';
-      width: 6px;
-      height: 6px;
-      border-radius: 999px;
-      background: var(--green);
-      box-shadow: 0 0 18px rgba(52, 168, 83, 0.8);
-    }
+
     .hero h1 {
-      margin: 0;
-      color: var(--text);
-      font-size: clamp(2.8rem, 7vw, 6rem);
-      font-weight: 800;
-      line-height: 0.99;
-      letter-spacing: 0;
-      text-wrap: balance;
+      margin: 0 0 20px;
+      color: var(--text-primary);
+      font-size: clamp(2.5rem, 8vw, 4rem);
+      font-weight: 900;
+      line-height: 1.1;
+      letter-spacing: -1px;
     }
+
     .hero p {
       margin: 0;
-      color: var(--secondary);
+      max-width: 700px;
+      margin: 0 auto;
+      color: var(--text-secondary);
       font-size: 18px;
-      line-height: 1.78;
+      line-height: 1.7;
     }
-    .hero-metrics {
-      display: grid;
-      gap: 14px;
-      padding: 24px;
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      background: rgba(17, 17, 24, 0.64);
-      backdrop-filter: blur(16px);
-      -webkit-backdrop-filter: blur(16px);
-    }
-    .metric-row {
-      display: flex;
-      justify-content: space-between;
-      gap: 20px;
-      padding-bottom: 14px;
-      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-      color: var(--secondary);
-      font-family: "JetBrains Mono", monospace;
-      font-size: 12px;
-    }
-    .metric-row:last-child { padding-bottom: 0; border-bottom: 0; }
-    .metric-row strong { color: var(--green-light); font-weight: 500; }
 
-    .section { position: relative; padding: 104px 24px; }
-    .section.alt {
-      border-block: 1px solid var(--border);
-      background: linear-gradient(180deg, rgba(17, 17, 24, 0.92), rgba(12, 12, 20, 0.95));
+    .gs-reveal {
+      opacity: 0;
     }
-    .inner { width: min(1120px, 100%); margin: 0 auto; }
+
+    /* Use cases section */
+    .section {
+      position: relative;
+      padding: 96px 24px;
+    }
+
+    .section.alt {
+      background: linear-gradient(180deg, rgba(17, 17, 24, 0.5) 0%, rgba(8, 8, 15, 0.8) 100%);
+      border-top: 1px solid var(--border);
+      border-bottom: 1px solid var(--border);
+    }
+
+    .section-inner {
+      max-width: 1344px;
+      margin: 0 auto;
+    }
+
     .section-label {
-      display: block;
-      margin-bottom: 18px;
-      color: var(--green-light);
+      display: inline-block;
+      padding: 6px 12px;
+      color: var(--safe-light);
       font-size: 11px;
       font-weight: 700;
-      letter-spacing: 0.14em;
+      letter-spacing: 0.1em;
       text-transform: uppercase;
-    }
-    .section-title {
-      margin: 0;
-      color: var(--text);
-      font-size: clamp(2rem, 4.2vw, 3.8rem);
-      font-weight: 790;
-      line-height: 1.06;
-      letter-spacing: 0;
-      text-wrap: balance;
-    }
-    .section-intro {
-      max-width: 610px;
-      margin: 18px 0 0;
-      color: var(--secondary);
-      font-size: 16px;
-      line-height: 1.82;
+      margin-bottom: 16px;
     }
 
-    .use-case-layout {
-      display: grid;
-      grid-template-columns: minmax(0, 1.15fr) minmax(300px, 0.72fr);
-      gap: 22px;
-      margin-top: 54px;
+    .section-title {
+      margin: 0 0 16px;
+      color: var(--text-primary);
+      font-size: clamp(2rem, 5vw, 3.5rem);
+      font-weight: 900;
+      line-height: 1.2;
+      letter-spacing: -0.5px;
     }
-    .use-case-feature {
-      position: relative;
-      display: grid;
-      grid-template-columns: minmax(0, 0.76fr) minmax(280px, 0.62fr);
-      gap: 46px;
-      align-items: center;
-      min-height: 420px;
-      padding: 44px;
-      border: 1px solid rgba(52, 168, 83, 0.18);
-      border-radius: 8px;
-      background:
-        radial-gradient(ellipse at 80% 10%, rgba(52, 168, 83, 0.11), transparent 26rem),
-        rgba(255, 255, 255, 0.026);
-      overflow: hidden;
-    }
-    .use-case-feature h3,
-    .use-case-panel h3 {
-      margin: 0 0 14px;
-      color: var(--text);
-      font-size: 25px;
-      font-weight: 760;
-      letter-spacing: 0;
-    }
-    .use-case-feature p,
-    .use-case-panel p {
+
+    .section-subtitle {
       margin: 0;
-      color: var(--secondary);
-      font-size: 15px;
-      line-height: 1.78;
+      max-width: 680px;
+      color: var(--text-secondary);
+      font-size: 16px;
+      line-height: 1.7;
     }
-    .case-tag {
+
+    /* Use case cards layout */
+    .use-cases-grid {
+      margin-top: 60px;
+      display: grid;
+      gap: 24px;
+    }
+
+    .use-case-featured {
+      grid-column: 1 / -1;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 48px;
+      align-items: center;
+      padding: 48px;
+      background: linear-gradient(135deg, rgba(52, 168, 83, 0.08) 0%, rgba(17, 17, 24, 0.6) 100%);
+      border: 1px solid rgba(52, 168, 83, 0.2);
+      border-radius: 8px;
+      transition: all 0.3s ease;
+    }
+
+    .use-case-featured:hover {
+      transform: translateY(-3px);
+      border-color: rgba(52, 168, 83, 0.35);
+    }
+
+    .use-case-featured h3 {
+      margin: 0 0 16px;
+      color: var(--text-primary);
+      font-size: 28px;
+      font-weight: 800;
+      line-height: 1.2;
+    }
+
+    .use-case-featured p {
+      margin: 0;
+      color: var(--text-secondary);
+      font-size: 16px;
+      line-height: 1.8;
+    }
+
+    .use-case-tag {
       display: inline-block;
-      margin-bottom: 16px;
-      color: var(--green-light);
-      font-family: "JetBrains Mono", monospace;
+      margin-bottom: 12px;
+      color: var(--safe-light);
       font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
     }
+
     .route-score {
       border: 1px solid var(--border);
       border-radius: 8px;
-      background: rgba(8, 8, 15, 0.55);
+      background: rgba(8, 8, 15, 0.7);
       overflow: hidden;
     }
-    .route-score-header {
+
+    .route-header {
       display: flex;
       justify-content: space-between;
-      padding: 13px 15px;
+      padding: 12px 16px;
       border-bottom: 1px solid var(--border);
-      color: var(--muted);
-      font-family: "JetBrains Mono", monospace;
+      color: var(--text-muted);
       font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.05em;
     }
+
     .route-item {
       display: grid;
-      grid-template-columns: 10px minmax(0, 1fr) auto;
+      grid-template-columns: 12px 1fr auto;
       gap: 12px;
       align-items: center;
-      padding: 14px 15px;
-      border-bottom: 1px solid rgba(255, 255, 255, 0.045);
-    }
-    .route-item:last-child { border-bottom: 0; }
-    .route-dot {
-      width: 9px;
-      height: 9px;
-      border-radius: 999px;
-    }
-    .route-label {
-      min-width: 0;
-      color: var(--secondary);
-      font-size: 13px;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-    }
-    .route-value {
-      font-family: "JetBrains Mono", monospace;
-      font-size: 12px;
-    }
-    .use-case-side {
-      display: grid;
-      gap: 22px;
-    }
-    .use-case-panel {
-      min-height: 199px;
-      padding: 32px;
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      background: rgba(255, 255, 255, 0.024);
-      transition: transform 0.18s ease, border-color 0.18s ease;
-    }
-    .use-case-panel:hover {
-      transform: translateY(-2px);
-      border-color: rgba(255, 255, 255, 0.13);
-    }
-    .panel-tag {
-      display: inline-block;
-      margin-bottom: 16px;
-      color: var(--muted);
-      font-family: "JetBrains Mono", monospace;
-      font-size: 11px;
+      padding: 14px 16px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.04);
     }
 
-    .reason-list {
-      margin-top: 54px;
-      border-top: 1px solid var(--border);
+    .route-item:last-child {
+      border-bottom: none;
     }
+
+    .route-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+    }
+
+    .route-label {
+      color: var(--text-secondary);
+      font-size: 14px;
+    }
+
+    .route-score {
+      color: var(--text-primary);
+      font-size: 14px;
+      font-weight: 600;
+    }
+
+    .use-case-small {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 24px;
+    }
+
+    .use-case-card {
+      padding: 36px;
+      background: rgba(17, 17, 24, 0.6);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      transition: all 0.3s ease;
+    }
+
+    .use-case-card:hover {
+      transform: translateY(-3px);
+      border-color: rgba(255, 255, 255, 0.12);
+    }
+
+    .use-case-card h3 {
+      margin: 0 0 12px;
+      color: var(--text-primary);
+      font-size: 20px;
+      font-weight: 800;
+    }
+
+    .use-case-card p {
+      margin: 0;
+      color: var(--text-secondary);
+      font-size: 15px;
+      line-height: 1.7;
+    }
+
+    /* Why section */
+    .reasons-list {
+      margin-top: 60px;
+    }
+
     .reason-row {
       display: grid;
-      grid-template-columns: 118px minmax(0, 0.42fr) minmax(0, 0.58fr);
-      gap: 44px;
+      grid-template-columns: 140px 1fr;
+      gap: 48px;
       align-items: start;
-      padding: 38px 0;
+      padding: 48px 0;
       border-bottom: 1px solid var(--border);
     }
-    .reason-num {
-      color: rgba(255, 255, 255, 0.08);
-      font-size: clamp(2.7rem, 7vw, 5.5rem);
-      font-weight: 800;
-      line-height: 0.88;
-      letter-spacing: 0;
-    }
-    .reason-title {
-      color: var(--text);
-      font-size: 19px;
-      font-weight: 740;
-      line-height: 1.35;
-    }
-    .reason-desc {
-      color: var(--secondary);
-      font-size: 15px;
-      line-height: 1.78;
+
+    .reason-row:last-child {
+      border-bottom: none;
     }
 
-    .pricing-head {
-      display: grid;
-      grid-template-columns: minmax(0, 0.76fr) minmax(280px, 0.44fr);
-      gap: 64px;
-      align-items: end;
-      margin-bottom: 54px;
+    .reason-number {
+      font-size: 80px;
+      font-weight: 900;
+      line-height: 1;
+      color: rgba(255, 255, 255, 0.06);
+      letter-spacing: -2px;
     }
+
+    .reason-content h3 {
+      margin: 0 0 12px;
+      color: var(--text-primary);
+      font-size: 22px;
+      font-weight: 800;
+      line-height: 1.3;
+    }
+
+    .reason-content p {
+      margin: 0;
+      color: var(--text-secondary);
+      font-size: 16px;
+      line-height: 1.8;
+    }
+
+    /* Pricing section */
     .pricing-grid {
       display: grid;
-      grid-template-columns: repeat(3, minmax(0, 1fr));
-      gap: 18px;
-      align-items: stretch;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 24px;
+      margin-top: 60px;
     }
+
     .pricing-card {
       display: flex;
-      min-height: 500px;
       flex-direction: column;
-      padding: 32px;
+      padding: 40px;
+      background: rgba(17, 17, 24, 0.6);
       border: 1px solid var(--border);
       border-radius: 8px;
-      background: rgba(255, 255, 255, 0.026);
-    }
-    .pricing-card.featured {
       position: relative;
-      min-height: 534px;
-      border-color: rgba(52, 168, 83, 0.32);
-      background:
-        radial-gradient(ellipse at 50% 0%, rgba(52, 168, 83, 0.10), transparent 22rem),
-        rgba(255, 255, 255, 0.03);
-      box-shadow: 0 0 70px rgba(52, 168, 83, 0.065), 0 28px 76px rgba(0, 0, 0, 0.28);
-      transform: translateY(-18px);
+      transition: all 0.3s ease;
     }
-    .tier-tag {
-      color: var(--green-light);
-      font-family: "JetBrains Mono", monospace;
+
+    .pricing-card:hover {
+      transform: translateY(-4px);
+    }
+
+    .pricing-card.featured {
+      border-color: rgba(52, 168, 83, 0.3);
+      background: linear-gradient(135deg, rgba(52, 168, 83, 0.1) 0%, rgba(17, 17, 24, 0.7) 100%);
+      transform: translateY(-8px);
+      padding: 48px 40px;
+    }
+
+    .pricing-badge {
+      position: absolute;
+      top: 24px;
+      right: 24px;
+      padding: 6px 14px;
+      background: var(--safe-green);
+      color: #061008;
       font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      border-radius: 4px;
     }
-    .featured .tier-tag { color: var(--text); }
+
+    .pricing-tier {
+      color: var(--safe-light);
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      margin-bottom: 12px;
+    }
+
     .pricing-card h3 {
-      margin: 18px 0 24px;
-      color: var(--text);
-      font-size: 24px;
-      font-weight: 760;
-    }
-    .price {
-      color: var(--text);
-      font-size: clamp(2.5rem, 5vw, 4.1rem);
+      margin: 0 0 24px;
+      color: var(--text-primary);
+      font-size: 22px;
       font-weight: 800;
+    }
+
+    .price-amount {
+      font-size: 48px;
+      font-weight: 900;
+      color: var(--text-primary);
       line-height: 1;
-      letter-spacing: 0;
+      margin-bottom: 8px;
     }
-    .period {
-      margin: 9px 0 28px;
-      color: var(--muted);
-      font-size: 13px;
-    }
-    .features {
-      display: grid;
-      gap: 0;
-      margin: auto 0 0;
-      padding: 22px 0 0;
-      border-top: 1px solid var(--border);
-      list-style: none;
-    }
-    .features li {
-      display: grid;
-      grid-template-columns: 14px minmax(0, 1fr);
-      gap: 10px;
-      padding: 9px 0;
-      border-bottom: 1px solid rgba(255, 255, 255, 0.045);
-      color: var(--secondary);
+
+    .price-period {
+      color: var(--text-muted);
       font-size: 14px;
-      line-height: 1.5;
+      margin-bottom: 32px;
     }
-    .features li:last-child { border-bottom: 0; }
-    .features li::before {
+
+    .features-list {
+      list-style: none;
+      margin: 0;
+      padding: 0;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .features-list li {
+      color: var(--text-secondary);
+      font-size: 15px;
+      line-height: 1.6;
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+    }
+
+    .features-list li::before {
       content: '';
       width: 6px;
       height: 6px;
-      margin-top: 7px;
-      border-radius: 999px;
-      background: var(--green);
-      box-shadow: 0 0 12px rgba(52, 168, 83, 0.45);
-    }
-    .popular-badge {
-      position: absolute;
-      top: 18px;
-      right: 18px;
-      padding: 5px 8px;
-      border: 1px solid rgba(52, 168, 83, 0.22);
-      border-radius: 6px;
-      background: rgba(52, 168, 83, 0.10);
-      color: var(--green-light);
-      font-family: "JetBrains Mono", monospace;
-      font-size: 10px;
+      border-radius: 50%;
+      background: var(--safe-green);
+      margin-top: 6px;
+      flex-shrink: 0;
     }
 
+    /* CTA Section */
     .cta-section {
-      padding: 108px 24px 118px;
-      background:
-        radial-gradient(ellipse at 50% 0%, rgba(52, 168, 83, 0.105), transparent 42rem),
-        var(--bg);
+      position: relative;
+      padding: 120px 24px;
+      background: rgba(17, 17, 24, 0.8);
+      border-top: 1px solid var(--border);
       text-align: center;
     }
+
     .cta-inner {
-      width: min(760px, 100%);
+      max-width: 800px;
       margin: 0 auto;
     }
+
     .cta-inner h2 {
-      margin: 0;
-      color: var(--text);
-      font-size: clamp(2rem, 4.4vw, 4.2rem);
-      font-weight: 800;
-      line-height: 1.04;
-      letter-spacing: 0;
-      text-wrap: balance;
-    }
-    .cta-inner p {
-      margin: 22px auto 34px;
-      max-width: 610px;
-      color: var(--secondary);
-      font-size: 17px;
-      line-height: 1.82;
-    }
-    .button-primary {
-      display: inline-flex;
-      min-height: 48px;
-      align-items: center;
-      justify-content: center;
-      padding: 0 22px;
-      border-radius: 8px;
-      background: var(--green);
-      color: #061008;
-      font-size: 14px;
-      font-weight: 730;
-      text-decoration: none;
-      box-shadow: 0 18px 42px rgba(52, 168, 83, 0.16);
-      transition: background 0.18s ease, transform 0.18s ease;
-    }
-    .button-primary:hover { background: var(--green-light); transform: translateY(-1px); }
-    .email-note {
-      margin-top: 16px;
-      color: var(--muted);
-      font-family: "JetBrains Mono", monospace;
-      font-size: 12px;
+      margin: 0 0 20px;
+      color: var(--text-primary);
+      font-size: clamp(2rem, 5vw, 3.5rem);
+      font-weight: 900;
+      line-height: 1.2;
+      letter-spacing: -0.5px;
     }
 
-    footer {
-      padding: 46px 24px;
-      border-top: 1px solid var(--border);
-      background: rgba(8, 8, 15, 0.86);
+    .cta-inner p {
+      margin: 0 0 32px;
+      color: var(--text-secondary);
+      font-size: 17px;
+      line-height: 1.7;
     }
+
+    .btn-primary {
+      display: inline-block;
+      padding: 14px 32px;
+      background: var(--safe-green);
+      color: #061008;
+      font-size: 15px;
+      font-weight: 700;
+      border-radius: 6px;
+      transition: all 0.2s ease;
+      border: none;
+      cursor: pointer;
+    }
+
+    .btn-primary:hover {
+      background: var(--safe-light);
+      transform: translateY(-2px);
+    }
+
+    .cta-email {
+      display: block;
+      margin-top: 12px;
+      color: var(--text-muted);
+      font-size: 13px;
+      letter-spacing: 0.02em;
+    }
+
+    /* Footer */
+    footer {
+      padding: 48px 24px;
+      border-top: 1px solid var(--border);
+      background: rgba(8, 8, 15, 0.9);
+    }
+
     .footer-inner {
+      max-width: 1344px;
+      margin: 0 auto;
       display: grid;
       grid-template-columns: 1fr auto 1fr;
-      gap: 34px;
+      gap: 48px;
       align-items: center;
-      width: min(1220px, 100%);
-      margin: 0 auto;
     }
-    .footer-logo { margin: 0; color: var(--text); font-size: 15px; font-weight: 760; }
-    .footer-tagline { margin: 6px 0 0; color: var(--muted); font-size: 12px; }
-    .footer-links { display: flex; gap: 26px; justify-content: center; }
-    .footer-links a { color: var(--muted); font-size: 13px; text-decoration: none; transition: color 0.18s ease; }
-    .footer-links a:hover { color: var(--secondary); }
-    .footer-credits { color: var(--muted); font-size: 11px; line-height: 1.7; text-align: right; }
-    .footer-credits p { margin: 0; }
 
-    .anim-fade-up, .anim-stagger > * { opacity: 0; }
-
-    @media (prefers-reduced-motion: reduce) {
-      *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; scroll-behavior: auto !important; }
+    .footer-brand h3 {
+      margin: 0;
+      color: var(--text-primary);
+      font-size: 16px;
+      font-weight: 800;
     }
-    @media (max-width: 1080px) {
-      .hero-inner,
-      .use-case-layout,
-      .use-case-feature,
-      .pricing-head {
+
+    .footer-tagline {
+      margin: 6px 0 0;
+      color: var(--text-muted);
+      font-size: 13px;
+    }
+
+    .footer-nav {
+      display: flex;
+      gap: 32px;
+      justify-content: center;
+    }
+
+    .footer-nav a {
+      color: var(--text-muted);
+      font-size: 14px;
+      transition: color 0.2s ease;
+    }
+
+    .footer-nav a:hover {
+      color: var(--text-secondary);
+    }
+
+    .footer-credits {
+      text-align: right;
+      color: var(--text-muted);
+      font-size: 12px;
+      line-height: 1.7;
+    }
+
+    .footer-credits p {
+      margin: 0;
+    }
+
+    /* Responsive */
+    @media (max-width: 1024px) {
+      .use-case-featured {
+        grid-template-columns: 1fr;
+        gap: 32px;
+      }
+
+      .use-case-small {
         grid-template-columns: 1fr;
       }
-      .pricing-grid { grid-template-columns: 1fr; }
-      .pricing-card,
+
+      .pricing-grid {
+        grid-template-columns: 1fr;
+      }
+
       .pricing-card.featured {
-        min-height: auto;
         transform: none;
       }
-    }
-    @media (max-width: 820px) {
+
       .reason-row {
-        grid-template-columns: 72px minmax(0, 1fr);
-        gap: 24px;
+        grid-template-columns: 1fr;
+        gap: 16px;
       }
-      .reason-desc { grid-column: 2; }
     }
+
     @media (max-width: 768px) {
-      .nav-links { display: none; }
-      .hamburger { display: block; }
-      .mobile-menu { display: block; }
-      .hero { min-height: 74vh; padding-top: 118px; }
-      .hero h1 { font-size: clamp(2.45rem, 13vw, 4.5rem); }
-      .section, .cta-section { padding: 78px 20px; }
+      .nav-links {
+        display: none;
+      }
+
+      #mobile-toggle {
+        display: block;
+      }
+
+      .hero {
+        padding: 96px 24px 48px;
+      }
+
+      .hero h1 {
+        font-size: clamp(1.8rem, 10vw, 2.8rem);
+      }
+
+      .section {
+        padding: 72px 24px;
+      }
+
       .footer-inner {
         grid-template-columns: 1fr;
+        gap: 24px;
         justify-items: center;
         text-align: center;
       }
-      .footer-credits { text-align: center; }
-    }
-    @media (max-width: 520px) {
-      .use-case-feature,
-      .use-case-panel,
-      .pricing-card {
-        padding: 24px;
-      }
-      .route-label { white-space: normal; }
-      .reason-row {
-        grid-template-columns: 1fr;
+
+      .footer-nav {
+        flex-direction: column;
         gap: 12px;
       }
-      .reason-desc { grid-column: auto; }
-      .footer-links { flex-wrap: wrap; row-gap: 12px; }
-      .button-primary { width: 100%; }
+
+      .footer-credits {
+        text-align: center;
+      }
+
+      .use-case-featured {
+        padding: 32px;
+      }
+
+      .use-case-card {
+        padding: 24px;
+      }
+
+      .pricing-card,
+      .pricing-card.featured {
+        padding: 32px;
+      }
+
+      .reason-number {
+        font-size: 48px;
+      }
+
+      .btn-primary {
+        width: 100%;
+      }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      * { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
     }
   </style>
 </head>
-<body data-page="partners">
-  <nav id="nav">
+<body>
+  <nav id="main-nav">
     <div class="nav-inner">
-      <a href="index.html" class="nav-logo">Safe Walk</a>
+      <a href="/website/index.html" class="nav-logo">Safe Walk</a>
       <div class="nav-links">
-        <a href="how-it-works.html" data-nav="how-it-works">How It Works</a>
-        <a href="about.html" data-nav="about">About</a>
-        <a href="partners.html" data-nav="partners">For Partners</a>
+        <a href="/website/how-it-works.html">How It Works</a>
+        <a href="/website/about.html">About</a>
+        <a href="/website/partners.html" class="active">For Partners</a>
         <a href="#" class="nav-demo">Try the Demo</a>
       </div>
-      <button class="hamburger" id="hamburger" type="button" aria-label="Open menu" aria-expanded="false" aria-controls="mobile-menu">
-        <span></span>
-        <span></span>
-        <span></span>
+      <button id="mobile-toggle" aria-label="Toggle menu" type="button">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="width: 20px; height: 20px;">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
+        </svg>
       </button>
     </div>
   </nav>
 
   <div class="mobile-menu" id="mobile-menu">
-    <a href="how-it-works.html" data-nav="how-it-works">How It Works</a>
-    <a href="about.html" data-nav="about">About</a>
-    <a href="partners.html" data-nav="partners">For Partners</a>
-    <a href="#" class="mobile-demo">Try the Demo</a>
+    <a href="/website/how-it-works.html">How It Works</a>
+    <a href="/website/about.html">About</a>
+    <a href="/website/partners.html">For Partners</a>
+    <a href="#" class="nav-demo">Try the Demo</a>
   </div>
 
   <main>
+    <!-- Hero -->
     <section class="hero">
       <div class="hero-inner">
-        <div>
-          <span class="eyebrow anim-fade-up">For partners</span>
-          <h1 class="anim-fade-up">Add safety-aware routing to your platform</h1>
-        </div>
-        <div>
-          <p class="anim-fade-up">Safe Walk's safety graph API gives universities, transit agencies, and navigation platforms a way to offer pedestrian safety scoring without building it themselves.</p>
-          <div class="hero-metrics anim-stagger">
-            <div class="metric-row"><span>integration</span><strong>one route call</strong></div>
-            <div class="metric-row"><span>data layers</span><strong>incidents + lights</strong></div>
-            <div class="metric-row"><span>output</span><strong>fastest + safest</strong></div>
-          </div>
-        </div>
+        <div class="hero-label gs-reveal">FOR PARTNERS</div>
+        <h1 class="gs-reveal">Add safety-aware routing to your platform</h1>
+        <p class="gs-reveal">Safe Walk's safety graph API gives universities, transit agencies, and navigation platforms a way to offer pedestrian safety scoring without building it themselves.</p>
       </div>
     </section>
 
+    <!-- Use Cases -->
     <section class="section">
-      <div class="inner">
-        <span class="section-label anim-fade-up">Use cases</span>
-        <h2 class="section-title anim-fade-up">Who uses Safe Walk</h2>
-        <p class="section-intro anim-fade-up">The API is designed for platforms that already move people through cities and need safety intelligence without rebuilding maps, data pipelines, or scoring infrastructure.</p>
+      <div class="section-inner">
+        <div class="gs-reveal">
+          <div class="section-label">USE CASES</div>
+          <h2 class="section-title">Who uses Safe Walk</h2>
+          <p class="section-subtitle">The API is designed for platforms that already move people through cities and need safety intelligence without rebuilding maps, data pipelines, or scoring infrastructure.</p>
+        </div>
 
-        <div class="use-case-layout anim-stagger">
-          <article class="use-case-feature">
+        <div class="use-cases-grid">
+          <article class="use-case-featured gs-reveal">
             <div>
-              <span class="case-tag">PRIMARY TARGET / UNIVERSITIES</span>
+              <div class="use-case-tag">PRIMARY TARGET / UNIVERSITIES</div>
               <h3>Universities</h3>
               <p>Integrate safety-scored routes into your campus app. Students get personalized safe route recommendations from the library to their dorm, from the lab to the subway. Replace static blue light phone maps with dynamic, data-driven guidance.</p>
             </div>
             <div class="route-score">
-              <div class="route-score-header">
+              <div class="route-header">
                 <span>sample route scores</span>
                 <span>lower is safer</span>
               </div>
               <div class="route-item">
-                <div class="route-dot" style="background: #34A853; box-shadow: 0 0 14px rgba(52,168,83,0.48);"></div>
+                <div class="route-dot" style="background: #34A853;"></div>
                 <span class="route-label">Bloor St via King's College Rd</span>
-                <span class="route-value" style="color: #4ade80;">0.14</span>
+                <span class="route-score" style="color: #4ade80;">0.14</span>
               </div>
               <div class="route-item">
-                <div class="route-dot" style="background: #fb923c; box-shadow: 0 0 14px rgba(251,146,60,0.38);"></div>
+                <div class="route-dot" style="background: #fb923c;"></div>
                 <span class="route-label">Russell St shortcut</span>
-                <span class="route-value" style="color: #fb923c;">0.51</span>
+                <span class="route-score" style="color: #fb923c;">0.51</span>
               </div>
               <div class="route-item">
-                <div class="route-dot" style="background: #ef4444; box-shadow: 0 0 14px rgba(239,68,68,0.38);"></div>
+                <div class="route-dot" style="background: #ef4444;"></div>
                 <span class="route-label">Spadina via Harbord</span>
-                <span class="route-value" style="color: #ef4444;">0.68</span>
+                <span class="route-score" style="color: #ef4444;">0.68</span>
               </div>
             </div>
           </article>
 
-          <div class="use-case-side">
-            <article class="use-case-panel">
-              <span class="panel-tag">TRANSIT AGENCIES</span>
+          <div class="use-case-small">
+            <article class="use-case-card gs-reveal">
+              <div class="use-case-tag">TRANSIT AGENCIES</div>
               <h3>Solve the last-mile safety problem</h3>
               <p>Riders feel safe on the subway but not walking from the station to home. Show them the safest walking route from any stop, and more people take transit instead of driving.</p>
             </article>
-            <article class="use-case-panel">
-              <span class="panel-tag">NAVIGATION PLATFORMS</span>
+            <article class="use-case-card gs-reveal">
+              <div class="use-case-tag">NAVIGATION PLATFORMS</div>
               <h3>A new routing mode, API-first</h3>
               <p>Add "safest route" as a routing option alongside "fastest" and "shortest." License the safety graph via API. Same integration pattern as traffic data or toll avoidance, applied to pedestrian safety.</p>
             </article>
@@ -740,52 +843,66 @@
       </div>
     </section>
 
+    <!-- Why -->
     <section class="section alt">
-      <div class="inner">
-        <span class="section-label anim-fade-up">Why build with Safe Walk</span>
-        <h2 class="section-title anim-fade-up">Why build with Safe Walk instead of building it yourself</h2>
-        <div class="reason-list anim-stagger">
-          <div class="reason-row">
-            <div class="reason-num">01</div>
-            <div class="reason-title">The data integration is already done</div>
-            <div class="reason-desc">We've built the ingestion pipeline for Toronto Police incident data, City of Toronto streetlight data, and community reports. Normalizing municipal open data across different formats, schemas, and update frequencies is unglamorous plumbing work. We've done it so you don't have to.</div>
+      <div class="section-inner">
+        <div class="gs-reveal">
+          <div class="section-label">WHY BUILD WITH SAFE WALK</div>
+          <h2 class="section-title">Why build with Safe Walk instead of building it yourself</h2>
+        </div>
+
+        <div class="reasons-list">
+          <div class="reason-row gs-reveal">
+            <div class="reason-number">01</div>
+            <div class="reason-content">
+              <h3>The data integration is already done</h3>
+              <p>We've built the ingestion pipeline for Toronto Police incident data, City of Toronto streetlight data, and community reports. Normalizing municipal open data across different formats, schemas, and update frequencies is unglamorous plumbing work. We've done it so you don't have to.</p>
+            </div>
           </div>
-          <div class="reason-row">
-            <div class="reason-num">02</div>
-            <div class="reason-title">The scoring engine is calibrated</div>
-            <div class="reason-desc">Our safety scoring weights incident proximity, recency, severity, streetlight density, and time of day. It's been tested against known high-incident areas in Toronto and tuned to produce scores that match real-world risk patterns.</div>
+
+          <div class="reason-row gs-reveal">
+            <div class="reason-number">02</div>
+            <div class="reason-content">
+              <h3>The scoring engine is calibrated</h3>
+              <p>Our safety scoring weights incident proximity, recency, severity, streetlight density, and time of day. It's been tested against known high-incident areas in Toronto and tuned to produce scores that match real-world risk patterns.</p>
+            </div>
           </div>
-          <div class="reason-row">
-            <div class="reason-num">03</div>
-            <div class="reason-title">The community layer creates a moat</div>
-            <div class="reason-desc">Every user who reports an incident makes the safety graph more accurate. More accuracy means more trust, which means more reports. This feedback loop is the competitive advantage: you can't replicate a community data asset from scratch.</div>
+
+          <div class="reason-row gs-reveal">
+            <div class="reason-number">03</div>
+            <div class="reason-content">
+              <h3>The community layer creates a moat</h3>
+              <p>Every user who reports an incident makes the safety graph more accurate. More accuracy means more trust, which means more reports. This feedback loop is the competitive advantage: you can't replicate a community data asset from scratch.</p>
+            </div>
           </div>
-          <div class="reason-row">
-            <div class="reason-num">04</div>
-            <div class="reason-title">One API call, no infrastructure</div>
-            <div class="reason-desc">You don't need to host databases, build scoring engines, or manage data pipelines. Send us an origin and destination. We send back routes ranked by safety. Integrate in an afternoon.</div>
+
+          <div class="reason-row gs-reveal">
+            <div class="reason-number">04</div>
+            <div class="reason-content">
+              <h3>One API call, no infrastructure</h3>
+              <p>You don't need to host databases, build scoring engines, or manage data pipelines. Send us an origin and destination. We send back routes ranked by safety. Integrate in an afternoon.</p>
+            </div>
           </div>
         </div>
       </div>
     </section>
 
+    <!-- Pricing -->
     <section class="section">
-      <div class="inner">
-        <div class="pricing-head">
-          <div>
-            <span class="section-label anim-fade-up">Partnership tiers</span>
-            <h2 class="section-title anim-fade-up">Pricing</h2>
-          </div>
-          <p class="section-intro anim-fade-up">Start with a campus deployment, expand across an institution, or license the safety graph for high-volume navigation products.</p>
+      <div class="section-inner">
+        <div class="gs-reveal">
+          <div class="section-label">PARTNERSHIP TIERS</div>
+          <h2 class="section-title">Pricing</h2>
+          <p class="section-subtitle">Start with a campus deployment, expand across an institution, or license the safety graph for high-volume navigation products.</p>
         </div>
 
-        <div class="pricing-grid anim-stagger">
-          <article class="pricing-card">
-            <span class="tier-tag">CAMPUS</span>
+        <div class="pricing-grid">
+          <article class="pricing-card gs-reveal">
+            <div class="pricing-tier">CAMPUS</div>
             <h3>Single campus pilot</h3>
-            <div class="price">$25K</div>
-            <div class="period">per year</div>
-            <ul class="features">
+            <div class="price-amount">$25K</div>
+            <div class="price-period">per year</div>
+            <ul class="features-list">
               <li>API access for one campus</li>
               <li>Campus-specific safety data</li>
               <li>Integration support</li>
@@ -794,13 +911,13 @@
             </ul>
           </article>
 
-          <article class="pricing-card featured">
-            <span class="popular-badge">MOST POPULAR</span>
-            <span class="tier-tag">INSTITUTION</span>
+          <article class="pricing-card featured gs-reveal">
+            <div class="pricing-badge">MOST POPULAR</div>
+            <div class="pricing-tier">INSTITUTION</div>
             <h3>Multi-campus rollout</h3>
-            <div class="price">$50K</div>
-            <div class="period">per year</div>
-            <ul class="features">
+            <div class="price-amount">$50K</div>
+            <div class="price-period">per year</div>
+            <ul class="features-list">
               <li>API access, multi-campus</li>
               <li>White-label integration</li>
               <li>Priority support</li>
@@ -810,12 +927,12 @@
             </ul>
           </article>
 
-          <article class="pricing-card">
-            <span class="tier-tag">ENTERPRISE</span>
+          <article class="pricing-card gs-reveal">
+            <div class="pricing-tier">ENTERPRISE</div>
             <h3>Platform license</h3>
-            <div class="price">Custom</div>
-            <div class="period">usage-based</div>
-            <ul class="features">
+            <div class="price-amount">Custom</div>
+            <div class="price-period">usage-based</div>
+            <ul class="features-list">
               <li>Unlimited API queries</li>
               <li>Multi-city safety graph</li>
               <li>SLA guarantees</li>
@@ -828,27 +945,28 @@
       </div>
     </section>
 
+    <!-- CTA -->
     <section class="cta-section">
       <div class="cta-inner">
-        <h2 class="anim-fade-up">Ready to make your platform safer?</h2>
-        <p class="anim-fade-up">We're actively looking for early partners — universities, transit agencies, and navigation platforms that want to be first to offer safety-aware pedestrian routing.</p>
-        <a href="mailto:bornaboyafraz@gmail.com" class="button-primary anim-fade-up">Get in Touch</a>
-        <div class="email-note anim-fade-up">bornaboyafraz@gmail.com</div>
+        <h2 class="gs-reveal">Ready to make your platform safer?</h2>
+        <p class="gs-reveal">We're actively looking for early partners — universities, transit agencies, and navigation platforms that want to be first to offer safety-aware pedestrian routing.</p>
+        <a href="mailto:bornaboyafraz@gmail.com" class="btn-primary gs-reveal">Get in Touch</a>
+        <span class="cta-email gs-reveal">bornaboyafraz@gmail.com</span>
       </div>
     </section>
   </main>
 
   <footer>
     <div class="footer-inner">
-      <div>
-        <p class="footer-logo">Safe Walk</p>
+      <div class="footer-brand">
+        <h3>Safe Walk</h3>
         <p class="footer-tagline">The safety layer for urban navigation.</p>
       </div>
-      <div class="footer-links">
-        <a href="how-it-works.html">How It Works</a>
-        <a href="about.html">About</a>
-        <a href="partners.html">For Partners</a>
-      </div>
+      <nav class="footer-nav">
+        <a href="/website/how-it-works.html">How It Works</a>
+        <a href="/website/about.html">About</a>
+        <a href="/website/partners.html">For Partners</a>
+      </nav>
       <div class="footer-credits">
         <p>Data: Toronto Police Open Data, City of Toronto</p>
         <p>Built by Seyedborna Boyafraz</p>
@@ -857,98 +975,69 @@
   </footer>
 
   <script>
-    function revealWithoutAnimation() {
-      document.querySelectorAll('.anim-fade-up, .anim-stagger > *').forEach(element => {
-        element.style.opacity = '1';
-        element.style.transform = 'none';
-      });
-    }
-
-    window.setTimeout(() => {
-      const heroStillHidden = Array.from(document.querySelectorAll('.hero .anim-fade-up'))
-        .some(element => Number(getComputedStyle(element).opacity) < 0.1);
-      if (!window.safeWalkAnimated || heroStillHidden) revealWithoutAnimation();
-    }, 1800);
-
-    window.addEventListener('DOMContentLoaded', () => {
-    const nav = document.getElementById('nav');
-    const hamburger = document.getElementById('hamburger');
+    // Mobile menu
+    const mobileToggle = document.getElementById('mobile-toggle');
     const mobileMenu = document.getElementById('mobile-menu');
-    const currentPage = document.body.dataset.page;
+    const mainNav = document.getElementById('main-nav');
 
-    document.querySelectorAll('[data-nav]').forEach(link => {
-      if (link.dataset.nav === currentPage) {
-        link.classList.add(link.closest('.mobile-menu') ? 'mobile-active' : 'active');
+    mobileToggle.addEventListener('click', () => {
+      mobileMenu.classList.toggle('open');
+    });
+
+    mobileMenu.addEventListener('click', (e) => {
+      if (e.target.tagName === 'A') {
+        mobileMenu.classList.remove('open');
       }
     });
 
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') {
+        mobileMenu.classList.remove('open');
+      }
+    });
+
+    // Scroll nav border
     window.addEventListener('scroll', () => {
-      nav.classList.toggle('scrolled', window.scrollY > 20);
+      mainNav.classList.toggle('scrolled', window.scrollY > 20);
     }, { passive: true });
 
-    hamburger.addEventListener('click', () => {
-      const isOpen = mobileMenu.classList.toggle('open');
-      hamburger.setAttribute('aria-expanded', String(isOpen));
-    });
-    mobileMenu.addEventListener('click', event => {
-      if (event.target.tagName === 'A') {
-        mobileMenu.classList.remove('open');
-        hamburger.setAttribute('aria-expanded', 'false');
-      }
-    });
-    document.addEventListener('keydown', event => {
-      if (event.key === 'Escape' && mobileMenu.classList.contains('open')) {
-        mobileMenu.classList.remove('open');
-        hamburger.setAttribute('aria-expanded', 'false');
-      }
-    });
-
-    if (!window.gsap || !window.ScrollTrigger) {
-      revealWithoutAnimation();
-    } else {
-      window.safeWalkAnimated = true;
+    // GSAP animations
+    if (window.gsap && window.ScrollTrigger) {
       gsap.registerPlugin(ScrollTrigger);
 
-      const fontsReady = document.fonts && document.fonts.ready
-        ? Promise.race([document.fonts.ready, new Promise(resolve => setTimeout(resolve, 500))])
-        : Promise.resolve();
-
-      fontsReady.then(() => {
-        gsap.utils.toArray('.hero .anim-fade-up').forEach((element, index) => {
-          gsap.set(element, { opacity: 0, y: index === 1 ? 30 : 20 });
-        });
-        gsap.to('.hero .anim-fade-up', {
-          opacity: 1,
-          y: 0,
-          duration: 0.85,
-          stagger: 0.12,
-          ease: 'power3.out'
-        });
+      // Hero fade up
+      gsap.utils.toArray('.hero .gs-reveal').forEach((element, index) => {
+        gsap.set(element, { opacity: 0, y: 20 });
       });
 
-      gsap.utils.toArray('.anim-fade-up').forEach(element => {
+      gsap.to('.hero .gs-reveal', {
+        opacity: 1,
+        y: 0,
+        duration: 0.8,
+        stagger: 0.1,
+        ease: 'power3.out'
+      });
+
+      // Scroll reveals
+      gsap.utils.toArray('.gs-reveal').forEach(element => {
         if (element.closest('.hero')) return;
-        gsap.set(element, { opacity: 0, y: 22 });
+        gsap.set(element, { opacity: 0, y: 20 });
         ScrollTrigger.create({
           trigger: element,
           start: 'top 88%',
           once: true,
-          onEnter: () => gsap.to(element, { opacity: 1, y: 0, duration: 0.74, ease: 'power2.out' })
+          onEnter: () => {
+            gsap.to(element, { opacity: 1, y: 0, duration: 0.7, ease: 'power2.out' });
+          }
         });
       });
-
-      gsap.utils.toArray('.anim-stagger').forEach(group => {
-        const children = Array.from(group.children);
-        gsap.set(children, { opacity: 0, y: 24 });
-        ScrollTrigger.create({
-          trigger: group,
-          start: 'top 86%',
-          once: true,
-          onEnter: () => gsap.to(children, { opacity: 1, y: 0, duration: 0.62, stagger: 0.15, ease: 'power2.out' })
-        });
+    } else {
+      // Fallback - show all elements if GSAP not loaded
+      document.querySelectorAll('.gs-reveal').forEach(el => {
+        el.style.opacity = '1';
+        el.style.transform = 'none';
       });
     }
-    });
   </script>
 </body>
 </html>

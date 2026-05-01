@@ -6,692 +6,951 @@
   <title>How It Works — Safe Walk</title>
   <meta name="description" content="How Safe Walk scores walking routes — incident density, streetlight coverage, and time-of-day weighting on top of the Google Routes API.">
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%2308080f'/%3E%3Ccircle cx='9' cy='23' r='3.2' fill='%2334A853'/%3E%3Ccircle cx='23' cy='9' r='3.2' fill='%234ade80'/%3E%3Cpath d='M9 23 C9 13 23 19 23 9' stroke='%2334A853' stroke-width='2' stroke-linecap='round' fill='none'/%3E%3C/svg%3E">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
   <script defer src="https://cdn.tailwindcss.com"></script>
   <script>
     tailwind.config = {
       theme: {
         extend: {
           colors: {
-            bg: '#08080f',
-            s1: '#111118',
-            s2: '#1a1a25',
-            green: { DEFAULT: '#34A853', light: '#4ade80' },
+            bg: { DEFAULT: '#08080f', card: '#111118', elevated: '#1a1a25' },
+            brd: { DEFAULT: 'rgba(255,255,255,0.06)' },
+            txt: { primary: '#e8e8ed', secondary: '#8888a0', muted: '#555568' },
+            safe: { green: '#34A853', light: '#4ade80' },
             accent: '#6366f1',
             danger: '#ef4444',
-            tp: '#e8e8ed',
-            ts: '#8888a0',
-            tm: '#555568'
+            code: '#0c0c14',
           },
           fontFamily: {
-            sans: ['Inter', 'system-ui', 'sans-serif'],
-            mono: ['"JetBrains Mono"', 'monospace']
+            sans: ['Inter', 'system-ui', '-apple-system', 'sans-serif'],
+            mono: ['JetBrains Mono', 'monospace'],
           }
         }
       }
     };
   </script>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
   <script defer src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
   <script defer src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
   <style>
     *, *::before, *::after { box-sizing: border-box; }
-    :root {
-      --bg: #08080f;
-      --surface: #111118;
-      --surface-2: #1a1a25;
-      --border: rgba(255, 255, 255, 0.06);
-      --text: #e8e8ed;
-      --secondary: #8888a0;
-      --muted: #555568;
-      --green: #34A853;
-      --green-light: #4ade80;
-      --accent: #6366f1;
-      --danger: #ef4444;
-      --code: #0c0c14;
-    }
+
     html { scroll-behavior: smooth; }
+
     body {
       margin: 0;
       overflow-x: hidden;
-      background: var(--bg);
-      color: var(--text);
-      font-family: Inter, system-ui, sans-serif;
+      background: #08080f;
+      color: #e8e8ed;
+      font-family: Inter, system-ui, -apple-system, sans-serif;
       letter-spacing: 0;
       -webkit-font-smoothing: antialiased;
       -moz-osx-font-smoothing: grayscale;
     }
+
     body::before {
       content: '';
       position: fixed;
       inset: 0;
       z-index: 9999;
       pointer-events: none;
-      opacity: 0.028;
-      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
-      mix-blend-mode: screen;
+      opacity: 0.025;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+      background-size: 256px 256px;
     }
-    a { color: inherit; }
 
-    #nav {
+    a { color: inherit; text-decoration: none; }
+
+    /* Navigation */
+    nav {
       position: fixed;
-      inset: 0 0 auto;
-      z-index: 100;
+      top: 0;
+      w-full: 100%;
+      z-index: 50;
+      background: rgba(8, 8, 15, 0.6);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      transition: all 0.3s duration-300;
       border-bottom: 1px solid transparent;
-      background: rgba(17, 17, 24, 0.58);
-      backdrop-filter: blur(22px);
-      -webkit-backdrop-filter: blur(22px);
-      transition: border-color 0.25s ease, background 0.25s ease;
     }
-    #nav.scrolled { border-bottom-color: var(--border); background: rgba(17, 17, 24, 0.78); }
+
+    nav.nav-scrolled {
+      border-bottom-color: rgba(255, 255, 255, 0.06);
+      background: rgba(8, 8, 15, 0.85);
+    }
+
     .nav-inner {
+      max-width: 1280px;
+      margin: 0 auto;
+      padding: 0 24px;
+      height: 64px;
       display: flex;
       align-items: center;
       justify-content: space-between;
-      max-width: 1220px;
-      height: 66px;
+    }
+
+    .nav-logo {
+      font-size: 18px;
+      font-weight: 700;
+      color: white;
+      tracking-tight: true;
+    }
+
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: 32px;
+      font-size: 14px;
+    }
+
+    .nav-links a {
+      color: #8888a0;
+      transition: color 0.2s;
+      font-weight: 500;
+    }
+
+    .nav-links a:hover {
+      color: white;
+    }
+
+    .nav-links a.active {
+      color: white;
+    }
+
+    .nav-demo {
+      padding: 8px 16px !important;
+      border: 1px solid rgba(52, 168, 83, 0.25) !important;
+      border-radius: 6px;
+      color: #4ade80 !important;
+      font-weight: 500;
+      transition: all 0.2s;
+    }
+
+    .nav-demo:hover {
+      background: rgba(52, 168, 83, 0.05);
+      border-color: rgba(52, 168, 83, 0.5) !important;
+    }
+
+    .hamburger {
+      display: none;
+      background: none;
+      border: none;
+      color: #e8e8ed;
+      cursor: pointer;
+      padding: 8px;
+    }
+
+    .hamburger span {
+      display: block;
+      width: 20px;
+      height: 1.5px;
+      background: currentColor;
+      margin: 5px 0;
+      transition: all 0.3s;
+    }
+
+    .hamburger[aria-expanded="true"] span:nth-child(1) {
+      transform: translateY(6px) rotate(45deg);
+    }
+
+    .hamburger[aria-expanded="true"] span:nth-child(2) {
+      opacity: 0;
+    }
+
+    .hamburger[aria-expanded="true"] span:nth-child(3) {
+      transform: translateY(-6px) rotate(-45deg);
+    }
+
+    .mobile-menu {
+      position: fixed;
+      right: 0;
+      top: 0;
+      z-index: 40;
+      display: none;
+      width: min(360px, 100vw);
+      height: 100vh;
+      padding-top: 80px;
+      padding: 80px 24px 24px;
+      background: rgba(17, 17, 24, 0.95);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border-left: 1px solid rgba(255, 255, 255, 0.06);
+      transform: translateX(100%);
+      transition: transform 0.3s;
+    }
+
+    .mobile-menu.open {
+      transform: translateX(0);
+    }
+
+    .mobile-menu a {
+      display: block;
+      padding: 16px 0;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+      color: #8888a0;
+      font-size: 16px;
+      font-weight: 600;
+    }
+
+    .mobile-menu a.mobile-active {
+      color: white;
+    }
+
+    .mobile-menu a.mobile-demo {
+      color: #4ade80;
+    }
+
+    /* Hero */
+    .hero {
+      padding-top: 128px;
+      padding-bottom: 64px;
+      position: relative;
+      overflow: hidden;
+      background:
+        linear-gradient(135deg, rgba(52, 168, 83, 0.05) 0%, transparent 35%),
+        linear-gradient(-45deg, rgba(99, 102, 241, 0.04) 0%, transparent 40%),
+        #08080f;
+      background-size: 400% 400%;
+      animation: gradientBg 15s ease infinite;
+    }
+
+    @keyframes gradientBg {
+      0%, 100% { background-position: 0% 50%; }
+      50% { background-position: 100% 50%; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .hero { animation: none; }
+    }
+
+    .hero-inner {
+      max-width: 1024px;
       margin: 0 auto;
       padding: 0 24px;
     }
-    .nav-logo {
-      color: var(--text);
-      font-size: 17px;
-      font-weight: 750;
-      text-decoration: none;
-      letter-spacing: 0;
-    }
-    .nav-links { display: flex; align-items: center; gap: 34px; }
-    .nav-links a {
-      color: var(--secondary);
-      font-size: 13px;
-      font-weight: 500;
-      text-decoration: none;
-      transition: color 0.18s ease;
-    }
-    .nav-links a:hover, .nav-links a.active { color: var(--text); }
-    .nav-links .nav-demo {
-      color: var(--green-light);
-      padding: 8px 14px;
-      border: 1px solid rgba(52, 168, 83, 0.32);
-      border-radius: 8px;
-      box-shadow: inset 0 0 18px rgba(52, 168, 83, 0.03);
-    }
-    .nav-links .nav-demo:hover { border-color: rgba(74, 222, 128, 0.56); background: rgba(52, 168, 83, 0.07); }
-    .hamburger {
-      display: none;
-      width: 38px;
-      height: 38px;
-      padding: 0;
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      background: rgba(255, 255, 255, 0.03);
-      color: var(--text);
-      cursor: pointer;
-    }
-    .hamburger span {
-      display: block;
-      width: 16px;
-      height: 1px;
-      margin: 5px auto;
-      background: currentColor;
-      transition: transform 0.2s ease, opacity 0.2s ease;
-    }
-    .hamburger[aria-expanded="true"] span:nth-child(1) { transform: translateY(6px) rotate(45deg); }
-    .hamburger[aria-expanded="true"] span:nth-child(2) { opacity: 0; }
-    .hamburger[aria-expanded="true"] span:nth-child(3) { transform: translateY(-6px) rotate(-45deg); }
-    .mobile-menu {
-      position: fixed;
-      inset: 0 0 0 auto;
-      z-index: 90;
-      display: none;
-      width: min(360px, 100%);
-      padding: 88px 24px 28px;
-      border-left: 1px solid var(--border);
-      background: rgba(17, 17, 24, 0.96);
-      backdrop-filter: blur(20px);
-      -webkit-backdrop-filter: blur(20px);
-      transform: translateX(100%);
-      transition: transform 0.32s cubic-bezier(0.16, 1, 0.3, 1);
-    }
-    .mobile-menu.open { transform: translateX(0); }
-    .mobile-menu a {
-      display: block;
-      padding: 18px 0;
-      border-bottom: 1px solid var(--border);
-      color: var(--secondary);
-      font-size: 22px;
-      font-weight: 650;
-      text-decoration: none;
-    }
-    .mobile-menu a.mobile-active { color: var(--text); }
-    .mobile-menu a.mobile-demo { color: var(--green-light); }
 
-    .hero {
-      position: relative;
-      min-height: 82vh;
-      display: flex;
-      align-items: center;
-      overflow: hidden;
-      padding: 136px 24px 88px;
-      background:
-        radial-gradient(ellipse at 16% 18%, rgba(52, 168, 83, 0.13), transparent 34rem),
-        radial-gradient(ellipse at 78% 72%, rgba(99, 102, 241, 0.11), transparent 38rem),
-        var(--bg);
-    }
-    .hero::before {
-      content: '';
-      position: absolute;
-      inset: -35%;
-      background:
-        linear-gradient(120deg, transparent 0%, rgba(52, 168, 83, 0.07) 28%, transparent 48%),
-        linear-gradient(45deg, transparent 0%, rgba(99, 102, 241, 0.06) 40%, transparent 62%);
-      animation: gradientShift 14s ease-in-out infinite alternate;
-      transform: translate3d(0, 0, 0);
-    }
-    @keyframes gradientShift {
-      from { transform: translate(-3%, -2%) rotate(0deg); opacity: 0.65; }
-      to { transform: translate(4%, 3%) rotate(7deg); opacity: 1; }
-    }
-    .hero-inner {
-      position: relative;
-      z-index: 1;
-      width: min(1040px, 100%);
-      margin: 0 auto;
-    }
     .eyebrow {
       display: inline-flex;
       align-items: center;
-      gap: 10px;
+      gap: 8px;
       margin-bottom: 24px;
-      color: var(--green-light);
-      font-size: 11px;
+      color: #4ade80;
+      font-size: 12px;
       font-weight: 700;
-      letter-spacing: 0.16em;
+      letter-spacing: 0.1em;
       text-transform: uppercase;
     }
+
     .eyebrow::before {
       content: '';
       width: 6px;
       height: 6px;
-      border-radius: 999px;
-      background: var(--green);
-      box-shadow: 0 0 18px rgba(52, 168, 83, 0.8);
+      border-radius: 50%;
+      background: #34A853;
+      box-shadow: 0 0 16px rgba(52, 168, 83, 0.6);
     }
+
     .hero h1 {
       max-width: 780px;
-      margin: 0 0 24px;
-      color: var(--text);
-      font-size: clamp(2.8rem, 7vw, 6rem);
+      margin: 0 0 20px;
+      font-size: clamp(2.2rem, 6vw, 4.5rem);
       font-weight: 800;
-      line-height: 0.99;
-      letter-spacing: 0;
+      line-height: 1.1;
+      color: white;
       text-wrap: balance;
     }
+
     .hero p {
-      max-width: 660px;
+      max-width: 640px;
       margin: 0;
-      color: var(--secondary);
-      font-size: 18px;
-      line-height: 1.78;
+      font-size: 16px;
+      line-height: 1.7;
+      color: #8888a0;
     }
 
+    /* Sections */
     .section {
+      padding: 96px 24px;
       position: relative;
-      padding: 104px 24px;
     }
+
     .section.alt {
-      border-block: 1px solid var(--border);
-      background: linear-gradient(180deg, rgba(17, 17, 24, 0.92), rgba(12, 12, 20, 0.95));
+      background: linear-gradient(180deg, rgba(17, 17, 24, 0.5), rgba(12, 12, 20, 0.5));
+      border-top: 1px solid rgba(255, 255, 255, 0.06);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.06);
     }
-    .inner { width: min(1120px, 100%); margin: 0 auto; }
-    .narrow { width: min(880px, 100%); margin: 0 auto; }
+
+    .inner {
+      max-width: 1120px;
+      margin: 0 auto;
+    }
+
+    .narrow {
+      max-width: 880px;
+      margin: 0 auto;
+    }
+
     .section-label {
       display: block;
-      margin-bottom: 18px;
-      color: var(--green-light);
+      margin-bottom: 16px;
+      color: #4ade80;
       font-size: 11px;
       font-weight: 700;
-      letter-spacing: 0.14em;
+      letter-spacing: 0.12em;
       text-transform: uppercase;
     }
+
     .section-title {
-      margin: 0;
-      color: var(--text);
-      font-size: clamp(2rem, 4.2vw, 3.8rem);
-      font-weight: 790;
-      line-height: 1.06;
-      letter-spacing: 0;
+      margin: 0 0 16px;
+      font-size: clamp(1.8rem, 4vw, 3.5rem);
+      font-weight: 800;
+      line-height: 1.1;
+      color: white;
       text-wrap: balance;
     }
-    .body-text {
-      color: var(--secondary);
-      font-size: 16px;
-      line-height: 1.82;
-    }
-    .body-text p { margin: 0 0 20px; }
-    code, pre { font-family: "JetBrains Mono", monospace; }
-    .inline-code {
-      padding: 2px 6px;
-      border: 1px solid rgba(34, 211, 238, 0.12);
-      border-radius: 6px;
-      background: rgba(34, 211, 238, 0.07);
-      color: #22d3ee;
-      font-size: 12px;
-    }
 
-    .architecture-layout {
-      display: grid;
-      grid-template-columns: minmax(0, 0.72fr) minmax(440px, 1fr);
-      gap: 74px;
-      align-items: center;
-    }
-    .flow-panel {
-      overflow: hidden;
-      border: 1px solid rgba(255, 255, 255, 0.08);
-      border-radius: 8px;
-      background: linear-gradient(145deg, rgba(26, 26, 37, 0.92), rgba(12, 12, 20, 0.92));
-      box-shadow: 0 32px 86px rgba(0, 0, 0, 0.34);
-    }
-    .flow-topbar {
-      display: flex;
-      justify-content: space-between;
-      padding: 15px 17px;
-      border-bottom: 1px solid var(--border);
-      color: var(--muted);
-      font-family: "JetBrains Mono", monospace;
-      font-size: 11px;
-    }
-    .flow-wrap { min-width: 620px; padding: 34px 26px 24px; }
-    .flow-svg { width: 100%; min-height: 214px; }
-    .flow-box { fill: rgba(255, 255, 255, 0.035); stroke: rgba(255, 255, 255, 0.08); stroke-width: 1; }
-    .flow-box-hot { fill: rgba(52, 168, 83, 0.10); stroke: rgba(52, 168, 83, 0.32); stroke-width: 1; }
-    .flow-title { fill: var(--text); font-family: Inter, sans-serif; font-size: 13px; font-weight: 700; text-anchor: middle; }
-    .flow-small { fill: var(--secondary); font-family: "JetBrains Mono", monospace; font-size: 10px; text-anchor: middle; }
-    .flow-line { fill: none; stroke: rgba(74, 222, 128, 0.58); stroke-width: 1.5; stroke-dasharray: 7 5; }
-    .flow-arrow { fill: rgba(74, 222, 128, 0.72); }
-    .flow-caption {
-      padding: 0 26px 24px;
-      color: var(--muted);
-      font-family: "JetBrains Mono", monospace;
-      font-size: 11px;
+    .body-text {
+      color: #8888a0;
+      font-size: 15px;
       line-height: 1.7;
     }
 
-    .scoring-head {
-      display: grid;
-      grid-template-columns: minmax(0, 0.78fr) minmax(280px, 0.46fr);
-      gap: 70px;
-      align-items: end;
-      margin-bottom: 62px;
+    .body-text p {
+      margin: 0 0 16px;
     }
-    .signal-stack { display: grid; gap: 26px; }
-    .signal-card {
+
+    /* Architecture section */
+    .arch-grid {
       display: grid;
-      grid-template-columns: minmax(0, 0.82fr) minmax(300px, 0.58fr);
-      gap: 34px;
-      padding: 34px;
-      border: 1px solid var(--border);
+      grid-template-columns: 1fr 1fr;
+      gap: 64px;
+      align-items: center;
+      margin-top: 48px;
+    }
+
+    .flow-diagram {
+      background: #111118;
+      border: 1px solid rgba(255, 255, 255, 0.06);
       border-radius: 8px;
-      background: rgba(255, 255, 255, 0.025);
+      padding: 32px 24px;
+      overflow-x: auto;
     }
-    .signal-card h3 {
+
+    .flow-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 24px;
+      padding-bottom: 16px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+      font-size: 12px;
+      color: #555568;
+      font-family: JetBrains Mono, monospace;
+    }
+
+    .flow-boxes {
+      display: flex;
+      gap: 16px;
+      align-items: center;
+      justify-content: space-between;
+      position: relative;
+    }
+
+    .flow-box {
+      flex-shrink: 0;
+      width: 140px;
+      padding: 16px;
+      background: #0c0c14;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 6px;
+      text-align: center;
+      font-size: 13px;
+      font-weight: 600;
+      color: #e8e8ed;
+    }
+
+    .flow-box.highlight {
+      border-color: rgba(52, 168, 83, 0.3);
+      background: rgba(52, 168, 83, 0.08);
+    }
+
+    .flow-box-label {
+      display: block;
+      font-size: 11px;
+      color: #8888a0;
+      margin-top: 4px;
+      font-weight: 400;
+    }
+
+    .flow-arrow {
+      position: relative;
+      flex-shrink: 0;
+      width: 24px;
+      height: 2px;
+      background: linear-gradient(90deg, rgba(52, 168, 83, 0.4) 0%, rgba(52, 168, 83, 0.1) 100%);
+      border-top: 1px dashed rgba(52, 168, 83, 0.3);
+    }
+
+    .flow-arrow::after {
+      content: '';
+      position: absolute;
+      right: -8px;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 0;
+      height: 0;
+      border-left: 8px solid rgba(52, 168, 83, 0.4);
+      border-top: 4px solid transparent;
+      border-bottom: 4px solid transparent;
+    }
+
+    .flow-dot {
+      position: absolute;
+      width: 6px;
+      height: 6px;
+      background: #34A853;
+      border-radius: 50%;
+      top: -2px;
+      left: 0;
+      animation: flowDot 3s ease-in-out infinite;
+    }
+
+    @keyframes flowDot {
+      0% { left: 0; opacity: 1; }
+      50% { opacity: 0.6; }
+      100% { left: calc(100% - 6px); opacity: 0.1; }
+    }
+
+    .flow-caption {
+      margin-top: 16px;
+      font-size: 11px;
+      color: #555568;
+      font-family: JetBrains Mono, monospace;
+    }
+
+    @media (max-width: 1024px) {
+      .arch-grid {
+        grid-template-columns: 1fr;
+        gap: 48px;
+      }
+    }
+
+    @media (max-width: 640px) {
+      .flow-boxes {
+        flex-direction: column;
+        gap: 12px;
+      }
+
+      .flow-arrow {
+        width: 2px;
+        height: 24px;
+        margin: 4px 0;
+      }
+
+      .flow-arrow::after {
+        display: none;
+      }
+
+      .flow-arrow::before {
+        content: '';
+        position: absolute;
+        bottom: -8px;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 0;
+        height: 0;
+        border-left: 4px solid transparent;
+        border-right: 4px solid transparent;
+        border-top: 8px solid rgba(52, 168, 83, 0.4);
+      }
+    }
+
+    /* Safety Scoring Section */
+    .scoring-intro {
+      display: grid;
+      grid-template-columns: 2fr 1fr;
+      gap: 64px;
+      align-items: end;
+      margin-bottom: 56px;
+    }
+
+    .signal-group {
+      display: grid;
+      gap: 32px;
+      margin-top: 48px;
+    }
+
+    .signal-card {
+      background: #111118;
+      border: 1px solid rgba(255, 255, 255, 0.06);
+      border-radius: 8px;
+      padding: 32px;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 40px;
+      align-items: start;
+    }
+
+    .signal-content h3 {
       margin: 0 0 12px;
-      color: var(--text);
-      font-size: 22px;
-      font-weight: 740;
-      letter-spacing: 0;
+      font-size: 20px;
+      font-weight: 700;
+      color: white;
+      line-height: 1.3;
     }
-    .signal-card p {
-      margin: 0 0 20px;
-      color: var(--secondary);
-      font-size: 15px;
-      line-height: 1.78;
-    }
+
     .signal-tag {
       display: inline-block;
-      margin-bottom: 16px;
-      color: var(--muted);
-      font-family: "JetBrains Mono", monospace;
-      font-size: 11px;
+      font-size: 10px;
+      font-weight: 700;
+      color: #555568;
+      margin-bottom: 12px;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      font-family: JetBrains Mono, monospace;
     }
-    .formula-grid { display: grid; gap: 12px; }
+
+    .signal-text {
+      color: #8888a0;
+      font-size: 14px;
+      line-height: 1.7;
+      margin: 12px 0 20px;
+    }
+
+    .formula-group {
+      display: grid;
+      gap: 12px;
+    }
+
     .formula-block {
-      padding: 16px 18px;
-      border: 1px solid rgba(255, 255, 255, 0.07);
-      border-radius: 8px;
-      background: var(--code);
-      font-family: "JetBrains Mono", monospace;
-      font-size: 12px;
-      line-height: 1.72;
+      background: #0c0c14;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 6px;
+      padding: 14px 16px;
+      font-family: JetBrains Mono, monospace;
+      font-size: 11px;
+      line-height: 1.6;
+      color: #e8e8ed;
     }
+
+    .f-var { color: #22d3ee; }
+    .f-op { color: rgba(255, 255, 255, 0.6); }
+    .f-val { color: #4ade80; }
+    .f-muted { color: #555568; }
+
     .formula-block small {
       display: block;
       margin-top: 6px;
-      color: var(--muted);
-      font-family: Inter, system-ui, sans-serif;
-      font-size: 11px;
-      line-height: 1.55;
-    }
-    .f-var { color: #22d3ee; }
-    .f-label { color: var(--green); }
-    .f-op { color: rgba(255, 255, 255, 0.68); }
-    .f-val { color: var(--green-light); }
-    .f-muted { color: var(--muted); }
-    .mini-visual {
-      position: relative;
-      min-height: 232px;
-      overflow: hidden;
-      border: 1px solid rgba(255, 255, 255, 0.07);
-      border-radius: 8px;
-      background:
-        linear-gradient(rgba(255, 255, 255, 0.024) 1px, transparent 1px),
-        linear-gradient(90deg, rgba(255, 255, 255, 0.024) 1px, transparent 1px),
-        rgba(8, 8, 15, 0.52);
-      background-size: 28px 28px;
-    }
-    .curve-svg, .clock-svg { position: absolute; inset: 22px; width: calc(100% - 44px); height: calc(100% - 44px); }
-    .time-bar { width: 100%; padding: 16px 22px; }
-    .time-bar-track {
-      height: 22px;
-      border-radius: 6px;
-      background: linear-gradient(90deg,
-        rgba(99, 102, 241, 0.42) 0%,
-        rgba(99, 102, 241, 0.42) 20.8%,
-        rgba(52, 168, 83, 0.36) 29.2%,
-        rgba(52, 168, 83, 0.36) 79.2%,
-        rgba(99, 102, 241, 0.42) 87.5%,
-        rgba(99, 102, 241, 0.42) 100%
-      );
-      border: 1px solid rgba(255, 255, 255, 0.06);
-      margin-bottom: 10px;
-    }
-    .time-bar-labels {
-      display: flex;
-      justify-content: space-between;
+      color: #555568;
+      font-family: Inter, sans-serif;
       font-size: 10px;
-      letter-spacing: 0.04em;
-      color: var(--muted);
-      font-family: "JetBrains Mono", monospace;
-    }
-    .light-dots {
-      position: absolute;
-      inset: 24px;
-      display: grid;
-      grid-template-columns: repeat(5, 1fr);
-      gap: 16px;
-      align-items: center;
-    }
-    .light-dots span {
-      display: block;
-      width: 10px;
-      height: 10px;
-      border-radius: 999px;
-      background: #22d3ee;
-      box-shadow: 0 0 20px rgba(34, 211, 238, 0.38);
-    }
-    .light-dots span:nth-child(3n) { opacity: 0.28; }
-    .light-dots span:nth-child(4n) { opacity: 0.54; }
-    .visual-label {
-      position: absolute;
-      left: 18px;
-      bottom: 16px;
-      color: var(--muted);
-      font-family: "JetBrains Mono", monospace;
-      font-size: 10px;
+      line-height: 1.4;
     }
 
-    .master-panel {
-      padding: clamp(30px, 5vw, 54px);
-      border: 1px solid rgba(52, 168, 83, 0.18);
-      border-radius: 8px;
-      background:
-        radial-gradient(ellipse at 18% 10%, rgba(52, 168, 83, 0.09), transparent 28rem),
-        linear-gradient(145deg, rgba(26, 26, 37, 0.88), rgba(12, 12, 20, 0.96));
-      box-shadow: 0 34px 90px rgba(0, 0, 0, 0.38);
-    }
-    .master-formula {
-      margin: 34px 0 30px;
-      padding: 28px;
+    .signal-visual {
+      background: #0c0c14;
       border: 1px solid rgba(255, 255, 255, 0.08);
-      border-radius: 8px;
-      background: rgba(12, 12, 20, 0.76);
-      color: var(--text);
-      font-family: "JetBrains Mono", monospace;
-      font-size: clamp(14px, 2.1vw, 19px);
-      line-height: 1.9;
+      border-radius: 6px;
+      padding: 24px;
+      min-height: 200px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      font-size: 11px;
+      color: #555568;
+      font-family: JetBrains Mono, monospace;
     }
-    .weights-grid {
+
+    .signal-dot {
+      position: absolute;
+      top: 16px;
+      left: 16px;
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+    }
+
+    .signal-dot.danger { background: #ef4444; box-shadow: 0 0 12px rgba(239, 68, 68, 0.4); }
+    .signal-dot.cyan { background: #22d3ee; box-shadow: 0 0 12px rgba(34, 211, 238, 0.4); }
+    .signal-dot.orange { background: #f59e0b; box-shadow: 0 0 12px rgba(245, 158, 11, 0.4); }
+
+    .curve {
+      width: 100%;
+      height: 100%;
+    }
+
+    .light-dots {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 12px;
+      width: 100%;
+    }
+
+    .light-dot {
+      width: 10px;
+      height: 10px;
+      background: #22d3ee;
+      border-radius: 50%;
+      box-shadow: 0 0 16px rgba(34, 211, 238, 0.4);
+    }
+
+    .light-dot:nth-child(3n) { opacity: 0.3; }
+    .light-dot:nth-child(4n) { opacity: 0.6; }
+
+    .time-bar {
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .time-track {
+      height: 20px;
+      border-radius: 4px;
+      background: linear-gradient(90deg,
+        rgba(99, 102, 241, 0.35) 0%,
+        rgba(99, 102, 241, 0.35) 20%,
+        rgba(52, 168, 83, 0.35) 20%,
+        rgba(52, 168, 83, 0.35) 80%,
+        rgba(99, 102, 241, 0.35) 80%,
+        rgba(99, 102, 241, 0.35) 100%
+      );
+      border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+
+    .time-labels {
+      display: flex;
+      justify-content: space-between;
+      font-size: 9px;
+      color: #555568;
+      font-family: JetBrains Mono, monospace;
+    }
+
+    @media (max-width: 1024px) {
+      .scoring-intro { grid-template-columns: 1fr; }
+      .signal-card { grid-template-columns: 1fr; }
+    }
+
+    /* Master Formula Section */
+    .master-section {
+      background: linear-gradient(135deg, rgba(52, 168, 83, 0.06) 0%, rgba(99, 102, 241, 0.04) 100%);
+      border: 1px solid rgba(52, 168, 83, 0.15);
+      border-radius: 8px;
+      padding: 40px;
+      margin-top: 48px;
+    }
+
+    .master-formula {
+      background: #0c0c14;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 6px;
+      padding: 24px;
+      margin: 28px 0;
+      font-family: JetBrains Mono, monospace;
+      font-size: 16px;
+      line-height: 1.8;
+      color: #e8e8ed;
+      overflow-x: auto;
+    }
+
+    .weights-cards {
       display: grid;
       grid-template-columns: 1fr 1fr;
-      gap: 16px;
+      gap: 20px;
+      margin-top: 24px;
     }
+
     .weight-card {
-      padding: 22px;
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      background: rgba(255, 255, 255, 0.03);
+      background: rgba(255, 255, 255, 0.02);
+      border: 1px solid rgba(255, 255, 255, 0.06);
+      border-radius: 6px;
+      padding: 20px;
     }
+
     .weight-card h3 {
       margin: 0 0 16px;
-      color: var(--text);
-      font-size: 14px;
+      font-size: 12px;
       font-weight: 700;
+      color: white;
       text-transform: uppercase;
       letter-spacing: 0.08em;
     }
+
     .weight-row {
       display: flex;
       justify-content: space-between;
-      gap: 16px;
       padding: 8px 0;
-      border-top: 1px solid rgba(255, 255, 255, 0.05);
-      color: var(--secondary);
-      font-family: "JetBrains Mono", monospace;
+      border-top: 1px solid rgba(255, 255, 255, 0.04);
       font-size: 12px;
+      font-family: JetBrains Mono, monospace;
+      color: #8888a0;
     }
-    .weight-row strong { color: #22d3ee; font-weight: 500; }
 
+    .weight-row strong {
+      color: #22d3ee;
+      font-weight: 500;
+    }
+
+    @media (max-width: 640px) {
+      .weights-cards { grid-template-columns: 1fr; }
+    }
+
+    /* Data Sources */
     .source-grid {
       display: grid;
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-      gap: 18px;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 20px;
       margin-top: 48px;
     }
+
     .source-card {
-      min-height: 220px;
-      padding: 28px;
-      border: 1px solid var(--border);
+      background: #111118;
+      border: 1px solid rgba(255, 255, 255, 0.06);
       border-radius: 8px;
-      background: rgba(255, 255, 255, 0.025);
-    }
-    .source-mark {
-      width: 36px;
-      height: 3px;
-      margin-bottom: 24px;
-      border-radius: 99px;
-    }
-    .source-card h3 {
-      margin: 0 0 12px;
-      color: var(--text);
-      font-size: 18px;
-      font-weight: 730;
-    }
-    .source-card p {
-      margin: 0;
-      color: var(--secondary);
-      font-size: 15px;
-      line-height: 1.76;
+      padding: 28px;
     }
 
+    .source-mark {
+      width: 4px;
+      height: 32px;
+      margin-bottom: 16px;
+      border-radius: 2px;
+    }
+
+    .source-card h3 {
+      margin: 0 0 12px;
+      font-size: 16px;
+      font-weight: 700;
+      color: white;
+    }
+
+    .source-card p {
+      margin: 0;
+      font-size: 14px;
+      line-height: 1.6;
+      color: #8888a0;
+    }
+
+    @media (max-width: 640px) {
+      .source-grid { grid-template-columns: 1fr; }
+    }
+
+    /* API Reference */
     .docs-layout {
       display: grid;
-      grid-template-columns: minmax(0, 0.54fr) minmax(460px, 1fr);
-      gap: 58px;
+      grid-template-columns: 1fr 1fr;
+      gap: 56px;
       align-items: start;
+      margin-top: 48px;
     }
-    .endpoint-stack { display: grid; gap: 22px; }
+
+    .endpoints {
+      display: grid;
+      gap: 20px;
+    }
+
     .endpoint {
-      overflow: hidden;
-      border: 1px solid rgba(255, 255, 255, 0.08);
+      background: #111118;
+      border: 1px solid rgba(255, 255, 255, 0.06);
       border-radius: 8px;
-      background: rgba(17, 17, 24, 0.74);
+      overflow: hidden;
     }
+
     .endpoint-header {
       display: flex;
       align-items: center;
       gap: 12px;
       padding: 14px 16px;
-      border-bottom: 1px solid var(--border);
-      background: rgba(255, 255, 255, 0.02);
+      background: #1a1a25;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.06);
     }
+
     .method {
-      padding: 4px 8px;
-      border-radius: 5px;
-      background: rgba(52, 168, 83, 0.13);
-      color: var(--green-light);
-      font-family: "JetBrains Mono", monospace;
+      display: inline-block;
+      padding: 4px 10px;
+      background: rgba(52, 168, 83, 0.12);
+      color: #4ade80;
+      border-radius: 4px;
+      font-family: JetBrains Mono, monospace;
       font-size: 11px;
-      font-weight: 500;
+      font-weight: 600;
     }
-    .method.get { background: rgba(34, 211, 238, 0.11); color: #22d3ee; }
+
+    .method.get {
+      background: rgba(34, 211, 238, 0.1);
+      color: #22d3ee;
+    }
+
     .path {
-      color: var(--text);
-      font-family: "JetBrains Mono", monospace;
+      font-family: JetBrains Mono, monospace;
       font-size: 13px;
+      color: white;
     }
+
     .endpoint-desc {
-      margin: 0;
-      padding: 15px 18px 0;
-      color: var(--secondary);
-      font-size: 14px;
-      line-height: 1.65;
+      padding: 14px 16px 0;
+      color: #8888a0;
+      font-size: 13px;
+      line-height: 1.5;
     }
+
     .tabs {
       display: flex;
       gap: 0;
-      padding: 12px 18px 0;
-      border-bottom: 1px solid var(--border);
+      padding: 12px 16px 0;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.06);
     }
+
     .tab-btn {
-      padding: 10px 14px;
-      border: 0;
+      padding: 8px 12px;
+      background: none;
+      border: none;
       border-bottom: 2px solid transparent;
-      background: transparent;
-      color: var(--muted);
-      font: 500 12px Inter, system-ui, sans-serif;
+      color: #555568;
+      font-size: 12px;
+      font-weight: 500;
       cursor: pointer;
-      transition: color 0.18s ease, border-color 0.18s ease;
+      transition: all 0.2s;
     }
-    .tab-btn.active { color: var(--green-light); border-bottom-color: var(--green); }
+
+    .tab-btn.active {
+      color: #4ade80;
+      border-bottom-color: #34A853;
+    }
+
     .code-panel {
       display: none;
-      margin: 0;
-      padding: 22px;
-      overflow-x: auto;
-      background: var(--code);
-      color: var(--secondary);
-      font-family: "JetBrains Mono", monospace;
-      font-size: 12px;
-      line-height: 1.82;
+      padding: 16px;
+      background: #0c0c14;
+      color: #8888a0;
+      font-family: JetBrains Mono, monospace;
+      font-size: 11px;
+      line-height: 1.7;
       white-space: pre;
+      overflow-x: auto;
+      margin: 0;
     }
-    .code-panel.active { display: block; }
-    .c-key { color: var(--text); }
-    .c-str { color: var(--green-light); }
-    .c-num { color: #22d3ee; }
-    .c-com { color: var(--muted); }
-    .c-punc { color: var(--secondary); }
 
+    .code-panel.active { display: block; }
+
+    .c-key { color: white; }
+    .c-str { color: #4ade80; }
+    .c-num { color: #22d3ee; }
+    .c-com { color: #555568; }
+    .c-punc { color: #8888a0; }
+
+    @media (max-width: 1024px) {
+      .docs-layout { grid-template-columns: 1fr; gap: 40px; }
+    }
+
+    /* Roadmap */
     .roadmap {
       display: grid;
-      grid-template-columns: minmax(0, 0.68fr) minmax(260px, 0.42fr);
-      gap: 60px;
+      grid-template-columns: 2fr 1fr;
+      gap: 56px;
       align-items: start;
-    }
-    .roadmap-note {
-      padding: 24px;
-      border: 1px solid rgba(99, 102, 241, 0.18);
-      border-radius: 8px;
-      background: rgba(99, 102, 241, 0.055);
-      color: var(--secondary);
-      font-size: 15px;
-      line-height: 1.78;
+      margin-top: 48px;
     }
 
-    footer {
-      padding: 46px 24px;
-      border-top: 1px solid var(--border);
-      background: rgba(8, 8, 15, 0.86);
+    @media (max-width: 1024px) {
+      .roadmap { grid-template-columns: 1fr; }
     }
+
+    /* Footer */
+    footer {
+      padding: 48px 24px;
+      border-top: 1px solid rgba(255, 255, 255, 0.06);
+      background: rgba(8, 8, 15, 0.8);
+    }
+
     .footer-inner {
+      max-width: 1280px;
+      margin: 0 auto;
       display: grid;
       grid-template-columns: 1fr auto 1fr;
-      gap: 34px;
+      gap: 40px;
       align-items: center;
-      width: min(1220px, 100%);
-      margin: 0 auto;
     }
-    .footer-logo { margin: 0; color: var(--text); font-size: 15px; font-weight: 760; }
-    .footer-tagline { margin: 6px 0 0; color: var(--muted); font-size: 12px; }
-    .footer-links { display: flex; gap: 26px; justify-content: center; }
-    .footer-links a { color: var(--muted); font-size: 13px; text-decoration: none; transition: color 0.18s ease; }
-    .footer-links a:hover { color: var(--secondary); }
-    .footer-credits { color: var(--muted); font-size: 11px; line-height: 1.7; text-align: right; }
-    .footer-credits p { margin: 0; }
 
-    .anim-fade-up, .anim-stagger > * { opacity: 0; }
-
-    @media (prefers-reduced-motion: reduce) {
-      *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; scroll-behavior: auto !important; }
-      .hero::before { animation: none; }
+    .footer-brand h4 {
+      margin: 0;
+      font-size: 15px;
+      font-weight: 700;
+      color: white;
     }
-    @media (max-width: 1040px) {
-      .architecture-layout,
-      .scoring-head,
-      .signal-card,
-      .docs-layout,
-      .roadmap {
+
+    .footer-brand p {
+      margin: 6px 0 0;
+      font-size: 12px;
+      color: #555568;
+    }
+
+    .footer-links {
+      display: flex;
+      gap: 32px;
+      justify-content: center;
+    }
+
+    .footer-links a {
+      font-size: 13px;
+      color: #555568;
+      transition: color 0.2s;
+    }
+
+    .footer-links a:hover {
+      color: #8888a0;
+    }
+
+    .footer-credits {
+      text-align: right;
+      font-size: 11px;
+      line-height: 1.7;
+      color: #555568;
+    }
+
+    .footer-credits p {
+      margin: 0;
+    }
+
+    @media (max-width: 768px) {
+      .footer-inner {
         grid-template-columns: 1fr;
+        text-align: center;
       }
-      .flow-panel { overflow-x: auto; }
-      .docs-layout { gap: 40px; }
+
+      .footer-credits { text-align: center; }
     }
+
+    /* Animations */
+    .gs-reveal {
+      opacity: 0;
+    }
+
+    .animate-stagger > * {
+      opacity: 0;
+    }
+
     @media (max-width: 768px) {
       .nav-links { display: none; }
       .hamburger { display: block; }
       .mobile-menu { display: block; }
-      .hero { min-height: 72vh; padding-top: 118px; }
-      .hero h1 { font-size: clamp(2.45rem, 13vw, 4.5rem); }
-      .section { padding: 78px 20px; }
-      .source-grid, .weights-grid { grid-template-columns: 1fr; }
-      .formula-block { overflow-x: auto; }
-      .footer-inner {
-        grid-template-columns: 1fr;
-        justify-items: center;
-        text-align: center;
-      }
-      .footer-credits { text-align: center; }
-    }
-    @media (max-width: 480px) {
-      .signal-card { padding: 24px; }
-      .master-formula { padding: 22px; }
-      .endpoint-header { align-items: flex-start; flex-direction: column; }
-      .footer-links { flex-wrap: wrap; row-gap: 12px; }
+      .hero { padding-top: 96px; padding-bottom: 48px; }
+      .section { padding: 72px 20px; }
     }
   </style>
 </head>
 <body data-page="how-it-works">
-  <nav id="nav">
+  <nav id="main-nav" class="fixed top-0 w-full z-50 bg-bg/60 backdrop-blur-xl transition-all duration-300">
     <div class="nav-inner">
-      <a href="index.html" class="nav-logo">Safe Walk</a>
+      <a href="/website/index.html" class="nav-logo">Safe Walk</a>
       <div class="nav-links">
-        <a href="how-it-works.html" data-nav="how-it-works">How It Works</a>
-        <a href="about.html" data-nav="about">About</a>
-        <a href="partners.html" data-nav="partners">For Partners</a>
-        <a href="#" class="nav-demo">Try the Demo</a>
+        <a href="/website/how-it-works.html" class="text-white">How It Works</a>
+        <a href="/website/about.html" class="text-txt-secondary hover:text-white transition-colors duration-200">About</a>
+        <a href="/website/partners.html" class="text-txt-secondary hover:text-white transition-colors duration-200">For Partners</a>
+        <a href="#" class="px-4 py-1.5 text-safe-green border border-safe-green/25 rounded-md hover:bg-safe-green/5 transition-all duration-200 text-sm font-medium nav-demo">Try the Demo</a>
       </div>
-      <button class="hamburger" id="hamburger" type="button" aria-label="Open menu" aria-expanded="false" aria-controls="mobile-menu">
+      <button id="mobile-toggle" class="hamburger md:hidden">
         <span></span>
         <span></span>
         <span></span>
@@ -700,141 +959,137 @@
   </nav>
 
   <div class="mobile-menu" id="mobile-menu">
-    <a href="how-it-works.html" data-nav="how-it-works">How It Works</a>
-    <a href="about.html" data-nav="about">About</a>
-    <a href="partners.html" data-nav="partners">For Partners</a>
+    <a href="/website/how-it-works.html" class="mobile-active">How It Works</a>
+    <a href="/website/about.html">About</a>
+    <a href="/website/partners.html">For Partners</a>
     <a href="#" class="mobile-demo">Try the Demo</a>
   </div>
 
   <main>
+    <!-- Hero -->
     <section class="hero">
       <div class="hero-inner">
-        <span class="eyebrow anim-fade-up">How it works</span>
-        <h1 class="anim-fade-up">The safety graph, explained</h1>
-        <p class="anim-fade-up">Safe Walk builds a scored safety layer on top of Google Maps by combining municipal open data, community reports, and time-aware scoring into a single API that any platform can query.</p>
+        <span class="eyebrow gs-reveal">How it works</span>
+        <h1 class="gs-reveal">The safety graph, explained</h1>
+        <p class="gs-reveal">Safe Walk builds a scored safety layer on top of Google Maps by combining municipal open data, community reports, and time-aware scoring into a single API that any platform can query.</p>
       </div>
     </section>
 
+    <!-- Architecture -->
     <section class="section">
-      <div class="inner architecture-layout">
-        <div>
-          <span class="section-label anim-fade-up">Architecture</span>
-          <h2 class="section-title anim-fade-up">How a route request flows through the system</h2>
-          <div class="body-text">
-            <p class="anim-fade-up">When you request a route, Safe Walk calls the Google Routes API with <code class="inline-code">computeAlternativeRoutes: true</code> to get up to three different walking paths. Each path comes back as an encoded polyline — a compressed list of lat/lng points. We decode, sample, score, and rank them.</p>
-            <p class="anim-fade-up">We decode each polyline, sample points along the route at regular intervals, and score every sampled point against our safety graph. The route with the lowest average danger score becomes the "safest" recommendation. The route Google ranks first is labeled "fastest." You see both.</p>
+      <div class="inner">
+        <span class="section-label gs-reveal">Architecture</span>
+        <h2 class="section-title gs-reveal">How a route request flows through the system</h2>
+        <div class="arch-grid">
+          <div class="body-text gs-reveal">
+            <p>When you request a route, Safe Walk calls the Google Routes API with <code style="background: rgba(34, 211, 238, 0.1); color: #22d3ee; padding: 2px 6px; border-radius: 4px; font-family: JetBrains Mono, monospace; font-size: 12px;">computeAlternativeRoutes: true</code> to get up to three different walking paths. Each path comes back as an encoded polyline — a compressed list of lat/lng points. We decode, sample, score, and rank them.</p>
+            <p>We decode each polyline, sample points along the route at regular intervals, and score every sampled point against our safety graph. The route with the lowest average danger score becomes the "safest" recommendation. The route Google ranks first is labeled "fastest." You see both.</p>
           </div>
-        </div>
-        <div class="flow-panel anim-fade-up">
-          <div class="flow-topbar">
-            <span>route.pipeline</span>
-            <span>~900ms target</span>
+          <div class="flow-diagram gs-reveal">
+            <div class="flow-header">
+              <span>route.pipeline</span>
+              <span>~900ms target</span>
+            </div>
+            <div class="flow-boxes">
+              <div class="flow-box">Google Routes<span class="flow-box-label">alternatives</span></div>
+              <div class="flow-arrow"><div class="flow-dot"></div></div>
+              <div class="flow-box">Polyline<span class="flow-box-label">decode points</span></div>
+              <div class="flow-arrow"><div class="flow-dot"></div></div>
+              <div class="flow-box">Sample<span class="flow-box-label">N points</span></div>
+              <div class="flow-arrow"><div class="flow-dot"></div></div>
+              <div class="flow-box highlight">Safety Scoring<span class="flow-box-label">incidents + lights</span></div>
+              <div class="flow-arrow"><div class="flow-dot"></div></div>
+              <div class="flow-box">Rank<span class="flow-box-label">JSON</span></div>
+            </div>
+            <div class="flow-caption">fastest: Google-ranked route / safest: minimum average safety_cost</div>
           </div>
-          <div class="flow-wrap">
-            <svg class="flow-svg" viewBox="0 0 650 230" fill="none" xmlns="http://www.w3.org/2000/svg" aria-label="Safe Walk route scoring flow">
-              <rect x="12" y="46" width="132" height="70" rx="8" class="flow-box"/>
-              <text x="78" y="76" class="flow-title">Google Routes</text>
-              <text x="78" y="96" class="flow-small">alternatives</text>
-
-              <rect x="194" y="16" width="132" height="70" rx="8" class="flow-box"/>
-              <text x="260" y="46" class="flow-title">Polyline</text>
-              <text x="260" y="66" class="flow-small">decode points</text>
-
-              <rect x="194" y="126" width="132" height="70" rx="8" class="flow-box"/>
-              <text x="260" y="156" class="flow-title">Sample</text>
-              <text x="260" y="176" class="flow-small">N route points</text>
-
-              <rect x="376" y="70" width="132" height="90" rx="8" class="flow-box-hot"/>
-              <text x="442" y="104" class="flow-title">Safety scoring</text>
-              <text x="442" y="126" class="flow-small">incidents + lights</text>
-              <text x="442" y="144" class="flow-small">+ time + reports</text>
-
-              <rect x="558" y="80" width="80" height="70" rx="8" class="flow-box"/>
-              <text x="598" y="109" class="flow-title">Rank</text>
-              <text x="598" y="130" class="flow-small">JSON</text>
-
-              <path d="M145 80 C165 80 172 52 193 52" class="flow-line"/>
-              <polygon points="189,47 199,52 189,57" class="flow-arrow"/>
-              <path d="M145 88 C166 102 170 158 193 160" class="flow-line"/>
-              <polygon points="189,155 199,160 188,165" class="flow-arrow"/>
-              <path d="M327 52 C356 52 350 112 375 112" class="flow-line"/>
-              <polygon points="371,107 381,112 371,117" class="flow-arrow"/>
-              <path d="M327 160 C356 160 350 116 375 116" class="flow-line"/>
-              <polygon points="371,111 381,116 371,121" class="flow-arrow"/>
-              <path d="M509 116 C530 116 535 116 557 116" class="flow-line"/>
-              <polygon points="553,111 563,116 553,121" class="flow-arrow"/>
-            </svg>
-          </div>
-          <div class="flow-caption">fastest: Google-ranked route / safest: minimum average safety_cost</div>
         </div>
       </div>
     </section>
 
+    <!-- Safety Scoring -->
     <section class="section alt">
       <div class="inner">
-        <div class="scoring-head">
+        <div class="scoring-intro gs-reveal">
           <div>
-            <span class="section-label anim-fade-up">Safety scoring engine</span>
-            <h2 class="section-title anim-fade-up">Three signals, one score</h2>
+            <span class="section-label">Safety scoring engine</span>
+            <h2 class="section-title">Three signals, one score</h2>
           </div>
-          <p class="body-text anim-fade-up">Every point on every route gets a safety cost between 0 (very safe) and 1 (very dangerous). The cost is computed from three signals:</p>
+          <p class="body-text">Every point on every route gets a safety cost between 0 (very safe) and 1 (very dangerous). The cost is computed from three signals:</p>
         </div>
 
-        <div class="signal-stack anim-stagger">
+        <div class="signal-group animate-stagger">
+          <!-- Incident Density -->
           <article class="signal-card">
-            <div>
-              <span class="signal-tag">SIGNAL 01 / incident density</span>
+            <div class="signal-content">
+              <span class="signal-tag">Signal 01 / incident density</span>
               <h3>Nearby incidents decay by distance, time, and severity</h3>
-              <p>We query all police incidents within 500 metres of the point. Each incident's contribution is weighted by three factors multiplied together:</p>
-              <div class="formula-grid">
+              <p class="signal-text">We query all police incidents within 500 metres of the point. Each incident's contribution is weighted by three factors multiplied together:</p>
+              <div class="formula-group">
                 <div class="formula-block"><span class="f-var">distance_weight</span> <span class="f-op">=</span> 1 / (1 + <span class="f-var">metres</span> / 100)<small>An incident 50m away contributes 3x more than one at 300m.</small></div>
                 <div class="formula-block"><span class="f-var">recency_weight</span> <span class="f-op">=</span> e<sup>-days_old / 365</sup><small>Last month's incident counts heavily. Two years ago is nearly zero.</small></div>
-                <div class="formula-block"><span class="f-var">severity_weight</span> <span class="f-op">=</span> Assault / Robbery / Sexual Violation <span class="f-op">→</span> <span class="f-val">1.0</span><br>Break and Enter <span class="f-op">→</span> <span class="f-val">0.5</span><br>Theft <span class="f-op">→</span> <span class="f-val">0.3</span> &nbsp; Auto Theft <span class="f-op">→</span> <span class="f-val">0.2</span></div>
-                <div class="formula-block"><span class="f-var">incident_contribution</span> <span class="f-op">=</span> distance_weight <span class="f-op">×</span> recency_weight <span class="f-op">×</span> severity_weight</div>
+                <div class="formula-block"><span class="f-var">severity_weight</span> <span class="f-op">=</span><br>Assault / Robbery / Sexual Violation → <span class="f-val">1.0</span><br>Break and Enter → <span class="f-val">0.5</span><br>Theft → <span class="f-val">0.3</span> Auto Theft → <span class="f-val">0.2</span></div>
+                <div class="formula-block"><span class="f-var">incident_contribution</span> <span class="f-op">=</span><br>distance_weight <span class="f-op">×</span> recency_weight <span class="f-op">×</span> severity_weight</div>
               </div>
             </div>
-            <div class="mini-visual">
-              <svg class="curve-svg" viewBox="0 0 260 180" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M20 144 C70 64 108 42 240 26" stroke="rgba(239,68,68,0.22)" stroke-width="2"/>
-                <path d="M20 34 C72 92 120 122 240 146" stroke="#ef4444" stroke-width="3"/>
-                <circle cx="42" cy="58" r="5" fill="#ef4444"/>
-                <circle cx="106" cy="109" r="4" fill="rgba(239,68,68,0.7)"/>
-                <circle cx="198" cy="139" r="3" fill="rgba(239,68,68,0.42)"/>
+            <div class="signal-visual">
+              <div class="signal-dot danger"></div>
+              <svg class="curve" viewBox="0 0 200 140" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M20 120 Q80 50 180 20" stroke="rgba(239, 68, 68, 0.3)" stroke-width="2"/>
+                <path d="M20 30 Q80 90 180 120" stroke="#ef4444" stroke-width="2.5"/>
+                <circle cx="35" cy="65" r="4" fill="#ef4444"/>
+                <circle cx="100" cy="95" r="3" fill="rgba(239, 68, 68, 0.6)"/>
+                <circle cx="165" cy="115" r="2.5" fill="rgba(239, 68, 68, 0.3)"/>
               </svg>
-              <span class="visual-label">risk falls as distance increases</span>
+              <span style="position: absolute; bottom: 8px; left: 8px; font-size: 9px;">risk decays with distance</span>
             </div>
           </article>
 
+          <!-- Streetlight Coverage -->
           <article class="signal-card">
-            <div>
-              <span class="signal-tag">SIGNAL 02 / streetlight coverage</span>
+            <div class="signal-content">
+              <span class="signal-tag">Signal 02 / streetlight coverage</span>
               <h3>Lighting is treated as infrastructure, not vibes</h3>
-              <p>We count streetlights within 100 metres of each point. Five or more nearby streetlights means the area is well-lit and the lighting danger score drops to zero. Zero streetlights means maximum lighting danger. This layer is weighted heavily after dark and almost ignored during daytime.</p>
-              <div class="formula-grid">
+              <p class="signal-text">We count streetlights within 100 metres of each point. Five or more nearby streetlights means the area is well-lit and the lighting danger score drops to zero. Zero streetlights means maximum lighting danger. This layer is weighted heavily after dark and almost ignored during daytime.</p>
+              <div class="formula-group">
                 <div class="formula-block"><span class="f-var">lights_nearby</span> <span class="f-op">=</span> count of streetlights within 100m</div>
                 <div class="formula-block"><span class="f-var">lighting_score</span> <span class="f-op">=</span> max(0, 1 − <span class="f-var">lights_nearby</span> / 5)<small>0 = well-lit, 1 = no lights. Clamped at 0.</small></div>
               </div>
             </div>
-            <div class="mini-visual">
+            <div class="signal-visual">
+              <div class="signal-dot cyan"></div>
               <div class="light-dots">
-                <span></span><span></span><span></span><span></span><span></span>
-                <span></span><span></span><span></span><span></span><span></span>
-                <span></span><span></span><span></span><span></span><span></span>
+                <div class="light-dot"></div>
+                <div class="light-dot"></div>
+                <div class="light-dot"></div>
+                <div class="light-dot"></div>
+                <div class="light-dot"></div>
+                <div class="light-dot"></div>
+                <div class="light-dot"></div>
+                <div class="light-dot"></div>
+                <div class="light-dot"></div>
+                <div class="light-dot"></div>
+                <div class="light-dot"></div>
+                <div class="light-dot"></div>
+                <div class="light-dot"></div>
+                <div class="light-dot"></div>
+                <div class="light-dot"></div>
               </div>
-              <span class="visual-label">160k+ Toronto streetlight points</span>
+              <span style="position: absolute; bottom: 8px; left: 8px; font-size: 9px;">160k+ Toronto lights</span>
             </div>
           </article>
 
+          <!-- Time of Day -->
           <article class="signal-card">
-            <div>
-              <span class="signal-tag">SIGNAL 03 / time of day</span>
+            <div class="signal-content">
+              <span class="signal-tag">Signal 03 / time of day</span>
               <h3>The model changes after dark</h3>
-              <p>The scoring engine knows what time it is. During the day (7 AM to 7 PM), incident history carries most of the weight. After dark (9 PM to 5 AM), streetlight coverage becomes much more important. Dawn and dusk hours interpolate smoothly between the two modes, following Toronto's actual patterns.</p>
+              <p class="signal-text">The scoring engine knows what time it is. During the day (7 AM to 7 PM), incident history carries most of the weight. After dark (9 PM to 5 AM), streetlight coverage becomes much more important. Dawn and dusk hours interpolate smoothly between the two modes, following Toronto's actual patterns.</p>
             </div>
-            <div class="mini-visual" style="display:flex;align-items:center;justify-content:center;">
+            <div class="signal-visual" style="display: flex; align-items: center; justify-content: center;">
               <div class="time-bar">
-                <div class="time-bar-track"></div>
-                <div class="time-bar-labels">
+                <div class="time-track"></div>
+                <div class="time-labels">
                   <span>12am</span><span>6am</span><span>noon</span><span>6pm</span><span>12am</span>
                 </div>
               </div>
@@ -844,20 +1099,16 @@
       </div>
     </section>
 
+    <!-- Master Formula -->
     <section class="section">
       <div class="narrow">
-        <span class="section-label anim-fade-up">The final score</span>
-        <h2 class="section-title anim-fade-up">Combining the signals</h2>
-        <div class="master-panel anim-fade-up">
+        <span class="section-label gs-reveal">The final score</span>
+        <h2 class="section-title gs-reveal">Combining the signals</h2>
+        <div class="master-section gs-reveal">
           <div class="master-formula">
-            <span class="f-label">safety_cost</span>
-            <span class="f-op"> = </span>
-            incident_score <span class="f-op">×</span> incident_weight
-            <span class="f-op"> + </span>
-            lighting_score <span class="f-op">×</span> lighting_weight
-            <br><span class="f-muted">clamped between 0.0 safe and 1.0 dangerous</span>
+            <span class="f-label">safety_cost</span><span class="f-op"> = </span>incident_score <span class="f-op">×</span> incident_weight<span class="f-op"> + </span>lighting_score <span class="f-op">×</span> lighting_weight<br><span class="f-muted">clamped between 0.0 safe and 1.0 dangerous</span>
           </div>
-          <div class="weights-grid">
+          <div class="weights-cards">
             <div class="weight-card">
               <h3>Day weights</h3>
               <div class="weight-row"><span>7 AM – 7 PM</span><strong>incident-led</strong></div>
@@ -872,32 +1123,33 @@
             </div>
           </div>
         </div>
-        <p class="body-text anim-fade-up">The route's overall safety score is the average of all sampled points along the path. A route scoring 0.15 is meaningfully safer than one scoring 0.40, even though both numbers are below 0.5. The comparison between routes is what matters — and when you see both routes on the map, the difference is usually obvious: the safe route sticks to well-lit main streets while the fast route cuts through darker, higher-incident areas.</p>
+        <p class="body-text gs-reveal">The route's overall safety score is the average of all sampled points along the path. A route scoring 0.15 is meaningfully safer than one scoring 0.40, even though both numbers are below 0.5. The comparison between routes is what matters — and when you see both routes on the map, the difference is usually obvious: the safe route sticks to well-lit main streets while the fast route cuts through darker, higher-incident areas.</p>
       </div>
     </section>
 
+    <!-- Data Sources -->
     <section class="section alt">
       <div class="inner">
-        <span class="section-label anim-fade-up">Data sources</span>
-        <h2 class="section-title anim-fade-up">Where the data comes from</h2>
-        <div class="source-grid anim-stagger">
+        <span class="section-label gs-reveal">Data sources</span>
+        <h2 class="section-title gs-reveal">Where the data comes from</h2>
+        <div class="source-grid animate-stagger">
           <article class="source-card">
-            <div class="source-mark" style="background: #ef4444; box-shadow: 0 0 20px rgba(239,68,68,0.28);"></div>
+            <div class="source-mark" style="background: #ef4444; box-shadow: 0 0 16px rgba(239, 68, 68, 0.3);"></div>
             <h3>Toronto Police Service, Major Crime Indicators</h3>
             <p>Every geocoded assault, robbery, break-and-enter, theft, and sexual violation. Updated regularly via the ArcGIS feature service at data.torontopolice.on.ca. Tens of thousands of records covering multiple years.</p>
           </article>
           <article class="source-card">
-            <div class="source-mark" style="background: #22d3ee; box-shadow: 0 0 20px rgba(34,211,238,0.24);"></div>
+            <div class="source-mark" style="background: #22d3ee; box-shadow: 0 0 16px rgba(34, 211, 238, 0.3);"></div>
             <h3>City of Toronto, Street Lighting</h3>
             <p>The location of every streetlight in the city — approximately 160,000 points. Sourced from Toronto's Open Data portal via CKAN API. Includes type and wattage where available.</p>
           </article>
           <article class="source-card">
-            <div class="source-mark" style="background: #34A853; box-shadow: 0 0 20px rgba(52,168,83,0.25);"></div>
+            <div class="source-mark" style="background: #34A853; box-shadow: 0 0 16px rgba(52, 168, 83, 0.3);"></div>
             <h3>Community reports</h3>
             <p>User-submitted reports of harassment, poor lighting, suspicious activity, and other safety concerns. Weighted lower than police data initially, but gain weight with corroboration from multiple users.</p>
           </article>
           <article class="source-card">
-            <div class="source-mark" style="background: #6366f1; box-shadow: 0 0 20px rgba(99,102,241,0.24);"></div>
+            <div class="source-mark" style="background: #6366f1; box-shadow: 0 0 16px rgba(99, 102, 241, 0.3);"></div>
             <h3>Google Routes API</h3>
             <p>Walking route geometry and alternatives. We use Google for what it's good at — pathfinding on the road network — and add what it's missing: safety scoring.</p>
           </article>
@@ -905,15 +1157,16 @@
       </div>
     </section>
 
+    <!-- API Reference -->
     <section class="section">
       <div class="inner docs-layout">
         <div>
-          <span class="section-label anim-fade-up">API reference</span>
-          <h2 class="section-title anim-fade-up">Two useful surfaces. Both return JSON.</h2>
-          <p class="body-text anim-fade-up">The main integration is the route endpoint. The GeoJSON endpoints expose the layers that power map overlays and partner dashboards.</p>
+          <span class="section-label gs-reveal">API reference</span>
+          <h2 class="section-title gs-reveal">Two useful surfaces. Both return JSON.</h2>
+          <p class="body-text gs-reveal">The main integration is the route endpoint. The GeoJSON endpoints expose the layers that power map overlays and partner dashboards.</p>
         </div>
 
-        <div class="endpoint-stack anim-stagger">
+        <div class="endpoints animate-stagger">
           <article class="endpoint">
             <div class="endpoint-header">
               <span class="method">POST</span>
@@ -921,51 +1174,46 @@
             </div>
             <p class="endpoint-desc">Returns the fastest and safest walking routes between two addresses.</p>
             <div class="tabs">
-              <button class="tab-btn active" type="button" data-tab="route-request">Request</button>
-              <button class="tab-btn" type="button" data-tab="route-response">Response</button>
+              <button class="tab-btn active" data-tab="route-req">Request</button>
+              <button class="tab-btn" data-tab="route-res">Response</button>
             </div>
-            <pre class="code-panel active" id="route-request"><span class="c-com">// POST /api/route</span>
+            <pre class="code-panel active" id="route-req"><span class="c-com">// POST /api/route</span>
 <span class="c-punc">{</span>
   <span class="c-key">"origin"</span><span class="c-punc">:</span> <span class="c-str">"Robarts Library, Toronto"</span><span class="c-punc">,</span>
   <span class="c-key">"destination"</span><span class="c-punc">:</span> <span class="c-str">"100 Harbord St, Toronto"</span>
 <span class="c-punc">}</span></pre>
-            <pre class="code-panel" id="route-response"><span class="c-punc">{</span>
+            <pre class="code-panel" id="route-res"><span class="c-punc">{</span>
   <span class="c-key">"fastest"</span><span class="c-punc">: {</span>
-    <span class="c-key">"polyline"</span><span class="c-punc">:</span> <span class="c-str">"encoded_polyline_string"</span><span class="c-punc">,</span>
+    <span class="c-key">"polyline"</span><span class="c-punc">:</span> <span class="c-str">"encoded_polyline"</span><span class="c-punc">,</span>
     <span class="c-key">"distanceMeters"</span><span class="c-punc">:</span> <span class="c-num">1200</span><span class="c-punc">,</span>
     <span class="c-key">"duration"</span><span class="c-punc">:</span> <span class="c-str">"900s"</span><span class="c-punc">,</span>
     <span class="c-key">"safety_score"</span><span class="c-punc">:</span> <span class="c-num">0.42</span>
   <span class="c-punc">},</span>
   <span class="c-key">"safest"</span><span class="c-punc">: {</span>
-    <span class="c-key">"polyline"</span><span class="c-punc">:</span> <span class="c-str">"encoded_polyline_string"</span><span class="c-punc">,</span>
-    <span class="c-key">"distanceMeters"</span><span class="c-punc">:</span> <span class="c-num">1580</span><span class="c-punc">,</span>
-    <span class="c-key">"duration"</span><span class="c-punc">:</span> <span class="c-str">"1140s"</span><span class="c-punc">,</span>
     <span class="c-key">"safety_score"</span><span class="c-punc">:</span> <span class="c-num">0.18</span>
-  <span class="c-punc">},</span>
-  <span class="c-key">"all_routes"</span><span class="c-punc">: [</span> <span class="c-com">...</span> <span class="c-punc">]</span>
+  <span class="c-punc">}</span>
 <span class="c-punc">}</span></pre>
           </article>
 
           <article class="endpoint">
             <div class="endpoint-header">
               <span class="method get">GET</span>
-              <span class="path">/api/streetlights?minLat&maxLat&minLng&maxLng</span>
+              <span class="path">/api/streetlights?bbox</span>
             </div>
             <p class="endpoint-desc">Returns streetlights inside a bounding box as GeoJSON for visual overlays.</p>
             <div class="tabs">
-              <button class="tab-btn active" type="button" data-tab="lights-request">Request</button>
-              <button class="tab-btn" type="button" data-tab="lights-response">Response</button>
+              <button class="tab-btn active" data-tab="lights-req">Request</button>
+              <button class="tab-btn" data-tab="lights-res">Response</button>
             </div>
-            <pre class="code-panel active" id="lights-request"><span class="c-com">// GET /api/streetlights</span>
-?<span class="c-key">minLat</span>=<span class="c-num">43.64</span>&amp;<span class="c-key">maxLat</span>=<span class="c-num">43.67</span>&amp;<span class="c-key">minLng</span>=<span class="c-num">-79.41</span>&amp;<span class="c-key">maxLng</span>=<span class="c-num">-79.36</span></pre>
-            <pre class="code-panel" id="lights-response"><span class="c-punc">{</span>
+            <pre class="code-panel active" id="lights-req"><span class="c-com">// GET /api/streetlights</span>
+?<span class="c-key">minLat</span>=<span class="c-num">43.64</span>&<span class="c-key">maxLat</span>=<span class="c-num">43.67</span>&<span class="c-key">minLng</span>=<span class="c-num">-79.41</span>&<span class="c-key">maxLng</span>=<span class="c-num">-79.36</span></pre>
+            <pre class="code-panel" id="lights-res"><span class="c-punc">{</span>
   <span class="c-key">"type"</span><span class="c-punc">:</span> <span class="c-str">"FeatureCollection"</span><span class="c-punc">,</span>
   <span class="c-key">"features"</span><span class="c-punc">: [</span>
     <span class="c-punc">{</span>
       <span class="c-key">"type"</span><span class="c-punc">:</span> <span class="c-str">"Feature"</span><span class="c-punc">,</span>
       <span class="c-key">"geometry"</span><span class="c-punc">: {</span>
-        <span class="c-key">"type"</span><span class="c-punc">:</span> <span class="c-str">"Point"</span><span class="c-punc">,</span>
-        <span class="c-key">"coordinates"</span><span class="c-punc">:</span> [<span class="c-num">-79.3901</span><span class="c-punc">,</span> <span class="c-num">43.6629</span>]
+        <span class="c-key">"coordinates"</span><span class="c-punc">:</span> [<span class="c-num">-79.39</span>, <span class="c-num">43.66</span>]
       <span class="c-punc">}</span>
     <span class="c-punc">}</span>
   <span class="c-punc">]</span>
@@ -975,15 +1223,16 @@
       </div>
     </section>
 
+    <!-- Roadmap -->
     <section class="section alt">
       <div class="inner roadmap">
         <div>
-          <span class="section-label anim-fade-up">What's next</span>
-          <h2 class="section-title anim-fade-up">The roadmap</h2>
+          <span class="section-label gs-reveal">What's next</span>
+          <h2 class="section-title gs-reveal">The roadmap</h2>
         </div>
         <div class="body-text">
-          <p class="anim-fade-up">The current scoring engine uses statistical weighting. The next version adds an AI prediction layer using Claude to estimate risk in areas with sparse police data, based on patterns from nearby areas: time clustering, proximity to certain location types, and historical incident trajectories.</p>
-          <p class="anim-fade-up">We're also expanding the community reporting layer and building integrations for university campus safety apps, starting with University of Toronto, TMU, and York.</p>
+          <p class="gs-reveal">The current scoring engine uses statistical weighting. The next version adds an AI prediction layer using Claude to estimate risk in areas with sparse police data, based on patterns from nearby areas: time clustering, proximity to certain location types, and historical incident trajectories.</p>
+          <p class="gs-reveal">We're also expanding the community reporting layer and building integrations for university campus safety apps, starting with University of Toronto, TMU, and York.</p>
         </div>
       </div>
     </section>
@@ -991,14 +1240,14 @@
 
   <footer>
     <div class="footer-inner">
-      <div>
-        <p class="footer-logo">Safe Walk</p>
-        <p class="footer-tagline">The safety layer for urban navigation.</p>
+      <div class="footer-brand">
+        <h4>Safe Walk</h4>
+        <p>The safety layer for urban navigation.</p>
       </div>
       <div class="footer-links">
-        <a href="how-it-works.html">How It Works</a>
-        <a href="about.html">About</a>
-        <a href="partners.html">For Partners</a>
+        <a href="/website/how-it-works.html">How It Works</a>
+        <a href="/website/about.html">About</a>
+        <a href="/website/partners.html">For Partners</a>
       </div>
       <div class="footer-credits">
         <p>Data: Toronto Police Open Data, City of Toronto</p>
@@ -1008,123 +1257,93 @@
   </footer>
 
   <script>
-    function revealWithoutAnimation() {
-      document.querySelectorAll('.anim-fade-up, .anim-stagger > *').forEach(element => {
-        element.style.opacity = '1';
-        element.style.transform = 'none';
-      });
-    }
-
-    window.setTimeout(() => {
-      const heroStillHidden = Array.from(document.querySelectorAll('.hero .anim-fade-up'))
-        .some(element => Number(getComputedStyle(element).opacity) < 0.1);
-      if (!window.safeWalkAnimated || heroStillHidden) revealWithoutAnimation();
-    }, 1800);
-
     window.addEventListener('DOMContentLoaded', () => {
-    const nav = document.getElementById('nav');
-    const hamburger = document.getElementById('hamburger');
-    const mobileMenu = document.getElementById('mobile-menu');
-    const currentPage = document.body.dataset.page;
+      const nav = document.getElementById('main-nav');
+      const toggle = document.getElementById('mobile-toggle');
+      const menu = document.getElementById('mobile-menu');
 
-    document.querySelectorAll('[data-nav]').forEach(link => {
-      if (link.dataset.nav === currentPage) {
-        link.classList.add(link.closest('.mobile-menu') ? 'mobile-active' : 'active');
-      }
-    });
-
-    window.addEventListener('scroll', () => {
-      nav.classList.toggle('scrolled', window.scrollY > 20);
-    }, { passive: true });
-
-    hamburger.addEventListener('click', () => {
-      const isOpen = mobileMenu.classList.toggle('open');
-      hamburger.setAttribute('aria-expanded', String(isOpen));
-    });
-    mobileMenu.addEventListener('click', event => {
-      if (event.target.tagName === 'A') {
-        mobileMenu.classList.remove('open');
-        hamburger.setAttribute('aria-expanded', 'false');
-      }
-    });
-    document.addEventListener('keydown', event => {
-      if (event.key === 'Escape' && mobileMenu.classList.contains('open')) {
-        mobileMenu.classList.remove('open');
-        hamburger.setAttribute('aria-expanded', 'false');
-      }
-    });
-
-    document.querySelectorAll('.endpoint').forEach(endpoint => {
-      endpoint.querySelectorAll('.tab-btn').forEach(button => {
-        button.addEventListener('click', () => {
-          endpoint.querySelectorAll('.tab-btn').forEach(tab => tab.classList.remove('active'));
-          endpoint.querySelectorAll('.code-panel').forEach(panel => panel.classList.remove('active'));
-          button.classList.add('active');
-          document.getElementById(button.dataset.tab).classList.add('active');
-        });
-      });
-    });
-
-    if (!window.gsap || !window.ScrollTrigger) {
-      revealWithoutAnimation();
-    } else {
-      window.safeWalkAnimated = true;
-      gsap.registerPlugin(ScrollTrigger);
-
-      const fontsReady = document.fonts && document.fonts.ready
-        ? Promise.race([document.fonts.ready, new Promise(resolve => setTimeout(resolve, 500))])
-        : Promise.resolve();
-
-      fontsReady.then(() => {
-        gsap.utils.toArray('.hero .anim-fade-up').forEach((element, index) => {
-          gsap.set(element, { opacity: 0, y: index === 1 ? 30 : 20 });
-        });
-        gsap.to('.hero .anim-fade-up', {
-          opacity: 1,
-          y: 0,
-          duration: 0.85,
-          stagger: 0.12,
-          ease: 'power3.out'
-        });
-      });
-
-      ScrollTrigger.create({
-        trigger: '.flow-panel',
-        start: 'top 78%',
-        once: true,
-        onEnter: () => {
-          gsap.to('.flow-line', {
-            strokeDashoffset: -70,
-            duration: 1.4,
-            repeat: -1,
-            ease: 'none',
-            stagger: 0.12
-          });
+      // Scroll behavior
+      window.addEventListener('scroll', () => {
+        if (window.scrollY > 40) {
+          nav.classList.add('nav-scrolled');
+        } else {
+          nav.classList.remove('nav-scrolled');
         }
       });
 
-      gsap.utils.toArray('.anim-fade-up').forEach(element => {
-        if (element.closest('.hero')) return;
-        gsap.set(element, { opacity: 0, y: 22 });
-        ScrollTrigger.create({
-          trigger: element,
-          start: 'top 88%',
-          once: true,
-          onEnter: () => gsap.to(element, { opacity: 1, y: 0, duration: 0.74, ease: 'power2.out' })
+      // Mobile menu
+      toggle.addEventListener('click', () => {
+        const isOpen = menu.classList.toggle('open');
+        toggle.setAttribute('aria-expanded', isOpen);
+      });
+
+      menu.addEventListener('click', (e) => {
+        if (e.target.tagName === 'A') {
+          menu.classList.remove('open');
+          toggle.setAttribute('aria-expanded', 'false');
+        }
+      });
+
+      document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && menu.classList.contains('open')) {
+          menu.classList.remove('open');
+          toggle.setAttribute('aria-expanded', 'false');
+        }
+      });
+
+      // Tab switching
+      document.querySelectorAll('.tab-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          const tabId = e.target.dataset.tab;
+          const endpoint = e.target.closest('.endpoint');
+
+          endpoint.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+          endpoint.querySelectorAll('.code-panel').forEach(p => p.classList.remove('active'));
+
+          e.target.classList.add('active');
+          document.getElementById(tabId).classList.add('active');
         });
       });
 
-      gsap.utils.toArray('.anim-stagger').forEach(group => {
-        const children = Array.from(group.children);
-        gsap.set(children, { opacity: 0, y: 24 });
-        ScrollTrigger.create({
-          trigger: group,
-          start: 'top 86%',
-          once: true,
-          onEnter: () => gsap.to(children, { opacity: 1, y: 0, duration: 0.62, stagger: 0.15, ease: 'power2.out' })
+      // GSAP animations
+      if (window.gsap && window.ScrollTrigger) {
+        gsap.registerPlugin(ScrollTrigger);
+
+        // Hero animations
+        gsap.utils.toArray('.hero .gs-reveal').forEach((el, i) => {
+          gsap.set(el, { opacity: 0, y: 20 });
         });
-      });
-    }
+        gsap.to('.hero .gs-reveal', {
+          opacity: 1,
+          y: 0,
+          duration: 0.8,
+          stagger: 0.15,
+          ease: 'power3.out'
+        });
+
+        // Scroll-triggered animations
+        gsap.utils.toArray('.gs-reveal:not(.hero .gs-reveal)').forEach(el => {
+          gsap.set(el, { opacity: 0, y: 24 });
+          ScrollTrigger.create({
+            trigger: el,
+            start: 'top 85%',
+            once: true,
+            onEnter: () => gsap.to(el, { opacity: 1, y: 0, duration: 0.7, ease: 'power2.out' })
+          });
+        });
+
+        // Stagger animations
+        gsap.utils.toArray('.animate-stagger').forEach(group => {
+          const children = Array.from(group.children);
+          gsap.set(children, { opacity: 0, y: 24 });
+          ScrollTrigger.create({
+            trigger: group,
+            start: 'top 84%',
+            once: true,
+            onEnter: () => gsap.to(children, { opacity: 1, y: 0, duration: 0.65, stagger: 0.12, ease: 'power2.out' })
+          });
+        });
+      }
     });
   </script>
 </body>

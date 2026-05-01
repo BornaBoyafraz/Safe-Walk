@@ -5,72 +5,36 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Safe Walk — The Safety Layer for Urban Navigation</title>
   <meta name="description" content="Safe Walk scores walking routes on safety, not just speed. Built on top of Google Maps using police data, streetlight coverage, and community reports.">
-  <meta property="og:title" content="Safe Walk — The Safety Layer for Urban Navigation">
-  <meta property="og:description" content="Safe Walk adds safety-aware routing to Google Maps. Score every path by incident density, streetlight coverage, and time of day.">
-  <meta property="og:type" content="website">
-  <meta name="twitter:card" content="summary_large_image">
-  <meta name="twitter:title" content="Safe Walk — The Safety Layer for Urban Navigation">
-  <meta name="twitter:description" content="Safe Walk adds safety-aware routing to Google Maps. Score every path by incident density, streetlight coverage, and time of day.">
-  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%2308080f'/%3E%3Ccircle cx='9' cy='23' r='3.2' fill='%2334A853'/%3E%3Ccircle cx='23' cy='9' r='3.2' fill='%234ade80'/%3E%3Cpath d='M9 23 C9 13 23 19 23 9' stroke='%2334A853' stroke-width='2' stroke-linecap='round' fill='none'/%3E%3C/svg%3E">
-  <script defer src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.tailwindcss.com"></script>
   <script>
     tailwind.config = {
       theme: {
         extend: {
           colors: {
-            bg: '#08080f',
-            s1: '#111118',
-            s2: '#1a1a25',
-            green: { DEFAULT: '#34A853', light: '#4ade80' },
-            accent: '#6366f1',
-            danger: '#ef4444',
-            tp: '#e8e8ed',
-            ts: '#8888a0',
-            tm: '#555568'
+            bg:      { DEFAULT: '#08080f', card: '#111118', elevated: '#1a1a25' },
+            brd:     { DEFAULT: 'rgba(255,255,255,0.06)' },
+            txt:     { primary: '#e8e8ed', secondary: '#8888a0', muted: '#555568' },
+            safe:    { green: '#34A853', light: '#4ade80' },
+            accent:  '#6366f1',
+            danger:  '#ef4444',
+            code:    '#0c0c14',
           },
           fontFamily: {
-            sans: ['Inter', 'system-ui', 'sans-serif'],
-            mono: ['"JetBrains Mono"', 'monospace']
+            sans: ['Inter', 'system-ui', '-apple-system', 'sans-serif'],
+            mono: ['JetBrains Mono', 'monospace'],
           }
         }
       }
-    };
+    }
   </script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
-  <script defer src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-  <script defer src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
-  <script defer src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
   <style>
-    *, *::before, *::after { box-sizing: border-box; }
-    :root {
-      --bg: #08080f;
-      --surface: #111118;
-      --surface-2: #1a1a25;
-      --border: rgba(255, 255, 255, 0.06);
-      --text: #e8e8ed;
-      --secondary: #8888a0;
-      --muted: #555568;
-      --green: #34A853;
-      --green-light: #4ade80;
-      --accent: #6366f1;
-      --danger: #ef4444;
-      --code: #0c0c14;
-    }
-    html { scroll-behavior: smooth; }
     body {
-      margin: 0;
-      overflow-x: hidden;
-      background:
-        radial-gradient(circle at 18% 12%, rgba(52, 168, 83, 0.06), transparent 27rem),
-        radial-gradient(circle at 82% 46%, rgba(99, 102, 241, 0.045), transparent 32rem),
-        var(--bg);
-      color: var(--text);
-      font-family: Inter, system-ui, sans-serif;
-      letter-spacing: 0;
-      -webkit-font-smoothing: antialiased;
-      -moz-osx-font-smoothing: grayscale;
+      font-family: 'Inter', system-ui, sans-serif;
+      background: #08080f;
+      color: #e8e8ed;
     }
     body::before {
       content: '';
@@ -78,1465 +42,458 @@
       inset: 0;
       z-index: 9999;
       pointer-events: none;
-      opacity: 0.028;
-      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
-      mix-blend-mode: screen;
+      opacity: 0.025;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+      background-size: 256px 256px;
     }
-    a { color: inherit; }
-    .page-shell { position: relative; z-index: 1; }
-
-    #nav {
-      position: fixed;
-      inset: 0 0 auto;
-      z-index: 100;
-      border-bottom: 1px solid transparent;
-      background: rgba(17, 17, 24, 0.58);
-      backdrop-filter: blur(22px);
-      -webkit-backdrop-filter: blur(22px);
-      transition: border-color 0.25s ease, background 0.25s ease;
+    .gs-reveal { opacity: 0; }
+    .gs-reveal-hero { opacity: 0; }
+    @keyframes bob {
+      0%, 100% { transform: translateY(0); opacity: 0.3; }
+      50% { transform: translateY(8px); opacity: 0.6; }
     }
-    #nav.scrolled {
-      border-bottom-color: var(--border);
-      background: rgba(17, 17, 24, 0.78);
-    }
-    .nav-inner {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      max-width: 1220px;
-      height: 66px;
-      margin: 0 auto;
-      padding: 0 24px;
-    }
-    .nav-logo {
-      color: var(--text);
-      font-size: 17px;
-      font-weight: 750;
-      text-decoration: none;
-      letter-spacing: 0;
-    }
-    .nav-links {
-      display: flex;
-      align-items: center;
-      gap: 34px;
-    }
-    .nav-links a {
-      color: var(--secondary);
-      font-size: 13px;
-      font-weight: 500;
-      text-decoration: none;
-      transition: color 0.18s ease;
-    }
-    .nav-links a:hover, .nav-links a.active { color: var(--text); }
-    .nav-links .nav-demo {
-      color: var(--green-light);
-      padding: 8px 14px;
-      border: 1px solid rgba(52, 168, 83, 0.32);
-      border-radius: 8px;
-      box-shadow: inset 0 0 18px rgba(52, 168, 83, 0.03);
-    }
-    .nav-links .nav-demo:hover { border-color: rgba(74, 222, 128, 0.56); background: rgba(52, 168, 83, 0.07); }
-    .hamburger {
-      display: none;
-      width: 38px;
-      height: 38px;
-      padding: 0;
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      background: rgba(255, 255, 255, 0.03);
-      color: var(--text);
-      cursor: pointer;
-    }
-    .hamburger span {
-      display: block;
-      width: 16px;
-      height: 1px;
-      margin: 5px auto;
-      background: currentColor;
-      transition: transform 0.2s ease, opacity 0.2s ease;
-    }
-    .hamburger[aria-expanded="true"] span:nth-child(1) { transform: translateY(6px) rotate(45deg); }
-    .hamburger[aria-expanded="true"] span:nth-child(2) { opacity: 0; }
-    .hamburger[aria-expanded="true"] span:nth-child(3) { transform: translateY(-6px) rotate(-45deg); }
-    .mobile-menu {
-      position: fixed;
-      inset: 0 0 0 auto;
-      z-index: 90;
-      display: none;
-      width: min(360px, 100%);
-      padding: 88px 24px 28px;
-      border-left: 1px solid var(--border);
-      background: rgba(17, 17, 24, 0.96);
-      backdrop-filter: blur(20px);
-      -webkit-backdrop-filter: blur(20px);
-      transform: translateX(100%);
-      transition: transform 0.32s cubic-bezier(0.16, 1, 0.3, 1);
-    }
-    .mobile-menu.open { transform: translateX(0); }
-    .mobile-menu a {
-      display: block;
-      padding: 18px 0;
-      border-bottom: 1px solid var(--border);
-      color: var(--secondary);
-      font-size: 22px;
-      font-weight: 650;
-      text-decoration: none;
-    }
-    .mobile-menu a.mobile-active { color: var(--text); }
-    .mobile-menu a.mobile-demo { color: var(--green-light); }
-
-    .hero {
-      position: relative;
-      display: flex;
-      min-height: 100vh;
-      align-items: center;
-      justify-content: center;
-      overflow: hidden;
-      padding: 110px 24px 82px;
-      isolation: isolate;
-    }
-    #hero-canvas {
-      position: absolute;
-      inset: 0;
-      width: 100%;
-      height: 100%;
-      opacity: 0.88;
-    }
-    .hero::before {
-      content: '';
-      position: absolute;
-      inset: 0;
-      z-index: 1;
-      background:
-        radial-gradient(ellipse at center, rgba(8, 8, 15, 0.13) 0%, rgba(8, 8, 15, 0.42) 54%, rgba(8, 8, 15, 0.92) 100%),
-        linear-gradient(to bottom, rgba(8, 8, 15, 0.1), rgba(8, 8, 15, 0.92));
-      pointer-events: none;
-    }
-    .hero-content {
-      position: relative;
-      z-index: 2;
-      width: min(940px, 100%);
-      text-align: center;
-    }
-    .eyebrow {
-      display: inline-flex;
-      align-items: center;
-      gap: 10px;
-      color: var(--green-light);
-      font-size: 11px;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: 0.16em;
-    }
-    .eyebrow::before {
-      content: '';
-      width: 6px;
-      height: 6px;
-      border-radius: 999px;
-      background: var(--green);
-      box-shadow: 0 0 18px rgba(52, 168, 83, 0.8);
-    }
-    .hero h1 {
-      max-width: 760px;
-      margin: 26px auto 26px;
-      color: var(--text);
-      font-size: clamp(2.45rem, 6vw, 5.6rem);
-      font-weight: 800;
-      line-height: 1.02;
-      letter-spacing: 0;
-      text-wrap: balance;
-    }
-    .hero h1 span {
-      display: inline-block;
-      background: linear-gradient(92deg, #e8e8ed 0%, #4ade80 46%, #34A853 100%);
-      background-clip: text;
+    .scroll-indicator { animation: bob 2.5s ease-in-out infinite; }
+    .gradient-safe {
+      background: linear-gradient(135deg, #34A853 0%, #4ade80 100%);
       -webkit-background-clip: text;
-      color: transparent;
       -webkit-text-fill-color: transparent;
-    }
-    .hero-sub {
-      max-width: 700px;
-      margin: 0 auto;
-      color: var(--secondary);
-      font-size: 18px;
-      line-height: 1.76;
-    }
-    .hero-actions {
-      display: flex;
-      flex-wrap: wrap;
-      justify-content: center;
-      gap: 12px;
-      margin-top: 38px;
-    }
-    .button {
-      display: inline-flex;
-      min-height: 48px;
-      align-items: center;
-      justify-content: center;
-      padding: 0 22px;
-      border-radius: 8px;
-      font-size: 14px;
-      font-weight: 700;
-      text-decoration: none;
-      transition: transform 0.18s ease, border-color 0.18s ease, background 0.18s ease, color 0.18s ease;
-    }
-    .button:hover { transform: translateY(-1px); }
-    .button-primary { background: var(--green); color: #061008; box-shadow: 0 18px 42px rgba(52, 168, 83, 0.16); }
-    .button-primary:hover { background: var(--green-light); }
-    .button-ghost { border: 1px solid rgba(255, 255, 255, 0.13); color: var(--text); background: rgba(255, 255, 255, 0.025); }
-    .button-ghost:hover { border-color: rgba(255, 255, 255, 0.24); background: rgba(255, 255, 255, 0.055); }
-    .scroll-indicator {
-      position: absolute;
-      right: 36px;
-      bottom: 32px;
-      z-index: 2;
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      color: var(--muted);
-      font-size: 11px;
-      font-family: "JetBrains Mono", monospace;
-    }
-    .scroll-indicator::after {
-      content: '';
-      width: 1px;
-      height: 54px;
-      background: linear-gradient(to bottom, rgba(255, 255, 255, 0.35), transparent);
-      animation: scrollBob 2s ease-in-out infinite;
-    }
-    @keyframes scrollBob {
-      0%, 100% { transform: translateY(-4px); opacity: 0.45; }
-      50% { transform: translateY(7px); opacity: 1; }
-    }
-
-    .stats-band {
-      padding: 64px 24px 76px;
-      border-top: 1px solid var(--border);
-      border-bottom: 1px solid var(--border);
-      background: linear-gradient(90deg, rgba(255, 255, 255, 0.02), transparent 22%, transparent 78%, rgba(255, 255, 255, 0.018));
-    }
-    .stats-grid {
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      max-width: 1120px;
-      margin: 0 auto;
-    }
-    .stat {
-      min-width: 0;
-      padding: 0 46px;
-    }
-    .stat + .stat { border-left: 1px solid var(--border); }
-    .stat-number {
-      display: block;
-      color: var(--text);
-      font-size: clamp(2.7rem, 5.6vw, 4.8rem);
-      font-weight: 800;
-      line-height: 1;
-      letter-spacing: 0;
-    }
-    .stat-label {
-      max-width: 260px;
-      margin: 14px 0 7px;
-      color: var(--secondary);
-      font-size: 14px;
-      line-height: 1.65;
-    }
-    .stat-source {
-      color: var(--muted);
-      font-family: "JetBrains Mono", monospace;
-      font-size: 11px;
-      line-height: 1.5;
-    }
-
-    section { position: relative; padding: 112px 24px; }
-    .section-inner { width: min(1120px, 100%); margin: 0 auto; }
-    .section-label {
-      display: block;
-      margin-bottom: 18px;
-      color: var(--green-light);
-      font-size: 11px;
-      font-weight: 700;
-      letter-spacing: 0.14em;
-      text-transform: uppercase;
-    }
-    .section-title {
-      margin: 0;
-      color: var(--text);
-      font-size: clamp(2rem, 4vw, 3.6rem);
-      font-weight: 790;
-      line-height: 1.05;
-      letter-spacing: 0;
-      text-wrap: balance;
-    }
-    .body-copy {
-      color: var(--secondary);
-      font-size: 17px;
-      line-height: 1.82;
-    }
-    .body-copy p { margin: 0 0 20px; }
-    .body-copy p:last-child { margin-bottom: 0; }
-
-    .problem-grid {
-      display: grid;
-      grid-template-columns: minmax(0, 0.9fr) minmax(360px, 1.1fr);
-      gap: clamp(44px, 8vw, 110px);
-      align-items: center;
-    }
-    .problem-copy { max-width: 660px; }
-    .map-console {
-      position: relative;
-      min-height: 430px;
-      overflow: hidden;
-      border: 1px solid rgba(255, 255, 255, 0.07);
-      border-radius: 8px;
-      background: linear-gradient(145deg, rgba(26, 26, 37, 0.95), rgba(12, 12, 20, 0.92));
-      box-shadow: 0 34px 90px rgba(0, 0, 0, 0.35);
-      transform: rotate(-1deg);
-    }
-    .map-console::before {
-      content: '';
-      position: absolute;
-      inset: 0;
-      background-image:
-        linear-gradient(rgba(255, 255, 255, 0.035) 1px, transparent 1px),
-        linear-gradient(90deg, rgba(255, 255, 255, 0.035) 1px, transparent 1px);
-      background-size: 38px 38px;
-      mask-image: linear-gradient(to bottom, black, transparent 93%);
-    }
-    .map-topbar {
-      position: relative;
-      z-index: 1;
-      display: flex;
-      justify-content: space-between;
-      padding: 16px 18px;
-      border-bottom: 1px solid var(--border);
-      color: var(--muted);
-      font-family: "JetBrains Mono", monospace;
-      font-size: 11px;
-    }
-    .blue-route,
-    .ghost-route,
-    .green-route {
-      position: absolute;
-      z-index: 1;
-      height: 2px;
-      border-radius: 99px;
-      transform-origin: left center;
-    }
-    .blue-route {
-      left: 15%;
-      top: 54%;
-      width: 72%;
-      background: repeating-linear-gradient(90deg, rgba(96, 165, 250, 0.9) 0 10px, transparent 10px 16px);
-      box-shadow: 0 0 22px rgba(96, 165, 250, 0.18);
-      transform: rotate(-10deg);
-    }
-    .ghost-route {
-      left: 18%;
-      top: 35%;
-      width: 55%;
-      background: repeating-linear-gradient(90deg, rgba(255, 255, 255, 0.12) 0 8px, transparent 8px 15px);
-      transform: rotate(18deg);
-    }
-    .green-route {
-      left: 22%;
-      top: 72%;
-      width: 49%;
-      background: repeating-linear-gradient(90deg, rgba(74, 222, 128, 0.22) 0 10px, transparent 10px 18px);
-      transform: rotate(-28deg);
-      filter: blur(0.2px);
-    }
-    .map-pin {
-      position: absolute;
-      z-index: 2;
-      width: 13px;
-      height: 13px;
-      border-radius: 999px;
-      background: #60a5fa;
-      box-shadow: 0 0 0 5px rgba(96, 165, 250, 0.08), 0 0 22px rgba(96, 165, 250, 0.35);
-    }
-    .map-pin.start { left: 14%; top: 51%; }
-    .map-pin.end { right: 13%; top: 39%; }
-    .map-note {
-      position: absolute;
-      right: 20px;
-      bottom: 20px;
-      z-index: 3;
-      max-width: 245px;
-      padding: 18px;
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      background: rgba(8, 8, 15, 0.72);
-      backdrop-filter: blur(16px);
-      -webkit-backdrop-filter: blur(16px);
-    }
-    .map-note strong {
-      display: block;
-      margin-bottom: 8px;
-      color: var(--text);
-      font-size: 13px;
-    }
-    .map-note span {
-      color: var(--muted);
-      font-family: "JetBrains Mono", monospace;
-      font-size: 11px;
-      line-height: 1.7;
-    }
-
-    .solution-section {
-      overflow: hidden;
-      border-block: 1px solid var(--border);
-      background:
-        linear-gradient(180deg, rgba(17, 17, 24, 0.92), rgba(10, 10, 17, 0.92)),
-        var(--surface);
-    }
-    .solution-head {
-      display: grid;
-      grid-template-columns: minmax(0, 0.85fr) minmax(320px, 0.65fr);
-      gap: 70px;
-      align-items: end;
-      margin-bottom: 76px;
-    }
-    .solution-intro {
-      max-width: 540px;
-      margin: 0;
-      color: var(--secondary);
-      font-size: 17px;
-      line-height: 1.78;
-    }
-    .route-steps {
-      display: grid;
-      gap: 28px;
-    }
-    .step-row {
-      display: grid;
-      grid-template-columns: 180px minmax(0, 1fr) 300px;
-      gap: 38px;
-      align-items: center;
-      padding: 34px 0;
-      border-top: 1px solid var(--border);
-    }
-    .step-row:last-child { border-bottom: 1px solid var(--border); }
-    .step-kicker {
-      color: var(--muted);
-      font-family: "JetBrains Mono", monospace;
-      font-size: 12px;
-    }
-    .step-row h3 {
-      margin: 0 0 9px;
-      color: var(--text);
-      font-size: 22px;
-      font-weight: 720;
-      letter-spacing: 0;
-    }
-    .step-row p {
-      margin: 0;
-      color: var(--secondary);
-      font-size: 15px;
-      line-height: 1.72;
-    }
-    .step-visual {
-      min-height: 116px;
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      background: rgba(255, 255, 255, 0.025);
-      overflow: hidden;
-    }
-    .input-visual {
-      display: grid;
-      gap: 10px;
-      padding: 18px;
-    }
-    .input-field {
-      display: flex;
-      align-items: center;
-      gap: 9px;
-      height: 34px;
-      padding: 0 12px;
-      border: 1px solid rgba(255, 255, 255, 0.07);
-      border-radius: 7px;
-      background: rgba(8, 8, 15, 0.42);
-      color: var(--secondary);
-      font-family: "JetBrains Mono", monospace;
-      font-size: 11px;
-    }
-    .input-field::before {
-      content: '';
-      width: 7px;
-      height: 7px;
-      border-radius: 999px;
-      background: var(--green);
-      box-shadow: 0 0 13px rgba(52, 168, 83, 0.65);
-    }
-    .score-visual { position: relative; padding: 20px; }
-    .score-line {
-      position: absolute;
-      left: 22px;
-      right: 22px;
-      height: 2px;
-      border-radius: 99px;
-      background: linear-gradient(90deg, rgba(239, 68, 68, 0.55), rgba(74, 222, 128, 0.68));
-    }
-    .score-line:nth-child(1) { top: 28px; transform: rotate(7deg); }
-    .score-line:nth-child(2) { top: 58px; transform: rotate(-5deg); opacity: 0.65; }
-    .score-line:nth-child(3) { top: 88px; transform: rotate(2deg); opacity: 0.44; }
-    .score-chip {
-      position: absolute;
-      right: 22px;
-      bottom: 15px;
-      color: var(--green-light);
-      font-family: "JetBrains Mono", monospace;
-      font-size: 11px;
-    }
-    .toggle-visual {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      padding: 22px;
-    }
-    .toggle-shell {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      width: 230px;
-      padding: 5px;
-      border: 1px solid rgba(255, 255, 255, 0.08);
-      border-radius: 8px;
-      background: rgba(8, 8, 15, 0.5);
-    }
-    .toggle-shell span {
-      padding: 9px 10px;
-      border-radius: 6px;
-      color: var(--muted);
-      font-size: 12px;
-      font-weight: 650;
-      text-align: center;
-    }
-    .toggle-shell span:last-child {
-      background: rgba(52, 168, 83, 0.15);
-      color: var(--green-light);
-      box-shadow: inset 0 0 0 1px rgba(52, 168, 83, 0.18);
-    }
-
-    .data-layout {
-      display: grid;
-      grid-template-columns: 0.72fr 1fr;
-      gap: 78px;
-      align-items: start;
-    }
-    .data-list {
-      display: grid;
-      gap: 0;
-      border-top: 1px solid var(--border);
-    }
-    .source-row {
-      display: grid;
-      grid-template-columns: 4px minmax(0, 1fr);
-      gap: 24px;
-      padding: 28px 0;
-      border-bottom: 1px solid var(--border);
-    }
-    .source-bar {
-      width: 3px;
-      height: 44px;
-      border-radius: 99px;
-      margin-top: 4px;
-    }
-    .source-bar.red { background: var(--danger); box-shadow: 0 0 22px rgba(239, 68, 68, 0.26); }
-    .source-bar.cyan { background: #22d3ee; box-shadow: 0 0 22px rgba(34, 211, 238, 0.22); }
-    .source-bar.green { background: var(--green); box-shadow: 0 0 22px rgba(52, 168, 83, 0.25); }
-    .source-row h3 {
-      margin: 0 0 7px;
-      color: var(--text);
-      font-size: 17px;
-      font-weight: 700;
-    }
-    .source-row p {
-      margin: 0;
-      color: var(--secondary);
-      font-size: 15px;
-      line-height: 1.75;
-    }
-
-    .testimonials-section {
-      background:
-        linear-gradient(180deg, rgba(17, 17, 24, 0.98), rgba(12, 12, 20, 0.98)),
-        var(--surface);
-      border-block: 1px solid var(--border);
-    }
-    .testimonial-grid {
-      display: grid;
-      grid-template-columns: minmax(0, 1.12fr) minmax(280px, 0.74fr);
-      gap: 22px;
-      align-items: start;
-      margin-top: 54px;
-    }
-    .quote-card {
-      position: relative;
-      overflow: hidden;
-      padding: 42px;
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      background: linear-gradient(150deg, rgba(26, 26, 37, 0.92), rgba(17, 17, 24, 0.82));
-    }
-    .quote-card:nth-child(2) { margin-top: 34px; padding: 34px; }
-    .quote-card::before {
-      content: '"';
-      position: absolute;
-      top: -22px;
-      left: 26px;
-      color: rgba(255, 255, 255, 0.045);
-      font-family: Georgia, serif;
-      font-size: 140px;
-      line-height: 1;
-    }
-    .quote-card blockquote {
-      position: relative;
-      margin: 0 0 30px;
-      color: #cfcfda;
-      font-size: 17px;
-      font-style: italic;
-      line-height: 1.78;
-    }
-    .quote-card:nth-child(2) blockquote { font-size: 15px; }
-    .quote-card cite {
-      display: block;
-      color: var(--text);
-      font-size: 13px;
-      font-style: normal;
-      font-weight: 700;
-    }
-    .quote-card span {
-      display: block;
-      margin-top: 4px;
-      color: var(--muted);
-      font-size: 12px;
-    }
-    .testimonial-note {
-      margin: 28px 0 0;
-      color: var(--muted);
-      font-family: "JetBrains Mono", monospace;
-      font-size: 11px;
-      text-align: right;
-    }
-
-    .api-layout {
-      display: grid;
-      grid-template-columns: minmax(0, 0.68fr) minmax(420px, 1fr);
-      gap: 64px;
-      align-items: center;
-    }
-    .code-window {
-      overflow: hidden;
-      border: 1px solid rgba(255, 255, 255, 0.08);
-      border-radius: 8px;
-      background: var(--code);
-      box-shadow: 0 0 80px rgba(52, 168, 83, 0.06), 0 30px 90px rgba(0, 0, 0, 0.45);
-    }
-    .code-bar {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      padding: 13px 16px;
-      border-bottom: 1px solid var(--border);
-      background: rgba(17, 17, 24, 0.92);
-    }
-    .code-dots { display: flex; gap: 7px; }
-    .code-dot { width: 11px; height: 11px; border-radius: 99px; }
-    .code-dot.red { background: #ff5f57; }
-    .code-dot.yellow { background: #ffbd2e; }
-    .code-dot.green { background: #28c841; }
-    .code-title {
-      color: var(--muted);
-      font-family: "JetBrains Mono", monospace;
-      font-size: 12px;
-    }
-    .code-body {
-      margin: 0;
-      padding: 28px;
-      overflow-x: auto;
-      color: var(--secondary);
-      font-family: "JetBrains Mono", monospace;
-      font-size: 13px;
-      line-height: 1.82;
-      white-space: pre;
-    }
-    .c-key { color: var(--text); }
-    .c-str { color: var(--green-light); }
-    .c-num { color: #22d3ee; }
-    .c-com { color: var(--muted); }
-    .c-punc { color: var(--secondary); }
-
-    .cta-section {
-      overflow: hidden;
-      padding: 118px 24px 126px;
-      background:
-        radial-gradient(ellipse at 50% 0%, rgba(52, 168, 83, 0.12), transparent 46rem),
-        linear-gradient(180deg, rgba(17, 17, 24, 0.92), rgba(8, 8, 15, 1));
-      border-top: 1px solid var(--border);
-    }
-    .cta-inner {
-      width: min(760px, 100%);
-      margin: 0 auto;
-      text-align: center;
-    }
-    .cta-inner h2 {
-      margin: 0;
-      color: var(--text);
-      font-size: clamp(2rem, 4.4vw, 4.4rem);
-      font-weight: 800;
-      line-height: 1.03;
-      letter-spacing: 0;
-      text-wrap: balance;
-    }
-    .cta-inner p {
-      max-width: 610px;
-      margin: 24px auto 38px;
-      color: var(--secondary);
-      font-size: 17px;
-      line-height: 1.82;
-    }
-
-    footer {
-      padding: 46px 24px;
-      border-top: 1px solid var(--border);
-      background: rgba(8, 8, 15, 0.86);
-    }
-    .footer-inner {
-      display: grid;
-      grid-template-columns: 1fr auto 1fr;
-      gap: 34px;
-      align-items: center;
-      width: min(1220px, 100%);
-      margin: 0 auto;
-    }
-    .footer-logo {
-      margin: 0;
-      color: var(--text);
-      font-size: 15px;
-      font-weight: 760;
-    }
-    .footer-tagline {
-      margin: 6px 0 0;
-      color: var(--muted);
-      font-size: 12px;
-    }
-    .footer-links {
-      display: flex;
-      gap: 26px;
-      justify-content: center;
-    }
-    .footer-links a {
-      color: var(--muted);
-      font-size: 13px;
-      text-decoration: none;
-      transition: color 0.18s ease;
-    }
-    .footer-links a:hover { color: var(--secondary); }
-    .footer-credits {
-      color: var(--muted);
-      font-size: 11px;
-      line-height: 1.7;
-      text-align: right;
-    }
-    .footer-credits p { margin: 0; }
-
-    .anim-fade-up, .anim-fade, .anim-stagger > * { opacity: 0; }
-
-    @media (prefers-reduced-motion: reduce) {
-      *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; scroll-behavior: auto !important; }
-      .scroll-indicator::after { animation: none; }
-    }
-    @media (max-width: 1024px) {
-      .problem-grid,
-      .solution-head,
-      .data-layout,
-      .api-layout {
-        grid-template-columns: 1fr;
-      }
-      .map-console { min-height: 360px; transform: none; }
-      .step-row { grid-template-columns: 128px minmax(0, 1fr); }
-      .step-visual { grid-column: 2; }
-      .api-layout { gap: 44px; }
-    }
-    @media (max-width: 768px) {
-      .nav-links { display: none; }
-      .hamburger { display: block; }
-      .mobile-menu { display: block; }
-      .hero { min-height: 92vh; padding-top: 104px; }
-      .hero h1 { font-size: clamp(2.5rem, 14vw, 4.6rem); }
-      .hero-sub { font-size: 16px; }
-      .scroll-indicator { display: none; }
-      .stats-grid { grid-template-columns: 1fr; }
-      .stat {
-        padding: 30px 0;
-        border-left: 0 !important;
-        border-bottom: 1px solid var(--border);
-      }
-      .stat:first-child { padding-top: 0; }
-      .stat:last-child { padding-bottom: 0; border-bottom: 0; }
-      section { padding: 78px 20px; }
-      .solution-section, .testimonials-section { padding-block: 82px; }
-      .solution-head { margin-bottom: 44px; }
-      .step-row {
-        grid-template-columns: 1fr;
-        gap: 16px;
-        padding: 28px 0;
-      }
-      .step-visual { grid-column: auto; }
-      .testimonial-grid { grid-template-columns: 1fr; }
-      .quote-card:nth-child(2) { margin-top: 0; }
-      .api-layout { grid-template-columns: 1fr; }
-      .footer-inner {
-        grid-template-columns: 1fr;
-        justify-items: center;
-        text-align: center;
-      }
-      .footer-credits { text-align: center; }
-    }
-    @media (max-width: 480px) {
-      .hero-content { width: 100%; }
-      .hero h1 {
-        font-size: clamp(2.15rem, 11vw, 3.05rem);
-        line-height: 1.06;
-      }
-      .hero h1 span { display: inline; }
-      .hero-sub { font-size: 15px; }
-      .hero-actions, .cta-inner .hero-actions { flex-direction: column; }
-      .button { width: 100%; }
-      .map-console { min-height: 310px; }
-      .map-note { left: 16px; right: 16px; max-width: none; }
-      .quote-card { padding: 30px 24px; }
-      .code-body { padding: 22px; font-size: 12px; }
-      .footer-links { flex-wrap: wrap; row-gap: 12px; }
-    }
+      background-clip: text;
+    }
+    .nav-scrolled { border-bottom: 1px solid rgba(255,255,255,0.06); }
+    .syn-key { color: #e8e8ed; }
+    .syn-str { color: #34A853; }
+    .syn-num { color: #22d3ee; }
+    .syn-cmt { color: #555568; }
+    .syn-brace { color: #8888a0; }
+    .card-lift { transition: transform 0.25s ease, border-color 0.25s ease, box-shadow 0.25s ease; }
+    .card-lift:hover { transform: translateY(-3px); border-color: rgba(255,255,255,0.1); box-shadow: 0 12px 40px rgba(0,0,0,0.4); }
+    #hero-canvas { position: absolute; inset: 0; z-index: 0; opacity: 0.55; }
+    .mobile-menu { transform: translateX(100%); transition: transform 0.3s ease; }
+    .mobile-menu.open { transform: translateX(0); }
+    .stat-divider { width: 1px; background: rgba(255,255,255,0.06); align-self: stretch; }
   </style>
 </head>
-<body data-page="home">
-  <nav id="nav">
-    <div class="nav-inner">
-      <a href="index.html" class="nav-logo">Safe Walk</a>
-      <div class="nav-links">
-        <a href="how-it-works.html" data-nav="how-it-works">How It Works</a>
-        <a href="about.html" data-nav="about">About</a>
-        <a href="partners.html" data-nav="partners">For Partners</a>
-        <a href="#" class="nav-demo">Try the Demo</a>
+<body class="bg-bg antialiased">
+
+  <!-- Nav -->
+  <nav id="main-nav" class="fixed top-0 w-full z-50 bg-bg/60 backdrop-blur-xl transition-all duration-300">
+    <div class="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
+      <a href="/website/index.html" class="text-lg font-bold text-white tracking-tight">Safe Walk</a>
+      <div class="hidden md:flex items-center gap-8 text-sm">
+        <a href="/website/how-it-works.html" class="text-txt-secondary hover:text-white transition-colors duration-200">How It Works</a>
+        <a href="/website/about.html" class="text-txt-secondary hover:text-white transition-colors duration-200">About</a>
+        <a href="/website/partners.html" class="text-txt-secondary hover:text-white transition-colors duration-200">For Partners</a>
+        <a href="#" class="px-4 py-1.5 text-safe-green border border-safe-green/25 rounded-md hover:bg-safe-green/5 transition-all duration-200 text-sm font-medium">Try the Demo</a>
       </div>
-      <button class="hamburger" id="hamburger" type="button" aria-label="Open menu" aria-expanded="false" aria-controls="mobile-menu">
-        <span></span>
-        <span></span>
-        <span></span>
+      <button id="mobile-toggle" class="md:hidden text-txt-secondary hover:text-white p-2">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 6h16M4 12h16M4 18h16"/></svg>
       </button>
     </div>
   </nav>
 
-  <div class="mobile-menu" id="mobile-menu">
-    <a href="how-it-works.html" data-nav="how-it-works">How It Works</a>
-    <a href="about.html" data-nav="about">About</a>
-    <a href="partners.html" data-nav="partners">For Partners</a>
-    <a href="#" class="mobile-demo">Try the Demo</a>
+  <!-- Mobile menu -->
+  <div id="mobile-menu" class="mobile-menu fixed inset-y-0 right-0 w-72 bg-bg-card/95 backdrop-blur-xl z-[60] border-l border-brd p-8 pt-20">
+    <button id="mobile-close" class="absolute top-5 right-5 text-txt-secondary hover:text-white">
+      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M6 18L18 6M6 6l12 12"/></svg>
+    </button>
+    <div class="flex flex-col gap-6 text-lg">
+      <a href="/website/how-it-works.html" class="text-txt-secondary hover:text-white transition">How It Works</a>
+      <a href="/website/about.html" class="text-txt-secondary hover:text-white transition">About</a>
+      <a href="/website/partners.html" class="text-txt-secondary hover:text-white transition">For Partners</a>
+      <a href="#" class="mt-4 px-5 py-2.5 text-safe-green border border-safe-green/25 rounded-md hover:bg-safe-green/5 transition text-center font-medium">Try the Demo</a>
+    </div>
   </div>
 
-  <main class="page-shell">
-    <section class="hero">
-      <canvas id="hero-canvas"></canvas>
-      <div class="hero-content">
-        <span class="eyebrow hero-label anim-fade-up">Safety API for Google Maps</span>
-        <h1 class="anim-fade-up">Every map shows the fastest route. <span>None show the safest.</span></h1>
-        <p class="hero-sub anim-fade-up">Safe Walk is a safety layer built on top of Google Maps. It scores walking routes using police incident data, streetlight coverage, and community reports, then recommends the safest path — not just the fastest one.</p>
-        <div class="hero-actions anim-fade-up">
-          <a href="#" class="button button-primary">Try the Demo</a>
-          <a href="how-it-works.html" class="button button-ghost">How It Works</a>
+  <!-- Hero -->
+  <section class="relative min-h-screen flex items-center justify-center px-6 overflow-hidden">
+    <canvas id="hero-canvas"></canvas>
+    <div class="relative z-10 max-w-4xl mx-auto text-center">
+      <p class="gs-reveal-hero text-safe-green text-xs font-semibold tracking-[0.2em] uppercase mb-6">Safety API for Google Maps</p>
+      <h1 class="gs-reveal-hero text-4xl sm:text-5xl md:text-7xl font-extrabold text-white leading-[1.08] mb-6 tracking-tight">
+        Every map shows the<br>fastest route.<br>
+        <span class="gradient-safe">None show the safest.</span>
+      </h1>
+      <p class="gs-reveal-hero text-base md:text-lg text-txt-secondary max-w-2xl mx-auto mb-10 leading-relaxed">
+        Safe Walk is a safety layer built on top of Google Maps. It scores walking routes using police incident data, streetlight coverage, and community reports — then recommends the safest path, not just the fastest one.
+      </p>
+      <div class="gs-reveal-hero flex flex-col sm:flex-row gap-3 justify-center">
+        <a href="#" class="px-7 py-3.5 bg-safe-green text-[#08080f] font-semibold rounded-lg hover:bg-safe-light transition-colors duration-200 text-base">Try the Demo</a>
+        <a href="/website/how-it-works.html" class="px-7 py-3.5 border border-white/10 text-white rounded-lg hover:bg-white/5 transition-all duration-200 text-base">How It Works</a>
+      </div>
+      <div class="scroll-indicator mt-16 mx-auto w-px h-8 bg-white/20 rounded-full"></div>
+    </div>
+  </section>
+
+  <!-- Stats -->
+  <section class="py-20 px-6 border-y border-brd">
+    <div class="max-w-5xl mx-auto flex flex-col md:flex-row items-center justify-center gap-12 md:gap-0">
+      <div class="flex-1 text-center px-8">
+        <p class="text-5xl font-bold text-white"><span>1 in </span><span class="stat-num" data-target="3">0</span></p>
+        <p class="text-txt-secondary mt-3 text-sm">Canadian women feel unsafe walking alone at night</p>
+        <p class="text-txt-muted text-xs mt-1">StatsCan General Social Survey</p>
+      </div>
+      <div class="stat-divider hidden md:block"></div>
+      <div class="flex-1 text-center px-8">
+        <p class="text-5xl font-bold text-white"><span class="stat-num" data-target="1500">0</span><span>+</span></p>
+        <p class="text-txt-secondary mt-3 text-sm">Safety incidents reported on the TTC in 2024</p>
+        <p class="text-txt-muted text-xs mt-1">Toronto Transit Commission</p>
+      </div>
+      <div class="stat-divider hidden md:block"></div>
+      <div class="flex-1 text-center px-8">
+        <p class="text-5xl font-bold text-white stat-zero">0</p>
+        <p class="text-txt-secondary mt-3 text-sm">Navigation apps that factor safety into routing</p>
+        <p class="text-txt-muted text-xs mt-1">Google Maps, Apple Maps, Waze</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Problem -->
+  <section class="py-28 px-6">
+    <div class="max-w-6xl mx-auto flex flex-col lg:flex-row gap-16 items-start">
+      <div class="flex-1 max-w-2xl">
+        <p class="gs-reveal text-safe-green text-xs font-semibold tracking-[0.2em] uppercase mb-4">The problem</p>
+        <h2 class="gs-reveal text-3xl md:text-4xl font-bold text-white mb-8 leading-tight">Navigation was built for drivers, not pedestrians</h2>
+        <div class="space-y-5 text-txt-secondary text-base leading-relaxed">
+          <p>MapQuest launched in 1996 for driving directions. Google Maps followed in 2005. Waze added crowdsourced traffic. The entire history of digital navigation has been about moving cars faster.</p>
+          <p>When these platforms added pedestrian routing, they used the same logic: shortest distance, fastest time. Walking got bolted onto a system designed for driving.</p>
+          <p>But drivers are in a metal box. Pedestrians are not. A driver doesn't care about streetlights or worry about being followed. A pedestrian does. The risk profile is completely different, and the navigation tools haven't caught up.</p>
         </div>
       </div>
-      <div class="scroll-indicator anim-fade">SCROLL</div>
-    </section>
-
-    <div class="stats-band">
-      <div class="stats-grid anim-stagger">
-        <div class="stat">
-          <span class="stat-number" data-count-kind="ratio">1 in 3</span>
-          <p class="stat-label">Canadian women feel unsafe walking alone at night</p>
-          <p class="stat-source">StatsCan General Social Survey</p>
-        </div>
-        <div class="stat">
-          <span class="stat-number" data-count="1500" data-suffix="+">0</span>
-          <p class="stat-label">Safety incidents reported on the TTC in 2024</p>
-          <p class="stat-source">Toronto Transit Commission</p>
-        </div>
-        <div class="stat">
-          <span class="stat-number" data-count="0">0</span>
-          <p class="stat-label">Navigation apps that factor safety into routing</p>
-          <p class="stat-source">Google Maps, Apple Maps, Waze</p>
+      <div class="hidden lg:block flex-shrink-0 w-72 mt-16">
+        <div class="bg-bg-card border border-brd rounded-xl p-6 opacity-50">
+          <div class="space-y-4">
+            <div class="h-px bg-white/5 w-full"></div>
+            <div class="flex gap-4">
+              <div class="h-24 w-px bg-white/5"></div>
+              <div class="flex-1 relative">
+                <div class="absolute top-2 left-0 right-0 border-t-2 border-dashed border-[#4285F4]/60"></div>
+                <div class="h-px bg-white/5 w-full mt-12"></div>
+              </div>
+              <div class="h-24 w-px bg-white/5"></div>
+            </div>
+            <div class="h-px bg-white/5 w-full"></div>
+            <div class="flex gap-4">
+              <div class="h-16 w-px bg-white/5"></div>
+              <div class="flex-1"><div class="h-px bg-white/5 w-full mt-8"></div></div>
+              <div class="h-16 w-px bg-white/5"></div>
+            </div>
+            <div class="h-px bg-white/5 w-full"></div>
+          </div>
+          <p class="text-txt-muted text-xs text-center mt-4">One route. No safety data.</p>
         </div>
       </div>
     </div>
+  </section>
 
-    <section>
-      <div class="section-inner problem-grid">
-        <div class="problem-copy">
-          <span class="section-label anim-fade-up">The problem</span>
-          <h2 class="section-title anim-fade-up">Navigation was built for drivers, not pedestrians</h2>
-          <div class="body-copy">
-            <p class="anim-fade-up">MapQuest launched in 1996 for driving directions. Google Maps followed in 2005. Waze added crowdsourced traffic. The entire history of digital navigation has been about moving cars faster.</p>
-            <p class="anim-fade-up">When these platforms added pedestrian routing, they used the same logic: shortest distance, fastest time. Walking got bolted onto a system designed for driving.</p>
-            <p class="anim-fade-up">But drivers are in a metal box. Pedestrians are not. A driver doesn't care about streetlights or worry about being followed. A pedestrian does. The risk profile is completely different, and the navigation tools haven't caught up.</p>
-          </div>
-        </div>
-        <div class="map-console anim-fade-up" aria-label="Abstract map showing only a single fastest route">
-          <div class="map-topbar">
-            <span>GOOGLE MAPS / WALKING</span>
-            <span>FASTEST ONLY</span>
-          </div>
-          <div class="ghost-route"></div>
-          <div class="green-route"></div>
-          <div class="blue-route"></div>
-          <div class="map-pin start"></div>
-          <div class="map-pin end"></div>
-          <div class="map-note">
-            <strong>Today you get one route.</strong>
-            <span>lighting_score: unavailable<br>incident_density: unavailable<br>route_safety: unavailable</span>
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <section class="solution-section">
-      <div class="section-inner">
-        <div class="solution-head">
+  <!-- Solution -->
+  <section class="py-28 px-6 bg-bg-card">
+    <div class="max-w-4xl mx-auto">
+      <p class="gs-reveal text-safe-green text-xs font-semibold tracking-[0.2em] uppercase mb-4">The solution</p>
+      <h2 class="gs-reveal text-3xl md:text-4xl font-bold text-white mb-6 leading-tight">A safety layer any map can use</h2>
+      <p class="gs-reveal text-txt-secondary text-base leading-relaxed mb-16 max-w-2xl">
+        Safe Walk doesn't replace Google Maps. It adds what Google Maps is missing: a real-time safety score for every street segment in the city.
+      </p>
+      <div class="space-y-0 animate-stagger">
+        <div class="flex gap-8 md:gap-12 items-start py-10 border-t border-brd">
+          <span class="text-6xl font-bold text-txt-muted/30 leading-none flex-shrink-0 hidden sm:block">01</span>
           <div>
-            <span class="section-label anim-fade-up">The solution</span>
-            <h2 class="section-title anim-fade-up">A safety layer any map can use</h2>
+            <h3 class="text-white font-semibold text-lg mb-2">Enter your route</h3>
+            <p class="text-txt-secondary leading-relaxed">Type your start and destination. Safe Walk calls the Google Routes API to get multiple walking route options between the two points.</p>
           </div>
-          <p class="solution-intro anim-fade-up">Safe Walk doesn't replace Google Maps. It adds what Google Maps is missing: a real-time safety score for every street segment in the city. Any app using Google Maps for walking directions can plug in Safe Walk's API and offer a "safest route" toggle alongside the fastest one.</p>
         </div>
-
-        <div class="route-steps anim-stagger">
-          <div class="step-row">
-            <span class="step-kicker">STEP 01</span>
-            <div>
-              <h3>Enter your route</h3>
-              <p>Type your start and destination. Safe Walk calls the Google Routes API to get multiple walking route options.</p>
-            </div>
-            <div class="step-visual input-visual">
-              <div class="input-field">origin / Robarts Library</div>
-              <div class="input-field">destination / 100 Harbord St</div>
-            </div>
+        <div class="flex gap-8 md:gap-12 items-start py-10 border-t border-brd">
+          <span class="text-6xl font-bold text-txt-muted/30 leading-none flex-shrink-0 hidden sm:block">02</span>
+          <div>
+            <h3 class="text-white font-semibold text-lg mb-2">We score each path</h3>
+            <p class="text-txt-secondary leading-relaxed">Each route is scored against our safety graph: police incident density, streetlight coverage, time of day, and community reports. Every point along the path gets a danger cost between 0 and 1.</p>
           </div>
-          <div class="step-row">
-            <span class="step-kicker">STEP 02</span>
-            <div>
-              <h3>We score each path</h3>
-              <p>Each route is scored against our safety graph: police incident density, streetlight coverage, time of day, and community reports.</p>
-            </div>
-            <div class="step-visual score-visual">
-              <div class="score-line"></div>
-              <div class="score-line"></div>
-              <div class="score-line"></div>
-              <span class="score-chip">lowest cost: 0.18</span>
-            </div>
-          </div>
-          <div class="step-row">
-            <span class="step-kicker">STEP 03</span>
-            <div>
-              <h3>See the safest route</h3>
-              <p>Toggle between fastest and safest. See exactly how much safer the recommended route is, and how much longer it takes.</p>
-            </div>
-            <div class="step-visual toggle-visual">
-              <div class="toggle-shell">
-                <span>Fastest 14m</span>
-                <span>Safest 19m</span>
-              </div>
-            </div>
+        </div>
+        <div class="flex gap-8 md:gap-12 items-start py-10 border-y border-brd">
+          <span class="text-6xl font-bold text-txt-muted/30 leading-none flex-shrink-0 hidden sm:block">03</span>
+          <div>
+            <h3 class="text-white font-semibold text-lg mb-2">See the safest route</h3>
+            <p class="text-txt-secondary leading-relaxed">Toggle between fastest and safest. See exactly how much safer the recommended route is, and how much longer it takes. You decide.</p>
           </div>
         </div>
       </div>
-    </section>
+    </div>
+  </section>
 
-    <section>
-      <div class="section-inner data-layout">
-        <div>
-          <span class="section-label anim-fade-up">Real data, not guesswork</span>
-          <h2 class="section-title anim-fade-up">Three layers of safety intelligence</h2>
+  <!-- Data Sources -->
+  <section class="py-28 px-6">
+    <div class="max-w-4xl mx-auto">
+      <p class="gs-reveal text-safe-green text-xs font-semibold tracking-[0.2em] uppercase mb-4">Real data, not guesswork</p>
+      <h2 class="gs-reveal text-3xl md:text-4xl font-bold text-white mb-14 leading-tight">Three layers of safety intelligence</h2>
+      <div class="space-y-10 animate-stagger">
+        <div class="flex gap-6 items-start">
+          <div class="w-0.5 bg-danger rounded-full self-stretch flex-shrink-0 mt-1"></div>
+          <div>
+            <h3 class="text-white font-semibold text-lg mb-2">Police incident data</h3>
+            <p class="text-txt-secondary leading-relaxed">Every reported assault, robbery, and break-and-enter from Toronto Police Open Data. Geocoded, weighted by severity and recency. An assault last month matters more than a bike theft two years ago.</p>
+          </div>
         </div>
-        <div class="data-list anim-stagger">
-          <div class="source-row">
-            <div class="source-bar red"></div>
-            <div>
-              <h3>Police incident data</h3>
-              <p>Every reported assault, robbery, and break-and-enter from Toronto Police Open Data. Geocoded, weighted by severity and recency. An assault last month matters more than a bike theft two years ago.</p>
-            </div>
+        <div class="flex gap-6 items-start">
+          <div class="w-0.5 bg-cyan-400 rounded-full self-stretch flex-shrink-0 mt-1"></div>
+          <div>
+            <h3 class="text-white font-semibold text-lg mb-2">Streetlight coverage</h3>
+            <p class="text-txt-secondary leading-relaxed">The location of every streetlight in Toronto from City Open Data. We compute a lighting density score for every street segment. Well-lit main roads score high. Dark side streets score low. After dark, this layer matters a lot.</p>
           </div>
-          <div class="source-row">
-            <div class="source-bar cyan"></div>
-            <div>
-              <h3>Streetlight coverage</h3>
-              <p>The location of every streetlight in Toronto from City Open Data. We compute a lighting density score for every street segment. Well-lit main roads score high. Dark side streets score low. After dark, this layer matters a lot.</p>
-            </div>
-          </div>
-          <div class="source-row">
-            <div class="source-bar green"></div>
-            <div>
-              <h3>Community reports</h3>
-              <p>Users report harassment, poor lighting, and suspicious activity directly in the app. These reports feed back into safety scores in real time, capturing the things that never make it into police data.</p>
-            </div>
+        </div>
+        <div class="flex gap-6 items-start">
+          <div class="w-0.5 bg-safe-green rounded-full self-stretch flex-shrink-0 mt-1"></div>
+          <div>
+            <h3 class="text-white font-semibold text-lg mb-2">Community reports</h3>
+            <p class="text-txt-secondary leading-relaxed">Users report harassment, poor lighting, and suspicious activity directly in the app. These reports feed back into safety scores in real time, capturing the things that never make it into police data.</p>
           </div>
         </div>
       </div>
-    </section>
+    </div>
+  </section>
 
-    <section class="testimonials-section">
-      <div class="section-inner">
-        <span class="section-label anim-fade-up">What people are saying</span>
-        <h2 class="section-title anim-fade-up">Real experiences from real walkers</h2>
-        <div class="testimonial-grid anim-stagger">
-          <div class="quote-card">
-            <blockquote>"I leave Robarts at midnight twice a week. I always take the long way because I know the side streets aren't lit. If there was an app that showed me which route was actually safest, I'd use it every time."</blockquote>
-            <cite>Early beta tester</cite>
-            <span>University of Toronto student</span>
-          </div>
-          <div class="quote-card">
-            <blockquote>"When I finish my shift at 2 AM, I just pick whichever route looks busiest and hope for the best. There's no tool that actually tells me which streets are safe at that hour."</blockquote>
-            <cite>Early beta tester</cite>
-            <span>Healthcare worker, Toronto</span>
+  <!-- Testimonials -->
+  <section class="py-28 px-6 bg-bg-card">
+    <div class="max-w-5xl mx-auto">
+      <p class="gs-reveal text-safe-green text-xs font-semibold tracking-[0.2em] uppercase mb-4">What people are saying</p>
+      <h2 class="gs-reveal text-3xl md:text-4xl font-bold text-white mb-14 leading-tight">Real experiences from real walkers</h2>
+      <div class="grid grid-cols-1 md:grid-cols-12 gap-6 animate-stagger">
+        <div class="md:col-span-7 bg-bg border border-brd rounded-xl p-8 card-lift">
+          <span class="text-4xl text-txt-muted/40 leading-none font-serif">"</span>
+          <p class="text-txt-primary text-lg leading-relaxed mt-2 mb-6">I leave Robarts at midnight twice a week. I always take the long way because I know the side streets aren't lit. If there was an app that showed me which route was actually safest, I'd use it every time.</p>
+          <div>
+            <p class="text-white font-medium text-sm">Early beta tester</p>
+            <p class="text-txt-muted text-sm">University of Toronto student</p>
           </div>
         </div>
-        <p class="testimonial-note anim-fade-up">Testimonials being collected from beta testers. Updated weekly.</p>
-      </div>
-    </section>
-
-    <section>
-      <div class="section-inner api-layout">
-        <div>
-          <span class="section-label anim-fade-up">For developers</span>
-          <h2 class="section-title anim-fade-up">One API call to make any route safer</h2>
-          <p class="body-copy anim-fade-up">Safe Walk works as a drop-in layer on top of Google Maps. Send us an origin and destination, get back routes ranked by safety.</p>
-        </div>
-        <div class="code-window anim-fade-up">
-          <div class="code-bar">
-            <div class="code-dots">
-              <div class="code-dot red"></div>
-              <div class="code-dot yellow"></div>
-              <div class="code-dot green"></div>
-            </div>
-            <span class="code-title">POST /api/route</span>
+        <div class="md:col-span-5 bg-bg border border-brd rounded-xl p-8 card-lift">
+          <span class="text-4xl text-txt-muted/40 leading-none font-serif">"</span>
+          <p class="text-txt-primary text-base leading-relaxed mt-2 mb-6">When I finish my shift at 2 AM, I just pick whichever route looks busiest and hope for the best. There's no tool that tells me which streets are safe at that hour.</p>
+          <div>
+            <p class="text-white font-medium text-sm">Early beta tester</p>
+            <p class="text-txt-muted text-sm">Healthcare worker, Toronto</p>
           </div>
-          <pre class="code-body"><span class="c-com">// Request</span>
-<span class="c-punc">{</span>
-  <span class="c-key">"origin"</span><span class="c-punc">:</span> <span class="c-str">"Robarts Library, Toronto"</span><span class="c-punc">,</span>
-  <span class="c-key">"destination"</span><span class="c-punc">:</span> <span class="c-str">"100 Harbord St, Toronto"</span>
-<span class="c-punc">}</span>
-
-<span class="c-com">// Response</span>
-<span class="c-punc">{</span>
-  <span class="c-key">"fastest"</span><span class="c-punc">: {</span>
-    <span class="c-key">"distance"</span><span class="c-punc">:</span> <span class="c-str">"1.2 km"</span><span class="c-punc">,</span>
-    <span class="c-key">"duration"</span><span class="c-punc">:</span> <span class="c-str">"14 min"</span><span class="c-punc">,</span>
-    <span class="c-key">"safety_score"</span><span class="c-punc">:</span> <span class="c-num">0.42</span> <span class="c-com">// higher = more dangerous</span>
-  <span class="c-punc">},</span>
-  <span class="c-key">"safest"</span><span class="c-punc">: {</span>
-    <span class="c-key">"distance"</span><span class="c-punc">:</span> <span class="c-str">"1.6 km"</span><span class="c-punc">,</span>
-    <span class="c-key">"duration"</span><span class="c-punc">:</span> <span class="c-str">"19 min"</span><span class="c-punc">,</span>
-    <span class="c-key">"safety_score"</span><span class="c-punc">:</span> <span class="c-num">0.18</span> <span class="c-com">// much safer</span>
-  <span class="c-punc">}</span>
-<span class="c-punc">}</span></pre>
         </div>
       </div>
-    </section>
+      <p class="text-txt-muted text-sm mt-8 text-center">Collecting feedback from beta testers.</p>
+    </div>
+  </section>
 
-    <section class="cta-section">
-      <div class="cta-inner">
-        <h2 class="anim-fade-up">Walking home shouldn't require courage</h2>
-        <p class="anim-fade-up">We're building the safety layer that navigation should have had from the start. Try the demo, report an incident, or reach out if you want to integrate Safe Walk into your platform.</p>
-        <div class="hero-actions anim-fade-up">
-          <a href="#" class="button button-primary">Try the Demo</a>
-          <a href="partners.html" class="button button-ghost">Partner With Us</a>
+  <!-- API Preview -->
+  <section class="py-28 px-6">
+    <div class="max-w-4xl mx-auto">
+      <p class="gs-reveal text-safe-green text-xs font-semibold tracking-[0.2em] uppercase mb-4">For developers</p>
+      <h2 class="gs-reveal text-3xl md:text-4xl font-bold text-white mb-6 leading-tight">One API call to make any route safer</h2>
+      <p class="gs-reveal text-txt-secondary text-base mb-10 max-w-2xl leading-relaxed">Safe Walk works as a drop-in layer on top of Google Maps. Send us an origin and destination, get back routes ranked by safety.</p>
+      <div class="gs-reveal rounded-xl overflow-hidden border border-brd shadow-2xl shadow-black/40">
+        <div class="bg-bg-elevated px-4 py-3 flex items-center gap-3 border-b border-brd">
+          <div class="flex gap-1.5">
+            <div class="w-2.5 h-2.5 rounded-full bg-[#ff5f57]"></div>
+            <div class="w-2.5 h-2.5 rounded-full bg-[#febc2e]"></div>
+            <div class="w-2.5 h-2.5 rounded-full bg-[#28c840]"></div>
+          </div>
+          <span class="text-txt-muted text-xs font-mono ml-2">route-request.js</span>
+        </div>
+        <div class="bg-code p-6 overflow-x-auto">
+          <pre class="text-sm font-mono leading-relaxed"><code><span class="syn-cmt">// Request</span>
+<span class="syn-key">POST</span> <span class="syn-str">/api/route</span>
+<span class="syn-brace">{</span>
+  <span class="syn-str">"origin"</span>: <span class="syn-str">"Robarts Library, Toronto"</span>,
+  <span class="syn-str">"destination"</span>: <span class="syn-str">"100 Harbord St, Toronto"</span>
+<span class="syn-brace">}</span>
+
+<span class="syn-cmt">// Response</span>
+<span class="syn-brace">{</span>
+  <span class="syn-str">"fastest"</span>: <span class="syn-brace">{</span>
+    <span class="syn-str">"distance"</span>: <span class="syn-str">"1.2 km"</span>,
+    <span class="syn-str">"duration"</span>: <span class="syn-str">"14 min"</span>,
+    <span class="syn-str">"safety_score"</span>: <span class="syn-num">0.42</span>   <span class="syn-cmt">// higher = more dangerous</span>
+  <span class="syn-brace">}</span>,
+  <span class="syn-str">"safest"</span>: <span class="syn-brace">{</span>
+    <span class="syn-str">"distance"</span>: <span class="syn-str">"1.6 km"</span>,
+    <span class="syn-str">"duration"</span>: <span class="syn-str">"19 min"</span>,
+    <span class="syn-str">"safety_score"</span>: <span class="syn-num">0.18</span>   <span class="syn-cmt">// much safer</span>
+  <span class="syn-brace">}</span>
+<span class="syn-brace">}</span></code></pre>
         </div>
       </div>
-    </section>
-  </main>
+    </div>
+  </section>
 
-  <footer>
-    <div class="footer-inner">
+  <!-- CTA -->
+  <section class="relative py-28 px-6 bg-bg-card border-t border-brd overflow-hidden">
+    <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[300px] bg-safe-green/5 rounded-full blur-[120px] pointer-events-none"></div>
+    <div class="relative z-10 max-w-3xl mx-auto text-center">
+      <h2 class="gs-reveal text-3xl md:text-4xl font-bold text-white mb-6">Walking home shouldn't require courage</h2>
+      <p class="gs-reveal text-txt-secondary text-base mb-10 leading-relaxed max-w-xl mx-auto">We're building the safety layer that navigation should have had from the start. Try the demo, report an incident, or reach out if you want to integrate Safe Walk into your platform.</p>
+      <div class="gs-reveal flex flex-col sm:flex-row gap-3 justify-center">
+        <a href="#" class="px-7 py-3.5 bg-safe-green text-[#08080f] font-semibold rounded-lg hover:bg-safe-light transition-colors duration-200 text-base">Try the Demo</a>
+        <a href="/website/partners.html" class="px-7 py-3.5 border border-white/10 text-white rounded-lg hover:bg-white/5 transition-all duration-200 text-base">Partner With Us</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer class="py-12 px-6 border-t border-brd">
+    <div class="max-w-6xl mx-auto flex flex-col md:flex-row justify-between items-center gap-6">
       <div>
-        <p class="footer-logo">Safe Walk</p>
-        <p class="footer-tagline">The safety layer for urban navigation.</p>
+        <p class="text-white font-bold">Safe Walk</p>
+        <p class="text-txt-muted text-sm mt-1">The safety layer for urban navigation.</p>
       </div>
-      <div class="footer-links">
-        <a href="how-it-works.html">How It Works</a>
-        <a href="about.html">About</a>
-        <a href="partners.html">For Partners</a>
+      <div class="flex gap-8 text-sm text-txt-muted">
+        <a href="/website/how-it-works.html" class="hover:text-txt-secondary transition-colors">How It Works</a>
+        <a href="/website/about.html" class="hover:text-txt-secondary transition-colors">About</a>
+        <a href="/website/partners.html" class="hover:text-txt-secondary transition-colors">Partners</a>
       </div>
-      <div class="footer-credits">
+      <div class="text-txt-muted text-sm text-right">
         <p>Data: Toronto Police Open Data, City of Toronto</p>
-        <p>Built by Seyedborna Boyafraz</p>
+        <p class="mt-1">Built by Seyedborna Boyafraz</p>
       </div>
     </div>
   </footer>
 
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
   <script>
-    function revealWithoutAnimation() {
-      document.querySelectorAll('.anim-fade-up, .anim-fade, .anim-stagger > *').forEach(element => {
-        element.style.opacity = '1';
-        element.style.transform = 'none';
-      });
-      document.querySelectorAll('.stat-number[data-count-kind="ratio"]').forEach(element => {
-        element.textContent = '1 in 3';
-      });
-      document.querySelectorAll('.stat-number[data-count]').forEach(element => {
-        const target = Number(element.dataset.count || 0);
-        element.textContent = target.toLocaleString() + (element.dataset.suffix || '');
-      });
-    }
-
-    window.setTimeout(() => {
-      const heroStillHidden = Array.from(document.querySelectorAll('.hero .anim-fade-up'))
-        .some(element => Number(getComputedStyle(element).opacity) < 0.1);
-      if (!window.safeWalkAnimated || heroStillHidden) revealWithoutAnimation();
-    }, 1800);
-
-    window.addEventListener('DOMContentLoaded', () => {
-    const nav = document.getElementById('nav');
-    const hamburger = document.getElementById('hamburger');
-    const mobileMenu = document.getElementById('mobile-menu');
-    const currentPage = document.body.dataset.page;
-
-    document.querySelectorAll('[data-nav]').forEach(link => {
-      if (link.dataset.nav === currentPage) {
-        link.classList.add(link.closest('.mobile-menu') ? 'mobile-active' : 'active');
-      }
-    });
-
+    // Nav scroll
+    const nav = document.getElementById('main-nav');
     window.addEventListener('scroll', () => {
-      nav.classList.toggle('scrolled', window.scrollY > 20);
-    }, { passive: true });
-
-    hamburger.addEventListener('click', () => {
-      const isOpen = mobileMenu.classList.toggle('open');
-      hamburger.setAttribute('aria-expanded', String(isOpen));
-    });
-    mobileMenu.addEventListener('click', event => {
-      if (event.target.tagName === 'A') {
-        mobileMenu.classList.remove('open');
-        hamburger.setAttribute('aria-expanded', 'false');
-      }
-    });
-    document.addEventListener('keydown', event => {
-      if (event.key === 'Escape' && mobileMenu.classList.contains('open')) {
-        mobileMenu.classList.remove('open');
-        hamburger.setAttribute('aria-expanded', 'false');
-      }
+      nav.classList.toggle('nav-scrolled', window.scrollY > 40);
     });
 
-    (function createCityGrid() {
-      if (window.matchMedia('(max-width: 768px)').matches || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
-      if (!window.THREE) return;
+    // Mobile menu
+    const mobileMenu = document.getElementById('mobile-menu');
+    document.getElementById('mobile-toggle').addEventListener('click', () => mobileMenu.classList.add('open'));
+    document.getElementById('mobile-close').addEventListener('click', () => mobileMenu.classList.remove('open'));
 
+    // Three.js Hero
+    (function() {
       const canvas = document.getElementById('hero-canvas');
-      let renderer;
-      try {
-        renderer = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: false });
-      } catch (error) {
-        canvas.style.display = 'none';
-        return;
-      }
+      const renderer = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: true });
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+      renderer.setSize(window.innerWidth, window.innerHeight);
 
-      renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
       const scene = new THREE.Scene();
-      scene.fog = new THREE.FogExp2(0x08080f, 0.035);
-      const camera = new THREE.PerspectiveCamera(48, 1, 0.1, 1000);
-      camera.position.set(0, 18, 12);
+      scene.fog = new THREE.Fog(0x08080f, 20, 45);
+
+      const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 100);
+      camera.position.set(0, 20, 14);
       camera.lookAt(0, 0, 0);
 
-      const grid = 25;
-      const spacing = 2.1;
-      const half = (grid - 1) * spacing * 0.5;
-      const total = grid * grid;
-      const positions = new Float32Array(total * 3);
-      const colors = new Float32Array(total * 3);
-      const safeSet = new Set();
-      const dangerSet = new Set();
+      const gridSize = 22;
+      const spacing = 1.8;
+      const half = (gridSize - 1) * spacing / 2;
+      const pointCount = gridSize * gridSize;
+      const positions = new Float32Array(pointCount * 3);
+      const colors = new Float32Array(pointCount * 3);
 
-      function node(row, col) { return row * grid + col; }
-      function seeded(row, col) {
-        const value = Math.sin(row * 12.9898 + col * 78.233) * 43758.5453;
-        return value - Math.floor(value);
-      }
-      function addRoute(points) {
-        points.forEach(([row, col]) => safeSet.add(node(row, col)));
-      }
-      function walkRoute(startRow, startCol, turns) {
-        const points = [];
-        let row = startRow;
-        let col = startCol;
-        points.push([row, col]);
-        turns.forEach(([axis, target]) => {
-          while ((axis === 'r' ? row : col) !== target) {
-            if (axis === 'r') row += target > row ? 1 : -1;
-            if (axis === 'c') col += target > col ? 1 : -1;
-            points.push([row, col]);
-          }
-        });
-        return points;
+      const safeNodes = new Set();
+      for (let i = 0; i < pointCount; i++) {
+        const r = Math.random();
+        if (r < 0.12) safeNodes.add(i);
       }
 
-      const routes = [
-        walkRoute(5, 4, [['c', 13], ['r', 12], ['c', 22], ['r', 19], ['c', 26]]),
-        walkRoute(22, 3, [['r', 16], ['c', 10], ['r', 11], ['c', 18], ['r', 7], ['c', 25]]),
-        walkRoute(9, 26, [['c', 19], ['r', 15], ['c', 12], ['r', 23], ['c', 6]])
-      ];
-      routes.forEach(addRoute);
-
-      [[10, 6], [11, 7], [12, 8], [19, 17], [20, 18], [21, 18], [7, 21], [8, 22], [23, 10], [24, 10], [17, 25]].forEach(([row, col]) => dangerSet.add(node(row, col)));
-
-      for (let row = 0; row < grid; row++) {
-        for (let col = 0; col < grid; col++) {
-          const index = node(row, col);
-          positions[index * 3] = row * spacing - half;
-          positions[index * 3 + 1] = 0;
-          positions[index * 3 + 2] = col * spacing - half;
-
-          if (safeSet.has(index) || seeded(row, col) > 0.93) {
-            colors[index * 3] = 0.204;
-            colors[index * 3 + 1] = 0.659;
-            colors[index * 3 + 2] = 0.325;
-          } else if (dangerSet.has(index) || seeded(row + 7, col + 3) > 0.975) {
-            colors[index * 3] = 0.86;
-            colors[index * 3 + 1] = 0.18;
-            colors[index * 3 + 2] = 0.18;
+      for (let i = 0; i < gridSize; i++) {
+        for (let j = 0; j < gridSize; j++) {
+          const idx = i * gridSize + j;
+          positions[idx * 3]     = j * spacing - half;
+          positions[idx * 3 + 1] = (Math.random() - 0.5) * 0.15;
+          positions[idx * 3 + 2] = i * spacing - half;
+          if (safeNodes.has(idx)) {
+            colors[idx * 3] = 0.204; colors[idx * 3 + 1] = 0.659; colors[idx * 3 + 2] = 0.325;
+          } else if (Math.random() < 0.05) {
+            colors[idx * 3] = 0.35; colors[idx * 3 + 1] = 0.12; colors[idx * 3 + 2] = 0.12;
           } else {
-            colors[index * 3] = 0.2;
-            colors[index * 3 + 1] = 0.2;
-            colors[index * 3 + 2] = 0.251;
+            colors[idx * 3] = 0.165; colors[idx * 3 + 1] = 0.165; colors[idx * 3 + 2] = 0.21;
           }
         }
       }
 
-      const pointGeometry = new THREE.BufferGeometry();
-      pointGeometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
-      pointGeometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
-      const pointMaterial = new THREE.PointsMaterial({
-        size: 0.18,
-        vertexColors: true,
-        sizeAttenuation: true,
-        transparent: true,
-        opacity: 0.72,
-        blending: THREE.AdditiveBlending,
-        depthWrite: false
-      });
-      scene.add(new THREE.Points(pointGeometry, pointMaterial));
-
-      const lineVertices = [];
-      for (let row = 0; row < grid; row++) {
-        for (let col = 0; col < grid; col++) {
-          const index = node(row, col);
-          const x = positions[index * 3];
-          const y = positions[index * 3 + 1];
-          const z = positions[index * 3 + 2];
-          if (col < grid - 1) {
-            const next = node(row, col + 1);
-            lineVertices.push(x, y, z, positions[next * 3], positions[next * 3 + 1], positions[next * 3 + 2]);
-          }
-          if (row < grid - 1) {
-            const next = node(row + 1, col);
-            lineVertices.push(x, y, z, positions[next * 3], positions[next * 3 + 1], positions[next * 3 + 2]);
-          }
-        }
-      }
-      const lineGeometry = new THREE.BufferGeometry();
-      lineGeometry.setAttribute('position', new THREE.BufferAttribute(new Float32Array(lineVertices), 3));
-      scene.add(new THREE.LineSegments(lineGeometry, new THREE.LineBasicMaterial({
-        color: 0x1a1a2e,
-        transparent: true,
-        opacity: 0.15,
-        blending: THREE.AdditiveBlending,
-        depthWrite: false
+      const pointGeo = new THREE.BufferGeometry();
+      pointGeo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+      pointGeo.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+      scene.add(new THREE.Points(pointGeo, new THREE.PointsMaterial({
+        vertexColors: true, sizeAttenuation: true, size: 2.5, transparent: true, opacity: 0.8
       })));
 
-      const routeLineVertices = [];
-      routes.forEach(route => {
-        for (let i = 0; i < route.length - 1; i++) {
-          const start = node(route[i][0], route[i][1]);
-          const end = node(route[i + 1][0], route[i + 1][1]);
-          routeLineVertices.push(
-            positions[start * 3], positions[start * 3 + 1] + 0.04, positions[start * 3 + 2],
-            positions[end * 3], positions[end * 3 + 1] + 0.04, positions[end * 3 + 2]
-          );
+      // Grid lines
+      const lp = [];
+      for (let i = 0; i < gridSize; i++) {
+        for (let j = 0; j < gridSize; j++) {
+          const idx = i * gridSize + j;
+          const x = positions[idx*3], y = positions[idx*3+1], z = positions[idx*3+2];
+          if (j < gridSize-1) { const r=idx+1; lp.push(x,y,z,positions[r*3],positions[r*3+1],positions[r*3+2]); }
+          if (i < gridSize-1) { const r=(i+1)*gridSize+j; lp.push(x,y,z,positions[r*3],positions[r*3+1],positions[r*3+2]); }
         }
-      });
-      const routeGeometry = new THREE.BufferGeometry();
-      routeGeometry.setAttribute('position', new THREE.BufferAttribute(new Float32Array(routeLineVertices), 3));
-      scene.add(new THREE.LineSegments(routeGeometry, new THREE.LineBasicMaterial({
-        color: 0x34A853,
-        transparent: true,
-        opacity: 0.18,
-        blending: THREE.AdditiveBlending,
-        depthWrite: false
-      })));
-
-      const pulseGeometry = new THREE.SphereGeometry(0.24, 10, 10);
-      const pulseMaterial = new THREE.MeshBasicMaterial({ color: 0x4ade80, transparent: true, opacity: 0.92 });
-      const pulses = routes.map((route, index) => ({
-        mesh: new THREE.Mesh(pulseGeometry, pulseMaterial.clone()),
-        route,
-        segment: Math.floor(index * 5),
-        t: index * 0.27
-      }));
-      pulses.forEach(pulse => scene.add(pulse.mesh));
-
-      const startVec = new THREE.Vector3();
-      const endVec = new THREE.Vector3();
-
-      function getPosition(index, out) {
-        out.set(positions[index * 3], positions[index * 3 + 1] + 0.26, positions[index * 3 + 2]);
       }
+      const lg = new THREE.BufferGeometry();
+      lg.setAttribute('position', new THREE.Float32BufferAttribute(lp, 3));
+      scene.add(new THREE.LineSegments(lg, new THREE.LineBasicMaterial({ color: 0x151520, transparent: true, opacity: 0.12 })));
 
-      let mouseX = 0;
-      let mouseY = 0;
-      let camX = 0;
-      let camY = 0;
-      let orbit = 0;
-      let animationFrame;
-
-      window.addEventListener('mousemove', event => {
-        mouseX = (event.clientX / window.innerWidth - 0.5) * 2;
-        mouseY = (event.clientY / window.innerHeight - 0.5) * 2;
-      }, { passive: true });
-
-      function resize() {
-        const width = canvas.clientWidth;
-        const height = canvas.clientHeight;
-        renderer.setSize(width, height, false);
-        camera.aspect = width / height;
-        camera.updateProjectionMatrix();
+      // Pulse particles
+      const safeArr = Array.from(safeNodes);
+      const pulses = [];
+      const pg = new THREE.SphereGeometry(0.12, 8, 8);
+      for (let p = 0; p < 5; p++) {
+        const m = new THREE.Mesh(pg, new THREE.MeshBasicMaterial({ color: 0x34A853, transparent: true, opacity: 0.9 }));
+        scene.add(m);
+        pulses.push({ mesh: m, fromIdx: safeArr[Math.floor(Math.random()*safeArr.length)], toIdx: safeArr[Math.floor(Math.random()*safeArr.length)], t: Math.random(), speed: 0.003 + Math.random()*0.004 });
       }
-      resize();
-      window.addEventListener('resize', resize, { passive: true });
+      function gp(idx) { return new THREE.Vector3(positions[idx*3], positions[idx*3+1]+0.15, positions[idx*3+2]); }
 
-      function render() {
-        if (document.hidden) {
-          animationFrame = undefined;
-          return;
-        }
-        animationFrame = requestAnimationFrame(render);
-        orbit += 0.0003;
-        camX += (mouseX * 3.2 - camX) * 0.045;
-        camY += (-mouseY * 1.7 - camY) * 0.045;
-        camera.position.x = Math.sin(orbit) * 12 + camX;
-        camera.position.z = Math.cos(orbit) * 12;
-        camera.position.y = 18 + camY;
+      let mouseX = 0, mouseY = 0;
+      document.addEventListener('mousemove', e => { mouseX = (e.clientX/window.innerWidth-0.5)*2; mouseY = (e.clientY/window.innerHeight-0.5)*2; });
+
+      let angle = 0;
+      function animate() {
+        requestAnimationFrame(animate);
+        angle += 0.0003;
+        const tx = Math.sin(angle)*2 + mouseX*1.5;
+        const ty = 20 + mouseY*-0.8;
+        camera.position.x += (tx - camera.position.x) * 0.02;
+        camera.position.y += (ty - camera.position.y) * 0.02;
         camera.lookAt(0, 0, 0);
-
-        pulses.forEach((pulse, pulseIndex) => {
-          pulse.t += 0.012;
-          if (pulse.t >= 1) {
-            pulse.t = 0;
-            pulse.segment = (pulse.segment + 1) % (pulse.route.length - 1);
-          }
-          const start = node(pulse.route[pulse.segment][0], pulse.route[pulse.segment][1]);
-          const end = node(pulse.route[pulse.segment + 1][0], pulse.route[pulse.segment + 1][1]);
-          getPosition(start, startVec);
-          getPosition(end, endVec);
-          const x = startVec.x + (endVec.x - startVec.x) * pulse.t;
-          const y = startVec.y + (endVec.y - startVec.y) * pulse.t;
-          const z = startVec.z + (endVec.z - startVec.z) * pulse.t;
-          pulse.mesh.position.set(x, y, z);
-          pulse.mesh.material.opacity = 0.66 + Math.sin(Date.now() * 0.005 + pulseIndex) * 0.16;
-        });
+        for (const p of pulses) {
+          p.t += p.speed;
+          if (p.t >= 1) { p.t = 0; p.fromIdx = p.toIdx; p.toIdx = safeArr[Math.floor(Math.random()*safeArr.length)]; }
+          p.mesh.position.lerpVectors(gp(p.fromIdx), gp(p.toIdx), p.t);
+          p.mesh.material.opacity = Math.sin(p.t * Math.PI) * 0.9;
+        }
         renderer.render(scene, camera);
       }
+      animate();
 
-      document.addEventListener('visibilitychange', () => {
-        if (!document.hidden && !animationFrame) render();
+      window.addEventListener('resize', () => {
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        camera.aspect = window.innerWidth / window.innerHeight;
+        camera.updateProjectionMatrix();
       });
-      render();
     })();
 
-    if (!window.gsap || !window.ScrollTrigger) {
-      revealWithoutAnimation();
-    } else {
-      window.safeWalkAnimated = true;
-      gsap.registerPlugin(ScrollTrigger);
+    // GSAP
+    gsap.registerPlugin(ScrollTrigger);
+    gsap.set('.gs-reveal-hero', { y: 25 });
+    gsap.timeline({ delay: 0.2 }).to('.gs-reveal-hero', { opacity: 1, y: 0, duration: 0.8, ease: 'power2.out', stagger: 0.15 });
 
-      const fontsReady = document.fonts && document.fonts.ready
-        ? Promise.race([document.fonts.ready, new Promise(resolve => setTimeout(resolve, 500))])
-        : Promise.resolve();
-
-      fontsReady.then(() => {
-        gsap.set('.hero-label', { opacity: 0, y: 20 });
-        gsap.set('.hero h1', { opacity: 0, y: 30 });
-        gsap.set('.hero-sub', { opacity: 0, y: 20 });
-        gsap.set('.hero .hero-actions', { opacity: 0, y: 16 });
-        gsap.set('.scroll-indicator', { opacity: 0 });
-
-        gsap.timeline({ delay: 0.18 })
-          .to('.hero-label', { opacity: 1, y: 0, duration: 0.75, ease: 'power3.out' })
-          .to('.hero h1', { opacity: 1, y: 0, duration: 0.9, ease: 'power3.out' }, '-=0.45')
-          .to('.hero-sub', { opacity: 1, y: 0, duration: 0.68, ease: 'power2.out' }, '-=0.48')
-          .to('.hero .hero-actions', { opacity: 1, y: 0, duration: 0.62, ease: 'power2.out' }, '-=0.38')
-          .to('.scroll-indicator', { opacity: 1, duration: 0.55 }, '-=0.22');
-      });
-
-      ScrollTrigger.create({
-        trigger: '.stats-band',
-        start: 'top 78%',
-        once: true,
-        onEnter: () => {
-          gsap.to('.stats-band .stat', {
-            opacity: 1,
-            y: 0,
-            duration: 0.62,
-            stagger: 0.15,
-            ease: 'power2.out'
-          });
-          document.querySelectorAll('.stat-number').forEach(number => {
-            if (number.dataset.countKind === 'ratio') {
-              const counter = { value: 0 };
-              gsap.to(counter, {
-                value: 1,
-                duration: 1.1,
-                ease: 'power2.out',
-                onUpdate: () => { number.textContent = `${Math.round(counter.value)} in 3`; },
-                onComplete: () => { number.textContent = '1 in 3'; }
-              });
-              return;
-            }
-            const target = Number(number.dataset.count || 0);
-            const suffix = number.dataset.suffix || '';
-            const counter = { value: 0 };
-            gsap.to(counter, {
-              value: target,
-              duration: target === 0 ? 0.35 : 1.8,
-              ease: 'power2.out',
-              onUpdate: () => { number.textContent = Math.round(counter.value).toLocaleString() + suffix; },
-              onComplete: () => { number.textContent = target.toLocaleString() + suffix; }
-            });
-          });
-        }
-      });
-
-      gsap.utils.toArray('.anim-fade-up').forEach(element => {
-        if (element.closest('.hero')) return;
-        gsap.set(element, { opacity: 0, y: 22 });
-        ScrollTrigger.create({
-          trigger: element,
-          start: 'top 88%',
-          once: true,
-          onEnter: () => gsap.to(element, { opacity: 1, y: 0, duration: 0.74, ease: 'power2.out' })
-        });
-      });
-
-      gsap.utils.toArray('.anim-stagger').forEach(group => {
-        const children = Array.from(group.children);
-        gsap.set(children, { opacity: 0, y: 24 });
-        ScrollTrigger.create({
-          trigger: group,
-          start: 'top 86%',
-          once: true,
-          onEnter: () => gsap.to(children, { opacity: 1, y: 0, duration: 0.62, stagger: 0.15, ease: 'power2.out' })
-        });
-      });
-    }
+    gsap.utils.toArray('.gs-reveal').forEach(el => {
+      gsap.from(el, { y: 30, opacity: 0, duration: 0.8, ease: 'power2.out', scrollTrigger: { trigger: el, start: 'top 85%' } });
     });
+
+    gsap.utils.toArray('.animate-stagger').forEach(c => {
+      gsap.from(c.children, { y: 35, opacity: 0, duration: 0.6, ease: 'power2.out', stagger: 0.12, scrollTrigger: { trigger: c, start: 'top 85%' } });
+    });
+
+    // Stat counters
+    document.querySelectorAll('.stat-num').forEach(el => {
+      const target = parseInt(el.dataset.target);
+      ScrollTrigger.create({ trigger: el, start: 'top 90%', once: true, onEnter: () => {
+        gsap.to({ val: 0 }, { val: target, duration: 1.8, ease: 'power2.out', onUpdate: function() { el.textContent = Math.round(this.targets()[0].val).toLocaleString(); } });
+      }});
+    });
+
+    // Zero stat flash
+    ScrollTrigger.create({ trigger: '.stat-zero', start: 'top 90%', once: true, onEnter: () => {
+      gsap.fromTo('.stat-zero', { color: '#e8e8ed' }, { color: '#ef4444', duration: 0.6, ease: 'power2.out', yoyo: true, repeat: 1 });
+    }});
   </script>
 </body>
 </html>
