@@ -91,11 +91,11 @@ async function computeRoutes(origin, destination) {
     throw new Error('Google Routes could not find a route between these addresses.');
   }
 
-  const scored = rawRoutes.map((route, index) => {
+  const scored = await Promise.all(rawRoutes.map(async (route, index) => {
     const allPoints = decodePolyline(route.polyline.encodedPolyline);
     // Sample every 5th point for performance; always include endpoints
     const sampled = allPoints.length > 5 ? samplePoints(allPoints, 5) : allPoints;
-    const safetyScore = scoreRoute(sampled, hour);
+    const safetyScore = await scoreRoute(sampled, hour);
 
     return {
       polyline: route.polyline.encodedPolyline,
@@ -104,7 +104,7 @@ async function computeRoutes(origin, destination) {
       safety_score: parseFloat(safetyScore.toFixed(4)),
       google_rank: index, // 0 = Google's default (fastest) route
     };
-  });
+  }));
 
   // Sort ascending by safety score — lowest = safest
   const bySafety = [...scored].sort((a, b) => a.safety_score - b.safety_score);
