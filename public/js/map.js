@@ -244,14 +244,19 @@ function showInfoPanel(data, mode) {
   document.getElementById('info-distance').textContent = km + ' km';
   updateSafetyBar(pct);
 
-  const compEl = document.getElementById('comparison-text');
+  const compEl    = document.getElementById('comparison-text');
+  const detailsEl = document.getElementById('safety-details');
+
   if (mode === 'safest' && data.fastest.polyline !== data.safest.polyline) {
     const fastestMins = Math.round(parseInt(data.fastest.duration) / 60);
     const fastestPct  = Math.round((1 - data.fastest.safety_score) * 100);
     const extraMins   = mins - fastestMins;
     const safetyGain  = pct - fastestPct;
+    const scoreDiff   = Math.abs(data.fastest.safety_score - data.safest.safety_score);
 
-    if (extraMins <= 0 && safetyGain > 0) {
+    if (scoreDiff < 0.05) {
+      compEl.textContent = 'Both routes have similar safety profiles for this trip.';
+    } else if (extraMins <= 0 && safetyGain > 0) {
       compEl.textContent = `No extra time, and ${safetyGain}% safer — clearly the better route.`;
     } else if (extraMins > 0 && safetyGain > 0) {
       compEl.textContent = `${extraMins} min longer, but ${safetyGain}% safer than the fastest route.`;
@@ -259,11 +264,21 @@ function showInfoPanel(data, mode) {
       compEl.textContent = `${extraMins > 0 ? extraMins + ' min longer' : 'Same time'} via a different path.`;
     }
     compEl.classList.remove('hidden');
+
+    const avoided = (data.fastest.dangerous_segments || 0) - (data.safest.dangerous_segments || 0);
+    if (avoided > 0) {
+      detailsEl.textContent = `Avoids ${avoided} higher-risk segment${avoided > 1 ? 's' : ''} on the faster route.`;
+      detailsEl.classList.remove('hidden');
+    } else {
+      detailsEl.classList.add('hidden');
+    }
   } else if (mode === 'safest') {
     compEl.textContent = 'The fastest route is already the safest option here.';
     compEl.classList.remove('hidden');
+    detailsEl.classList.add('hidden');
   } else {
     compEl.classList.add('hidden');
+    detailsEl.classList.add('hidden');
   }
 
   document.getElementById('empty-state').classList.add('hidden');
