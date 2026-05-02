@@ -87,6 +87,8 @@ async function computeRoutes(origin, destination) {
   const hour = new Date().getHours();
   const rawRoutes = await callGoogleRoutes(origin, destination);
 
+  console.log(`[routes] Google returned ${rawRoutes.length} route(s) for "${origin}" → "${destination}"`);
+
   if (rawRoutes.length === 0) {
     throw new Error('Google Routes could not find a route between these addresses.');
   }
@@ -106,8 +108,14 @@ async function computeRoutes(origin, destination) {
     };
   }));
 
+  scored.forEach((r, i) => {
+    console.log(`[routes] Route ${i}: safety_score=${r.safety_score}, polyline_prefix=${r.polyline.slice(0, 20)}`);
+  });
+
   // Sort ascending by safety score — lowest = safest
   const bySafety = [...scored].sort((a, b) => a.safety_score - b.safety_score);
+
+  console.log(`[routes] fastest === safest polyline: ${scored[0].polyline === bySafety[0].polyline}`);
 
   return {
     fastest: scored[0],   // Google's first route is always the fastest
