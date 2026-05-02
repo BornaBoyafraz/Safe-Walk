@@ -169,9 +169,11 @@ async function safetyCost(lat, lng, hour) {
 }
 
 async function scoreRoute(points, hour) {
-  if (!points || points.length === 0) return 0;
+  if (!points || points.length === 0) return { score: 0, dangerousSegments: 0 };
   const costs = await Promise.all(points.map(p => safetyCost(p.lat, p.lng, hour)));
-  return costs.reduce((sum, c) => sum + c, 0) / costs.length;
+  const score = costs.reduce((sum, c) => sum + c, 0) / costs.length;
+  const dangerousSegments = costs.filter(c => c > 0.5).length;
+  return { score, dangerousSegments };
 }
 
 module.exports = { safetyCost, scoreRoute };
