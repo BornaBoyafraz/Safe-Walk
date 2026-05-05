@@ -11,11 +11,6 @@ let activeMode      = 'safest';
 let heatmapLayer    = null;
 let incidentCache   = null;
 let streetlightMarkers = [];
-let reportMarkers   = [];
-let reportsCached   = false;
-let reportingMode   = false;
-let pendingReportLatLng = null;
-let mapClickListener = null;
 
 // ─── Bootstrap ────────────────────────────────────────────────────────────────
 // Fetch the API key from the server, then inject the Maps script dynamically
@@ -27,7 +22,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const { googleMapsApiKey } = await res.json();
 
     const script = document.createElement('script');
-    script.src = `https://maps.googleapis.com/maps/api/js?key=${googleMapsApiKey}&libraries=places&callback=initMap`;
+    script.src = `https://maps.googleapis.com/maps/api/js?key=${googleMapsApiKey}&libraries=places,visualization&callback=initMap`;
     script.onerror = () => showError('Google Maps failed to load. Check that the API key has Maps JS, Places, and Routes APIs enabled.');
     document.head.appendChild(script);
   } catch (err) {
@@ -49,8 +44,6 @@ function initMap() {
   setupFindButton();
   setupModeTabs();
   setupHeatmapToggle();
-  setupReportsToggle();
-  setupReportFlow();
   setupStreetlightLayer();
 
   // Preload heatmap data in background so toggle is instant
@@ -330,14 +323,14 @@ function showEmptyState() {
   document.getElementById('empty-state').classList.remove('hidden');
 }
 
-// ─── Heatmap layer ────────────────────────────────────────────────────────────
+// ─── Heatmap layer (Google Maps native HeatmapLayer) ─────────────────────────
 function setupHeatmapToggle() {
   const toggle = document.getElementById('heatmap-toggle');
   const label  = document.getElementById('heatmap-label');
 
   toggle.addEventListener('change', async e => {
     if (!e.target.checked) {
-      heatmapLayer?.hide();
+      if (heatmapLayer) heatmapLayer.setMap(null);
       return;
     }
 
@@ -355,19 +348,8 @@ function setupHeatmapToggle() {
       const res = await fetch('/api/incidents/heatmap');
       if (!res.ok) throw new Error('/api/incidents/heatmap returned ' + res.status);
       const rows = await res.json();
-
-      // Build LatLng array in chunks to avoid freezing the main thread
-      const points = [];
-      const CHUNK = 5000;
-      for (let i = 0; i < rows.length; i += CHUNK) {
-        rows.slice(i, i + CHUNK).forEach(r => points.push(new google.maps.LatLng(r.lat, r.lng)));
-        if (i + CHUNK < rows.length) {
-          await new Promise(r => requestAnimationFrame(r));
-        }
-      }
-
-      incidentCache = points;
-      showHeatmap(points);
+      incidentCache = rows.map(r => new google.maps.LatLng(r.lat, r.lng));
+      showHeatmap(incidentCache);
     } catch (err) {
       console.error('Heatmap load failed:', err.message);
       e.target.checked = false;
@@ -379,101 +361,28 @@ function setupHeatmapToggle() {
 }
 
 function showHeatmap(points) {
-  if (!heatmapLayer) {
-    heatmapLayer = new SafeWalkHeatmap(map);
-    heatmapLayer.setPoints(points);
-  }
-  heatmapLayer.show();
-}
-
-// Canvas-based heatmap overlay — replaces the deprecated google.maps.visualization.HeatmapLayer
-class SafeWalkHeatmap {
-  constructor(mapInstance) {
-    this._map     = mapInstance;
-    this._mapDiv  = document.getElementById('map');
-    this._points  = null;
-    this._heat    = null;
-    this._container = null;
-    this._proj    = null;
-    this._visible = false;
-    this._init();
+  if (heatmapLayer) {
+    heatmapLayer.setMap(map);
+    return;
   }
 
-  _init() {
-    const div = document.createElement('div');
-    div.style.cssText = 'position:absolute;top:0;left:0;pointer-events:none;opacity:0;transition:opacity 0.3s;z-index:1';
-    div.style.width  = this._mapDiv.offsetWidth  + 'px';
-    div.style.height = this._mapDiv.offsetHeight + 'px';
-    this._mapDiv.appendChild(div);
-    this._container = div;
-
-    this._heat = h337.create({
-      container: div,
-      radius: 22,
-      maxOpacity: 0.7,
-      minOpacity: 0,
-      blur: 0.75,
-      gradient: {
-        '0':    'rgba(255,200,190,0)',
-        '0.25': '#ffb0a0',
-        '0.5':  '#e03010',
-        '0.75': '#c00000',
-        '1.0':  '#7a0000',
-      },
-    });
-
-    // Dummy OverlayView to get MapCanvasProjection (the only way to access it)
-    const self = this;
-    const Dummy = class extends google.maps.OverlayView {
-      onAdd()    {}
-      draw()     { self._proj = this.getProjection(); }
-      onRemove() {}
-    };
-    this._dummy = new Dummy();
-    this._dummy.setMap(this._map);
-
-    // Hide during pan so the static canvas doesn't look misaligned; re-render on idle
-    this._map.addListener('dragstart', () => {
-      if (this._visible) this._container.style.opacity = '0';
-    });
-    this._map.addListener('idle', () => {
-      if (!this._visible) return;
-      this._render();
-      this._container.style.opacity = '1';
-    });
-  }
-
-  _render() {
-    if (!this._heat || !this._points || !this._proj) return;
-    const step = Math.max(1, Math.ceil(this._points.length / 8000));
-    const data = [];
-    for (let i = 0; i < this._points.length; i += step) {
-      const px = this._proj.fromLatLngToContainerPixel(this._points[i]);
-      if (px) data.push({ x: Math.round(px.x), y: Math.round(px.y), value: 1 });
-    }
-    this._heat.setData({ max: 10, data });
-  }
-
-  setPoints(points) {
-    this._points = points;
-    if (this._visible) this._render();
-  }
-
-  show() {
-    this._visible = true;
-    this._render();
-    this._container.style.opacity = '1';
-  }
-
-  hide() {
-    this._visible = false;
-    this._container.style.opacity = '0';
-  }
-
-  destroy() {
-    this._dummy?.setMap(null);
-    this._container?.parentNode?.removeChild(this._container);
-  }
+  heatmapLayer = new google.maps.visualization.HeatmapLayer({
+    data: points,
+    map: map,
+    radius: 25,
+    maxIntensity: 20,
+    dissipating: true,
+    opacity: 0.75,
+    gradient: [
+      'rgba(0, 0, 0, 0)',
+      'rgba(255, 160, 160, 0.2)',
+      'rgba(255, 120, 100, 0.35)',
+      'rgba(255, 80, 60, 0.5)',
+      'rgba(230, 50, 30, 0.65)',
+      'rgba(200, 20, 10, 0.8)',
+      'rgba(160, 0, 0, 0.95)',
+    ],
+  });
 }
 
 // ─── Streetlight layer ────────────────────────────────────────────────────────
@@ -532,203 +441,6 @@ function clearStreetlights() {
   streetlightMarkers = [];
 }
 
-// ─── Community reports layer ──────────────────────────────────────────────────
-function setupReportsToggle() {
-  const toggle = document.getElementById('reports-toggle');
-  const label  = document.getElementById('reports-label');
-
-  toggle.addEventListener('change', async e => {
-    if (!e.target.checked) {
-      reportMarkers.forEach(m => m.setMap(null));
-      return;
-    }
-
-    // Already fetched — just show the cached markers
-    if (reportsCached) {
-      reportMarkers.forEach(m => m.setMap(map));
-      return;
-    }
-
-    const origText = label.textContent;
-    toggle.disabled = true;
-    label.textContent = 'Loading...';
-
-    try {
-      await loadReportMarkers();
-      reportsCached = true;
-    } finally {
-      toggle.disabled = false;
-      label.textContent = origText;
-    }
-  });
-}
-
-async function loadReportMarkers() {
-  try {
-    const res = await fetch('/api/reports');
-    if (!res.ok) return;
-    const geojson = await res.json();
-
-    reportMarkers.forEach(m => m.setMap(null));
-    reportMarkers = [];
-
-    const iconColors = {
-      harassment: '#EA4335',
-      suspicious_activity: '#FBBC04',
-      poor_lighting: '#00E5FF',
-      other: '#9ca3af',
-    };
-
-    reportMarkers = geojson.features.map(f => {
-      const [lng, lat] = f.geometry.coordinates;
-      const { category, note } = f.properties;
-      const color = iconColors[category] || '#9ca3af';
-      const jitter = () => (Math.random() - 0.5) * 0.0003;
-      const position = { lat: lat + jitter(), lng: lng + jitter() };
-
-      return new google.maps.Marker({
-        position,
-        map,
-        icon: {
-          path: google.maps.SymbolPath.CIRCLE,
-          scale: 8,
-          fillColor: color,
-          fillOpacity: 0.9,
-          strokeColor: '#ffffff',
-          strokeWeight: 1.5,
-        },
-        title: category.replace('_', ' ') + (note ? ': ' + note : ''),
-      });
-    });
-  } catch (err) {
-    console.error('Failed to load community reports:', err.message);
-  }
-}
-
-function clearReportMarkers() {
-  reportMarkers.forEach(m => m.setMap(null));
-  reportMarkers = [];
-  reportsCached = false;
-}
-
-// ─── Report incident flow ─────────────────────────────────────────────────────
-function setupReportFlow() {
-  document.getElementById('report-btn').addEventListener('click', startReporting);
-  document.getElementById('report-submit').addEventListener('click', submitReport);
-  document.getElementById('report-cancel').addEventListener('click', cancelReporting);
-}
-
-function startReporting() {
-  reportingMode = true;
-  pendingReportLatLng = null;
-
-  document.getElementById('report-panel').classList.remove('hidden');
-  document.getElementById('report-prompt').textContent = 'Click anywhere on the map to place your report.';
-  document.getElementById('report-fields').classList.add('hidden');
-  document.getElementById('report-category').value = '';
-  document.getElementById('report-note').value = '';
-
-  // Change cursor to crosshair
-  map.setOptions({ draggableCursor: 'crosshair' });
-
-  mapClickListener = map.addListener('click', e => {
-    pendingReportLatLng = e.latLng;
-
-    // Drop a temporary marker
-    if (window._tempReportMarker) window._tempReportMarker.setMap(null);
-    window._tempReportMarker = new google.maps.Marker({
-      position: e.latLng,
-      map,
-      icon: {
-        path: google.maps.SymbolPath.CIRCLE,
-        scale: 8,
-        fillColor: '#4285F4',
-        fillOpacity: 1,
-        strokeColor: '#ffffff',
-        strokeWeight: 2,
-      },
-      zIndex: 20,
-    });
-
-    document.getElementById('report-prompt').textContent = 'Location set. What happened here?';
-    document.getElementById('report-fields').classList.remove('hidden');
-  });
-}
-
-async function submitReport() {
-  if (!pendingReportLatLng) {
-    document.getElementById('report-prompt').textContent = 'Click on the map first to set a location.';
-    return;
-  }
-
-  const category = document.getElementById('report-category').value;
-  if (!category) {
-    document.getElementById('report-prompt').textContent = 'Please select a category.';
-    return;
-  }
-
-  const note = document.getElementById('report-note').value.trim();
-  const btn = document.getElementById('report-submit');
-  btn.disabled = true;
-  btn.textContent = 'Submitting...';
-
-  try {
-    const res = await fetch('/api/report', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        lat: pendingReportLatLng.lat(),
-        lng: pendingReportLatLng.lng(),
-        category,
-        note: note || undefined,
-      }),
-    });
-
-    if (!res.ok) {
-      const data = await res.json();
-      throw new Error(data.error);
-    }
-
-    cancelReporting();
-
-    // Invalidate cache and refresh if visible so new pin appears
-    reportsCached = false;
-    if (document.getElementById('reports-toggle').checked) {
-      await loadReportMarkers();
-      reportsCached = true;
-    }
-
-    // Brief success message
-    const panel = document.getElementById('report-panel');
-    panel.classList.remove('hidden');
-    document.getElementById('report-prompt').textContent = 'Report submitted. Thank you.';
-    document.getElementById('report-fields').classList.add('hidden');
-    setTimeout(() => panel.classList.add('hidden'), 2500);
-  } catch (err) {
-    document.getElementById('report-prompt').textContent = 'Submit failed: ' + err.message;
-    btn.disabled = false;
-    btn.textContent = 'Submit';
-  }
-}
-
-function cancelReporting() {
-  reportingMode = false;
-  pendingReportLatLng = null;
-
-  if (mapClickListener) {
-    google.maps.event.removeListener(mapClickListener);
-    mapClickListener = null;
-  }
-  if (window._tempReportMarker) {
-    window._tempReportMarker.setMap(null);
-    window._tempReportMarker = null;
-  }
-
-  map.setOptions({ draggableCursor: null });
-  document.getElementById('report-panel').classList.add('hidden');
-  document.getElementById('report-submit').disabled = false;
-  document.getElementById('report-submit').textContent = 'Submit';
-}
 
 // ─── Dark map style ────────────────────────────────────────────────────────────
 function darkMapStyles() {
