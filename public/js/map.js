@@ -12,6 +12,7 @@ let heatmapLayer    = null;
 let incidentCache   = null;
 let streetlightMarkers = [];
 let reportMarkers   = [];
+let reportsCached   = false;
 let reportingMode   = false;
 let pendingReportLatLng = null;
 let mapClickListener = null;
@@ -51,6 +52,17 @@ function initMap() {
   setupReportsToggle();
   setupReportFlow();
   setupStreetlightLayer();
+
+  // Preload heatmap data in background so toggle is instant
+  setTimeout(async () => {
+    try {
+      const res = await fetch('/api/incidents/heatmap');
+      if (res.ok) {
+        const rows = await res.json();
+        incidentCache = rows.map(r => new google.maps.LatLng(r.lat, r.lng));
+      }
+    } catch (e) { /* silent fail — will load on demand */ }
+  }, 2000);
 }
 
 // ─── Autocomplete ─────────────────────────────────────────────────────────────
@@ -320,45 +332,68 @@ function showEmptyState() {
 
 // ─── Heatmap layer ────────────────────────────────────────────────────────────
 function setupHeatmapToggle() {
-  document.getElementById('heatmap-toggle').addEventListener('change', async e => {
+  const toggle = document.getElementById('heatmap-toggle');
+  const label  = document.getElementById('heatmap-label');
+
+  toggle.addEventListener('change', async e => {
     if (!e.target.checked) {
       heatmapLayer?.setMap(null);
       return;
     }
 
+    // Already built from preload or a previous toggle — show immediately
+    if (incidentCache) {
+      showHeatmap(incidentCache);
+      return;
+    }
+
+    const origText = label.textContent;
+    toggle.disabled = true;
+    label.textContent = 'Loading...';
+
     try {
-      if (!incidentCache) {
-        const res = await fetch('/api/incidents');
-        if (!res.ok) throw new Error('/api/incidents returned ' + res.status);
-        incidentCache = await res.json();
+      const res = await fetch('/api/incidents/heatmap');
+      if (!res.ok) throw new Error('/api/incidents/heatmap returned ' + res.status);
+      const rows = await res.json();
+
+      // Build LatLng array in chunks to avoid freezing the main thread
+      const points = [];
+      const CHUNK = 5000;
+      for (let i = 0; i < rows.length; i += CHUNK) {
+        rows.slice(i, i + CHUNK).forEach(r => points.push(new google.maps.LatLng(r.lat, r.lng)));
+        if (i + CHUNK < rows.length) {
+          await new Promise(r => requestAnimationFrame(r));
+        }
       }
 
-      const points = incidentCache.features.map(f => {
-        const [lng, lat] = f.geometry.coordinates;
-        return new google.maps.LatLng(lat, lng);
-      });
-
-      if (!heatmapLayer) {
-        heatmapLayer = new google.maps.visualization.HeatmapLayer({
-          data: points,
-          radius: 20,
-          opacity: 0.7,
-          gradient: [
-            'rgba(0,0,0,0)',
-            'rgba(255,165,0,0.4)',
-            'rgba(255,100,0,0.6)',
-            'rgba(255,50,0,0.8)',
-            'rgba(255,0,0,1)',
-          ],
-        });
-      }
-
-      heatmapLayer.setMap(map);
+      incidentCache = points;
+      showHeatmap(points);
     } catch (err) {
       console.error('Heatmap load failed:', err.message);
       e.target.checked = false;
+    } finally {
+      toggle.disabled = false;
+      label.textContent = origText;
     }
   });
+}
+
+function showHeatmap(points) {
+  if (!heatmapLayer) {
+    heatmapLayer = new google.maps.visualization.HeatmapLayer({
+      data: points,
+      radius: 20,
+      opacity: 0.7,
+      gradient: [
+        'rgba(0,0,0,0)',
+        'rgba(255,165,0,0.4)',
+        'rgba(255,100,0,0.6)',
+        'rgba(255,50,0,0.8)',
+        'rgba(255,0,0,1)',
+      ],
+    });
+  }
+  heatmapLayer.setMap(map);
 }
 
 // ─── Streetlight layer ────────────────────────────────────────────────────────
@@ -419,12 +454,32 @@ function clearStreetlights() {
 
 // ─── Community reports layer ──────────────────────────────────────────────────
 function setupReportsToggle() {
-  document.getElementById('reports-toggle').addEventListener('change', async e => {
+  const toggle = document.getElementById('reports-toggle');
+  const label  = document.getElementById('reports-label');
+
+  toggle.addEventListener('change', async e => {
     if (!e.target.checked) {
-      clearReportMarkers();
+      reportMarkers.forEach(m => m.setMap(null));
       return;
     }
-    await loadReportMarkers();
+
+    // Already fetched — just show the cached markers
+    if (reportsCached) {
+      reportMarkers.forEach(m => m.setMap(map));
+      return;
+    }
+
+    const origText = label.textContent;
+    toggle.disabled = true;
+    label.textContent = 'Loading...';
+
+    try {
+      await loadReportMarkers();
+      reportsCached = true;
+    } finally {
+      toggle.disabled = false;
+      label.textContent = origText;
+    }
   });
 }
 
@@ -434,7 +489,8 @@ async function loadReportMarkers() {
     if (!res.ok) return;
     const geojson = await res.json();
 
-    clearReportMarkers();
+    reportMarkers.forEach(m => m.setMap(null));
+    reportMarkers = [];
 
     const iconColors = {
       harassment: '#EA4335',
@@ -448,7 +504,7 @@ async function loadReportMarkers() {
       const { category, note } = f.properties;
       const color = iconColors[category] || '#9ca3af';
 
-      const marker = new google.maps.Marker({
+      return new google.maps.Marker({
         position: { lat, lng },
         map,
         icon: {
@@ -461,7 +517,6 @@ async function loadReportMarkers() {
         },
         title: category.replace('_', ' ') + (note ? ': ' + note : ''),
       });
-      return marker;
     });
   } catch (err) {
     console.error('Failed to load community reports:', err.message);
@@ -471,6 +526,7 @@ async function loadReportMarkers() {
 function clearReportMarkers() {
   reportMarkers.forEach(m => m.setMap(null));
   reportMarkers = [];
+  reportsCached = false;
 }
 
 // ─── Report incident flow ─────────────────────────────────────────────────────
@@ -553,9 +609,11 @@ async function submitReport() {
 
     cancelReporting();
 
-    // If reports layer is on, refresh it to show the new pin
+    // Invalidate cache and refresh if visible so new pin appears
+    reportsCached = false;
     if (document.getElementById('reports-toggle').checked) {
       await loadReportMarkers();
+      reportsCached = true;
     }
 
     // Brief success message
