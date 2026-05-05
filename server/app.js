@@ -23,6 +23,20 @@ app.get('/api/config', (req, res) => {
   res.json({ googleMapsApiKey: process.env.GOOGLE_MAPS_API_KEY });
 });
 
+app.get('/api/incidents/heatmap', (req, res) => {
+  if (!db) return res.status(503).json({ error: 'Database not initialized.' });
+
+  const rows = db.prepare(`
+    SELECT lat, lng FROM incidents
+    WHERE lat IS NOT NULL AND lng IS NOT NULL
+      AND lat != 0 AND lng != 0
+      AND occurred_at >= datetime('now', '-2 years')
+  `).all();
+
+  res.set('Cache-Control', 'public, max-age=3600');
+  res.json(rows);
+});
+
 app.get('/api/incidents', (req, res) => {
   if (!db) {
     return res.status(503).json({ error: 'Database not initialized. Run npm run migrate && npm run sync.' });
@@ -161,6 +175,7 @@ app.get('/api/reports', (req, res) => {
     ORDER BY created_at DESC
   `).all();
 
+  res.set('Cache-Control', 'public, max-age=300');
   res.json({
     type: 'FeatureCollection',
     features: rows.map(row => ({
