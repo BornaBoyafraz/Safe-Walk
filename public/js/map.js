@@ -27,7 +27,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const { googleMapsApiKey } = await res.json();
 
     const script = document.createElement('script');
-    script.src = `https://maps.googleapis.com/maps/api/js?key=${googleMapsApiKey}&libraries=visualization,places&callback=initMap`;
+    script.src = `https://maps.googleapis.com/maps/api/js?key=${googleMapsApiKey}&libraries=places&callback=initMap`;
     script.onerror = () => showError('Google Maps failed to load. Check that the API key has Maps JS, Places, and Routes APIs enabled.');
     document.head.appendChild(script);
   } catch (err) {
@@ -337,7 +337,7 @@ function setupHeatmapToggle() {
 
   toggle.addEventListener('change', async e => {
     if (!e.target.checked) {
-      heatmapLayer?.setMap(null);
+      heatmapLayer?.hide();
       return;
     }
 
@@ -380,20 +380,100 @@ function setupHeatmapToggle() {
 
 function showHeatmap(points) {
   if (!heatmapLayer) {
-    heatmapLayer = new google.maps.visualization.HeatmapLayer({
-      data: points,
-      radius: 20,
-      opacity: 0.7,
-      gradient: [
-        'rgba(0,0,0,0)',
-        'rgba(255,165,0,0.4)',
-        'rgba(255,100,0,0.6)',
-        'rgba(255,50,0,0.8)',
-        'rgba(255,0,0,1)',
-      ],
+    heatmapLayer = new SafeWalkHeatmap(map);
+    heatmapLayer.setPoints(points);
+  }
+  heatmapLayer.show();
+}
+
+// Canvas-based heatmap overlay — replaces the deprecated google.maps.visualization.HeatmapLayer
+class SafeWalkHeatmap {
+  constructor(mapInstance) {
+    this._map     = mapInstance;
+    this._mapDiv  = document.getElementById('map');
+    this._points  = null;
+    this._heat    = null;
+    this._container = null;
+    this._proj    = null;
+    this._visible = false;
+    this._init();
+  }
+
+  _init() {
+    const div = document.createElement('div');
+    div.style.cssText = 'position:absolute;top:0;left:0;pointer-events:none;opacity:0;transition:opacity 0.3s;z-index:1';
+    div.style.width  = this._mapDiv.offsetWidth  + 'px';
+    div.style.height = this._mapDiv.offsetHeight + 'px';
+    this._mapDiv.appendChild(div);
+    this._container = div;
+
+    this._heat = h337.create({
+      container: div,
+      radius: 22,
+      maxOpacity: 0.7,
+      minOpacity: 0,
+      blur: 0.75,
+      gradient: {
+        '0':    'rgba(255,200,190,0)',
+        '0.25': '#ffb0a0',
+        '0.5':  '#e03010',
+        '0.75': '#c00000',
+        '1.0':  '#7a0000',
+      },
+    });
+
+    // Dummy OverlayView to get MapCanvasProjection (the only way to access it)
+    const self = this;
+    const Dummy = class extends google.maps.OverlayView {
+      onAdd()    {}
+      draw()     { self._proj = this.getProjection(); }
+      onRemove() {}
+    };
+    this._dummy = new Dummy();
+    this._dummy.setMap(this._map);
+
+    // Hide during pan so the static canvas doesn't look misaligned; re-render on idle
+    this._map.addListener('dragstart', () => {
+      if (this._visible) this._container.style.opacity = '0';
+    });
+    this._map.addListener('idle', () => {
+      if (!this._visible) return;
+      this._render();
+      this._container.style.opacity = '1';
     });
   }
-  heatmapLayer.setMap(map);
+
+  _render() {
+    if (!this._heat || !this._points || !this._proj) return;
+    const step = Math.max(1, Math.ceil(this._points.length / 8000));
+    const data = [];
+    for (let i = 0; i < this._points.length; i += step) {
+      const px = this._proj.fromLatLngToContainerPixel(this._points[i]);
+      if (px) data.push({ x: Math.round(px.x), y: Math.round(px.y), value: 1 });
+    }
+    this._heat.setData({ max: 10, data });
+  }
+
+  setPoints(points) {
+    this._points = points;
+    if (this._visible) this._render();
+  }
+
+  show() {
+    this._visible = true;
+    this._render();
+    this._container.style.opacity = '1';
+  }
+
+  hide() {
+    this._visible = false;
+    this._container.style.opacity = '0';
+  }
+
+  destroy() {
+    this._dummy?.setMap(null);
+    this._container?.parentNode?.removeChild(this._container);
+  }
 }
 
 // ─── Streetlight layer ────────────────────────────────────────────────────────
@@ -503,16 +583,18 @@ async function loadReportMarkers() {
       const [lng, lat] = f.geometry.coordinates;
       const { category, note } = f.properties;
       const color = iconColors[category] || '#9ca3af';
+      const jitter = () => (Math.random() - 0.5) * 0.0003;
+      const position = { lat: lat + jitter(), lng: lng + jitter() };
 
       return new google.maps.Marker({
-        position: { lat, lng },
+        position,
         map,
         icon: {
           path: google.maps.SymbolPath.CIRCLE,
-          scale: 7,
+          scale: 8,
           fillColor: color,
           fillOpacity: 0.9,
-          strokeColor: '#1a1a2e',
+          strokeColor: '#ffffff',
           strokeWeight: 1.5,
         },
         title: category.replace('_', ' ') + (note ? ': ' + note : ''),
