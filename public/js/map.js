@@ -58,6 +58,8 @@ function initMap() {
   }, 2000);
 }
 
+window.initMap = initMap;
+
 // ─── Autocomplete ─────────────────────────────────────────────────────────────
 function setupAutocomplete() {
   const torontoBounds = new google.maps.LatLngBounds(
