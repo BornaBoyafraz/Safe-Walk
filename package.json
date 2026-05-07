@@ -8,7 +8,16 @@
     "dev": "node scripts/dev.js",
     "migrate": "node scripts/migrate.js",
     "sync": "node scripts/sync-incidents.js",
-    "sync-lights": "node scripts/sync-streetlights.js"
+    "sync-lights": "node scripts/sync-streetlights.js",
+    "sync-peel": "node scripts/sync-peel-incidents.js",
+    "sync-york": "node scripts/sync-york-incidents.js",
+    "sync-durham": "node scripts/sync-durham-incidents.js",
+    "sync-halton": "node scripts/sync-halton-incidents.js",
+    "sync-transit": "node scripts/sync-transit-stops.js",
+    "sync-311": "node scripts/sync-311.js",
+    "sync-census": "node scripts/sync-census.js",
+    "sync-roads": "node scripts/sync-road-class.js",
+    "sync-all": "node scripts/sync-incidents.js && node scripts/sync-streetlights.js && node scripts/sync-peel-incidents.js && node scripts/sync-york-incidents.js && node scripts/sync-durham-incidents.js && node scripts/sync-halton-incidents.js && node scripts/sync-transit-stops.js && node scripts/sync-311.js && node scripts/sync-census.js && node scripts/sync-road-class.js"
   },
   "keywords": [],
   "author": "",
