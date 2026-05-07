@@ -291,7 +291,7 @@ export function DemoSidebar({
         </div>
 
         <div className="mt-3 flex w-full max-w-[342px] min-w-0 items-start gap-2 text-[11px] leading-relaxed text-muted-foreground">
-          <span className="mt-1 h-1.5 w-10 shrink-0 rounded-full bg-gradient-to-r from-amber-300/20 via-orange-400/50 to-red-700/75" />
+          <span className="mt-1 h-1.5 w-10 shrink-0 rounded-full bg-gradient-to-r from-amber-200/20 via-orange-400/40 to-orange-700/55" />
           <span className="min-w-0 break-words">Warmer density means more recent nearby incidents, not a blocked route.</span>
         </div>
       </div>
