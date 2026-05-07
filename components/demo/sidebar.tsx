@@ -1,6 +1,6 @@
 'use client';
 
-import { FormEvent, RefObject, useEffect, useMemo, useRef, useState } from 'react';
+import { FormEvent, RefObject, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { motion } from 'motion/react';
 import { Flame, Loader2, MapPin, Navigation, Search, Shield } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -12,6 +12,12 @@ import { loadGoogleMaps } from '@/lib/google-maps-loader';
 import { cn } from '@/lib/utils';
 import { dangerToSafetyPercent, durationToMinutes, metersToKm } from '@/lib/polyline';
 import type { MapLayers, RouteMode } from '@/components/map/google-map';
+
+export interface PlaceSelection {
+  role: 'origin' | 'destination';
+  label: string;
+  location: { lat: number; lng: number } | null;
+}
 
 interface DemoSidebarProps {
   apiKey: string | null;
@@ -25,18 +31,22 @@ interface DemoSidebarProps {
   onLayers: (layers: MapLayers) => void;
   onLoading: (loading: boolean) => void;
   onError: (message: string | null) => void;
+  onPlaceSelection?: (selection: PlaceSelection) => void;
   className?: string;
 }
 
 function usePlacesAutocomplete(
   apiKey: string | null,
+  role: PlaceSelection['role'],
   inputRef: RefObject<HTMLInputElement | null>,
+  onSelect: (value: string, location: PlaceSelection['location']) => void,
   onError: (message: string | null) => void,
 ) {
   useEffect(() => {
-    if (!apiKey || !inputRef.current) return;
-    const browserKey = apiKey;
+    if (!apiKey?.trim() || !inputRef.current) return;
+    const browserKey = apiKey.trim();
     let autocomplete: google.maps.places.Autocomplete | null = null;
+    let placeListener: google.maps.MapsEventListener | null = null;
     let cancelled = false;
 
     async function attachAutocomplete() {
@@ -50,24 +60,59 @@ function usePlacesAutocomplete(
 
       autocomplete = new google.maps.places.Autocomplete(inputRef.current, {
         bounds,
+        componentRestrictions: { country: 'ca' },
         strictBounds: false,
-        fields: ['formatted_address', 'geometry', 'name'],
+        fields: ['formatted_address', 'geometry.location', 'name', 'place_id'],
+      });
+
+      placeListener = autocomplete.addListener('place_changed', () => {
+        const place = autocomplete?.getPlace();
+        const inputValue = inputRef.current?.value?.trim() || '';
+        const label = place?.formatted_address || place?.name || inputValue;
+        const rawLocation = place?.geometry?.location;
+        const location = rawLocation
+          ? { lat: rawLocation.lat(), lng: rawLocation.lng() }
+          : null;
+
+        if (!label) {
+          console.warn('[Safe Walk] Places Autocomplete selection was empty.', { role });
+          onError('No address was selected. Try typing the address again.');
+          return;
+        }
+
+        if (!location) {
+          console.warn('[Safe Walk] Places Autocomplete selected a place without geometry.', {
+            role,
+            hasPlaceId: Boolean(place?.place_id),
+          });
+        } else {
+          console.info('[Safe Walk] Places Autocomplete selected place.', {
+            role,
+            hasPlaceId: Boolean(place?.place_id),
+            lat: Number(location.lat.toFixed(5)),
+            lng: Number(location.lng.toFixed(5)),
+          });
+        }
+
+        onSelect(label, location);
+        onError(null);
       });
     }
 
     attachAutocomplete().catch((error) => {
       const message = error instanceof Error ? error.message : 'Places Autocomplete failed to initialize.';
-      console.error('[Safe Walk] Places Autocomplete failed:', error);
+      console.error('[Safe Walk] Places Autocomplete failed:', { role, error });
       onError(message);
     });
 
     return () => {
       cancelled = true;
+      placeListener?.remove();
       if (autocomplete && globalThis.google?.maps?.event) {
         google.maps.event.clearInstanceListeners(autocomplete);
       }
     };
-  }, [apiKey, inputRef, onError]);
+  }, [apiKey, inputRef, onError, onSelect, role]);
 }
 
 function formatDelta(routeData: RouteResult) {
@@ -100,6 +145,12 @@ function routeConfidence(routeData: RouteResult): { label: string; color: string
   return { label: 'Similar profiles', color: 'text-muted-foreground' };
 }
 
+function normalizeTorontoSearch(value: string) {
+  const trimmed = value.trim();
+  if (!trimmed) return '';
+  if (/\b(toronto|ontario|canada)\b/i.test(trimmed) || /,\s*on\b/i.test(trimmed)) return trimmed;
+  return `${trimmed}, Toronto`;
+}
 
 export function DemoSidebar({
   apiKey,
@@ -113,6 +164,7 @@ export function DemoSidebar({
   onLayers,
   onLoading,
   onError,
+  onPlaceSelection,
   className,
 }: DemoSidebarProps) {
   const [origin, setOrigin] = useState('');
@@ -120,8 +172,36 @@ export function DemoSidebar({
   const originRef = useRef<HTMLInputElement | null>(null);
   const destinationRef = useRef<HTMLInputElement | null>(null);
 
-  usePlacesAutocomplete(apiKey, originRef, onError);
-  usePlacesAutocomplete(apiKey, destinationRef, onError);
+  const handleOriginSelection = useCallback(
+    (value: string, location: PlaceSelection['location']) => {
+      setOrigin(value);
+      onPlaceSelection?.({ role: 'origin', label: value, location });
+    },
+    [onPlaceSelection],
+  );
+
+  const handleDestinationSelection = useCallback(
+    (value: string, location: PlaceSelection['location']) => {
+      setDestination(value);
+      onPlaceSelection?.({ role: 'destination', label: value, location });
+    },
+    [onPlaceSelection],
+  );
+
+  usePlacesAutocomplete(
+    apiKey,
+    'origin',
+    originRef,
+    handleOriginSelection,
+    onError,
+  );
+  usePlacesAutocomplete(
+    apiKey,
+    'destination',
+    destinationRef,
+    handleDestinationSelection,
+    onError,
+  );
 
   const activeRoute = routeData?.[activeMode];
   const activeSafety = useMemo(
@@ -142,7 +222,13 @@ export function DemoSidebar({
     onRouteData(null);
 
     try {
-      const data = await fetchRoute(origin.trim(), destination.trim());
+      const routeOrigin = normalizeTorontoSearch(origin);
+      const routeDestination = normalizeTorontoSearch(destination);
+      console.info('[Safe Walk] Route search submitted.', {
+        originChars: routeOrigin.length,
+        destinationChars: routeDestination.length,
+      });
+      const data = await fetchRoute(routeOrigin, routeDestination);
       onRouteData(data);
       onActiveMode('safest');
     } catch (err) {

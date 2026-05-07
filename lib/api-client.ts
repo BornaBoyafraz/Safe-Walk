@@ -18,6 +18,9 @@ export interface RouteOption {
 export interface HeatmapPoint {
   lat: number;
   lng: number;
+  weight?: number;
+  category?: string;
+  offence?: string;
 }
 
 

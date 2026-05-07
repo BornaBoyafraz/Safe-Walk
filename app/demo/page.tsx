@@ -1,10 +1,10 @@
 'use client';
 
 import Link from 'next/link';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { ArrowLeft, Shield } from 'lucide-react';
-import { DemoSidebar } from '@/components/demo/sidebar';
-import { GoogleMap, type MapLayers, type RouteMode } from '@/components/map/google-map';
+import { DemoSidebar, type PlaceSelection } from '@/components/demo/sidebar';
+import { GoogleMap, type MapFocusLocation, type MapLayers, type RouteMode } from '@/components/map/google-map';
 import { BeamsBackground } from '@/components/ui/beams-background';
 import { fetchConfig, type RouteResult } from '@/lib/api-client';
 import { browserKeyMissingMessage } from '@/lib/google-maps-errors';
@@ -18,6 +18,11 @@ export default function DemoPage() {
   const [layers, setLayers] = useState<MapLayers>({ heatmap: false });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [focusLocation, setFocusLocation] = useState<MapFocusLocation | null>(null);
+
+  const handlePlaceSelection = useCallback((selection: PlaceSelection) => {
+    setFocusLocation(selection);
+  }, []);
 
   useEffect(() => {
     if (bundledBrowserKey) return;
@@ -68,6 +73,7 @@ export default function DemoPage() {
         routeData={routeData}
         activeMode={activeMode}
         layers={layers}
+        focusLocation={focusLocation}
         onError={setError}
         className="h-full"
       />
@@ -86,6 +92,7 @@ export default function DemoPage() {
           onLayers={setLayers}
           onLoading={setLoading}
           onError={setError}
+          onPlaceSelection={handlePlaceSelection}
           className="h-[calc(72svh-6px)] rounded-t-3xl md:h-full md:rounded-2xl"
         />
       </div>

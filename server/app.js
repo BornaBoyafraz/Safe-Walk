@@ -17,6 +17,16 @@ try {
   console.warn('Database not found. Run `npm run migrate` and `npm run sync` first.');
 }
 
+function incidentHeatmapWeight(row) {
+  const text = `${row.category || ''} ${row.offence || ''}`.toLowerCase();
+  if (/homicide|shooting|firearm|sexual|weapon|mugging|robbery/.test(text)) return 3.1;
+  if (/assault bodily harm|assault with weapon/.test(text)) return 2.6;
+  if (/assault/.test(text)) return 1.9;
+  if (/break|enter|b&e/.test(text)) return 1.35;
+  if (/theft over|auto theft|motor vehicle/.test(text)) return 1.15;
+  return 1;
+}
+
 app.use(express.json());
 
 app.get('/api/config', (req, res) => {
@@ -36,11 +46,15 @@ app.get('/api/incidents/heatmap', (req, res) => {
   if (!db) return res.status(503).json({ error: 'Database not initialized.' });
 
   const rows = db.prepare(`
-    SELECT lat, lng FROM incidents
+    SELECT lat, lng, category, offence FROM incidents
     WHERE lat IS NOT NULL AND lng IS NOT NULL
       AND lat != 0 AND lng != 0
       AND occurred_at >= datetime('now', '-2 years')
-  `).all();
+  `).all().map(row => ({
+    lat: row.lat,
+    lng: row.lng,
+    weight: Number(incidentHeatmapWeight(row).toFixed(2)),
+  }));
 
   res.set('Cache-Control', 'public, max-age=3600');
   res.json(rows);

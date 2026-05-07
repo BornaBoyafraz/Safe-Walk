@@ -77,6 +77,34 @@
   }
 }
 
+/* Google Places renders this menu outside React at document.body. */
+.pac-container {
+  z-index: 9999 !important;
+  margin-top: 6px;
+  border: 1px solid hsl(var(--border) / 0.9);
+  border-radius: 10px;
+  background: hsl(var(--card) / 0.98);
+  box-shadow: 0 20px 60px rgb(0 0 0 / 0.38);
+  color: hsl(var(--foreground));
+  overflow: hidden;
+}
+
+.pac-item {
+  border-top: 1px solid hsl(var(--border) / 0.72);
+  padding: 9px 12px;
+  color: hsl(var(--muted-foreground));
+  cursor: pointer;
+}
+
+.pac-item:hover,
+.pac-item-selected {
+  background: hsl(var(--muted) / 0.86);
+}
+
+.pac-item-query {
+  color: hsl(var(--foreground));
+}
+
 /* Explicit keyframes — defined here so they're never reliant on Tailwind injection */
 @keyframes shimmer {
   0%, 100% { background-position: 200% center; }

@@ -16,11 +16,18 @@ export interface MapLayers {
   heatmap: boolean;
 }
 
+export interface MapFocusLocation {
+  role: 'origin' | 'destination';
+  label: string;
+  location: { lat: number; lng: number } | null;
+}
+
 interface GoogleMapProps {
   apiKey: string | null;
   routeData: RouteResult | null;
   activeMode: RouteMode;
   layers: MapLayers;
+  focusLocation?: MapFocusLocation | null;
   className?: string;
   onError?: (message: string) => void;
 }
@@ -61,7 +68,15 @@ function markerIcon(color: string, stroke: string): google.maps.Symbol {
   };
 }
 
-export function GoogleMap({ apiKey, routeData, activeMode, layers, className, onError }: GoogleMapProps) {
+function routeBoundsPadding(): google.maps.Padding {
+  if (typeof window !== 'undefined' && window.innerWidth < 768) {
+    return { top: 64, right: 32, bottom: 330, left: 32 };
+  }
+
+  return { top: 72, right: 56, bottom: 72, left: 430 };
+}
+
+export function GoogleMap({ apiKey, routeData, activeMode, layers, focusLocation, className, onError }: GoogleMapProps) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<google.maps.Map | null>(null);
   const safestPolylineRef = useRef<google.maps.Polyline | null>(null);
@@ -93,6 +108,7 @@ export function GoogleMap({ apiKey, routeData, activeMode, layers, className, on
     }
 
     let cancelled = false;
+    let idleTimeout: number | null = null;
 
     async function bootMap() {
       try {
@@ -100,6 +116,10 @@ export function GoogleMap({ apiKey, routeData, activeMode, layers, className, on
         setStatusMessage('Loading Google Maps...');
         await loadGoogleMaps(browserKey);
         if (cancelled || !containerRef.current) return;
+
+        if (containerRef.current.offsetWidth === 0 || containerRef.current.offsetHeight === 0) {
+          throw new Error('Google Maps container has no visible size. Check the demo layout container.');
+        }
 
         const instance = new google.maps.Map(containerRef.current, {
           center: { lat: 43.6532, lng: -79.3832 },
@@ -111,6 +131,24 @@ export function GoogleMap({ apiKey, routeData, activeMode, layers, className, on
           styles: darkMapStyles(),
           gestureHandling: 'greedy',
           backgroundColor: '#08090d',
+        });
+
+        idleTimeout = window.setTimeout(() => {
+          console.warn('[Safe Walk] Google Map created but did not reach idle quickly.', {
+            center: instance.getCenter()?.toJSON(),
+            zoom: instance.getZoom(),
+          });
+        }, 7000);
+
+        google.maps.event.addListenerOnce(instance, 'idle', () => {
+          if (idleTimeout) {
+            window.clearTimeout(idleTimeout);
+            idleTimeout = null;
+          }
+          console.info('[Safe Walk] Google Map initialized.', {
+            center: instance.getCenter()?.toJSON(),
+            zoom: instance.getZoom(),
+          });
         });
 
         mapRef.current = instance;
@@ -130,6 +168,7 @@ export function GoogleMap({ apiKey, routeData, activeMode, layers, className, on
 
     return () => {
       cancelled = true;
+      if (idleTimeout) window.clearTimeout(idleTimeout);
       mapRef.current = null;
     };
   }, [apiKey, onError]);
@@ -143,13 +182,20 @@ export function GoogleMap({ apiKey, routeData, activeMode, layers, className, on
   }, [activeMode]);
 
   useEffect(() => {
-    const currentMap = mapRef.current;
-    if (!currentMap || !routeData) return;
+    const currentMap = map;
+    if (!currentMap) return;
 
     fastestPolylineRef.current?.setMap(null);
     safestPolylineRef.current?.setMap(null);
     originMarkerRef.current?.setMap(null);
     destinationMarkerRef.current?.setMap(null);
+
+    fastestPolylineRef.current = null;
+    safestPolylineRef.current = null;
+    originMarkerRef.current = null;
+    destinationMarkerRef.current = null;
+
+    if (!routeData) return;
 
     let fastestPoints;
     let safestPoints;
@@ -183,7 +229,7 @@ export function GoogleMap({ apiKey, routeData, activeMode, layers, className, on
     const bounds = new google.maps.LatLngBounds();
     [...fastestPoints, ...safestPoints].forEach((point) => bounds.extend(point));
     if (!bounds.isEmpty()) {
-      currentMap.fitBounds(bounds, { top: 72, right: 56, bottom: 72, left: 430 });
+      currentMap.fitBounds(bounds, routeBoundsPadding());
     }
 
     const origin = fastestPoints[0];
@@ -205,7 +251,32 @@ export function GoogleMap({ apiKey, routeData, activeMode, layers, className, on
         icon: markerIcon('#32c47c', '#f7f7f8'),
       });
     }
-  }, [activeMode, routeData]);
+  }, [activeMode, map, onError, routeData]);
+
+  useEffect(() => {
+    if (!map || !focusLocation?.location || routeData) return;
+
+    const center = focusLocation.location;
+    console.info('[Safe Walk] Centering map on selected place.', {
+      role: focusLocation.role,
+      labelChars: focusLocation.label.length,
+      lat: Number(center.lat.toFixed(5)),
+      lng: Number(center.lng.toFixed(5)),
+    });
+    map.panTo(center);
+    if ((map.getZoom() ?? 0) < 14) {
+      map.setZoom(14);
+    }
+  }, [focusLocation, map, routeData]);
+
+  useEffect(() => {
+    return () => {
+      fastestPolylineRef.current?.setMap(null);
+      safestPolylineRef.current?.setMap(null);
+      originMarkerRef.current?.setMap(null);
+      destinationMarkerRef.current?.setMap(null);
+    };
+  }, []);
 
   return (
     <div className={cn('relative h-full min-h-[520px] overflow-hidden bg-background', className)}>

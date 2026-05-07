@@ -50,7 +50,8 @@ export function loadGoogleMaps(apiKey: string): Promise<void> {
     setOptions({
       key: apiKey,
       v: 'weekly',
-      authReferrerPolicy: 'origin',
+      // Keep the full browser referrer available so Google Cloud wildcard
+      // restrictions such as https://safewalk-two.vercel.app/* continue to match.
     });
 
     const importsPromise = Promise.all([
