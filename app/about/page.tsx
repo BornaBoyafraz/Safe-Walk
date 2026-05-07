@@ -1,6 +1,7 @@
 import { Compass, Target, Users } from 'lucide-react';
 import { BeamsBackground } from '@/components/ui/beams-background';
 import { Card, CardContent } from '@/components/ui/card';
+import { Reveal } from '@/components/ui/reveal';
 import { Section, SectionInner } from '@/components/ui/section';
 import { SiteFooter } from '@/components/site/footer';
 import { SiteNav } from '@/components/site/nav';
@@ -29,24 +30,29 @@ export default function AboutPage() {
       <SiteNav />
 
       <section className="relative overflow-hidden px-6 pb-20 pt-32 md:pt-40">
-        <BeamsBackground intensity="subtle" className="opacity-60" />
+        <BeamsBackground intensity="subtle" className="opacity-55" />
         <div className="relative z-10 mx-auto max-w-4xl">
-          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-safe">About Safe Walk</p>
-          <h1 className="mt-5 text-4xl font-semibold leading-tight tracking-tight md:text-6xl">
-            Walking directions should understand what walking actually feels like.
-          </h1>
-          <p className="mt-6 max-w-3xl text-lg leading-8 text-muted-foreground">
-            Safe Walk was built by Seyedborna Boyafraz as a TKS Moonshot project. The goal is simple: make pedestrian safety a first-class routing parameter, not an afterthought hidden behind shortest-path logic.
-          </p>
+          <Reveal>
+            <p className="mb-4 text-[11px] font-medium tracking-[0.18em] text-muted-foreground/60 uppercase">
+              Toronto, Canada · TKS Moonshot 2026
+            </p>
+            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-safe">About Safe Walk</p>
+            <h1 className="mt-5 text-4xl font-semibold leading-tight tracking-tight md:text-6xl">
+              Walking directions should understand what walking actually feels like.
+            </h1>
+            <p className="mt-6 max-w-3xl text-lg leading-8 text-muted-foreground">
+              Safe Walk was built by Seyedborna Boyafraz as a TKS Moonshot project. The goal is simple: make pedestrian safety a first-class routing parameter, not an afterthought hidden behind shortest-path logic.
+            </p>
+          </Reveal>
         </div>
       </section>
 
       <Section className="pt-10">
         <SectionInner className="grid gap-10 lg:grid-cols-[0.8fr_1.2fr]">
-          <div>
+          <Reveal>
             <p className="text-xs font-semibold uppercase tracking-[0.2em] text-safe">Founder note</p>
-          </div>
-          <div className="space-y-6 text-lg leading-9 text-muted-foreground">
+          </Reveal>
+          <Reveal delay={0.08} className="space-y-6 text-lg leading-9 text-muted-foreground">
             <p>
               Most navigation products were invented for cars. Pedestrian routing was added later, but the underlying goal stayed the same: reduce travel time.
             </p>
@@ -59,29 +65,33 @@ export default function AboutPage() {
             <p>
               The first version focuses on Toronto because the city has rich open data: police incident records, streetlight locations, road context, and transit geography. The bigger vision is a safety API that can sit underneath any urban mobility product.
             </p>
-          </div>
+          </Reveal>
         </SectionInner>
       </Section>
 
-      <Section className="bg-card/35">
+      <Section className="relative overflow-hidden bg-card/30">
+        <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-border/60 to-transparent" />
         <SectionInner>
-          <div className="max-w-2xl">
+          <Reveal className="max-w-2xl">
             <p className="text-xs font-semibold uppercase tracking-[0.2em] text-safe">Operating principles</p>
             <h2 className="mt-4 text-3xl font-semibold tracking-tight md:text-5xl">Calm, precise, trustworthy.</h2>
-          </div>
+          </Reveal>
 
           <div className="mt-12 grid gap-4 md:grid-cols-3">
-            {principles.map(({ icon: Icon, title, body }) => (
-              <Card key={title} className="border border-border/80 bg-card/55">
-                <CardContent className="p-5">
-                  <Icon className="h-5 w-5 text-safe" />
-                  <h3 className="mt-5 text-base font-semibold">{title}</h3>
-                  <p className="mt-3 text-sm leading-6 text-muted-foreground">{body}</p>
-                </CardContent>
-              </Card>
+            {principles.map(({ icon: Icon, title, body }, i) => (
+              <Reveal key={title} delay={i * 0.07}>
+                <Card className="h-full border border-border/70 bg-card/50 transition-all duration-200 hover:-translate-y-0.5 hover:border-border hover:bg-card/70 hover:shadow-lg hover:shadow-black/20">
+                  <CardContent className="p-5">
+                    <Icon className="h-5 w-5 text-safe" />
+                    <h3 className="mt-5 text-base font-semibold">{title}</h3>
+                    <p className="mt-3 text-sm leading-6 text-muted-foreground">{body}</p>
+                  </CardContent>
+                </Card>
+              </Reveal>
             ))}
           </div>
         </SectionInner>
+        <div className="pointer-events-none absolute inset-x-0 bottom-0 h-px bg-gradient-to-r from-transparent via-border/60 to-transparent" />
       </Section>
 
       <SiteFooter />
