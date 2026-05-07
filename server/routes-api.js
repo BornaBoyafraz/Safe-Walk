@@ -144,7 +144,7 @@ async function scoreRawRoutes(rawRoutes, hour) {
   return Promise.all(rawRoutes.map(async (route, index) => {
     const allPoints = decodePolyline(route.polyline.encodedPolyline);
     const sampled = allPoints.length > 5 ? samplePoints(allPoints, 5) : allPoints;
-    const { score, dangerousSegments } = await scoreRoute(sampled, hour);
+    const { score, dangerousSegments } = scoreRoute(sampled, hour);
 
     return {
       polyline: route.polyline.encodedPolyline,

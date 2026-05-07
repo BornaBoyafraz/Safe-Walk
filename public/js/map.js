@@ -15,17 +15,41 @@ let streetlightMarkers = [];
 // ─── Bootstrap ────────────────────────────────────────────────────────────────
 // Fetch the API key from the server, then inject the Maps script dynamically
 // so the key never appears in the HTML source.
+
+// Google calls this global function when the API key fails authentication.
+// Without it, auth failures are completely silent in the UI.
+window.gm_authFailure = function () {
+  console.error('[SafeWalk] Google Maps authentication failed. The API key is missing, invalid, or has incorrect restrictions.');
+  showError(
+    'Google Maps failed to authenticate. Check that the API key is valid and has Maps JavaScript API, Places API, and Routes API enabled with no HTTP referrer restrictions blocking server calls.'
+  );
+};
+
 document.addEventListener('DOMContentLoaded', async () => {
   try {
     const res = await fetch('/api/config');
-    if (!res.ok) throw new Error('Server returned ' + res.status);
+    if (!res.ok) {
+      console.error('[SafeWalk] /api/config returned', res.status);
+      throw new Error('Config endpoint returned ' + res.status);
+    }
     const { googleMapsApiKey } = await res.json();
 
+    if (!googleMapsApiKey) {
+      console.error('[SafeWalk] GOOGLE_MAPS_API_KEY is not set in environment variables.');
+      showError('Google Maps API key is not configured on the server. Set GOOGLE_MAPS_API_KEY in your environment.');
+      return;
+    }
+
     const script = document.createElement('script');
-    script.src = `https://maps.googleapis.com/maps/api/js?key=${googleMapsApiKey}&libraries=places,visualization&callback=initMap`;
-    script.onerror = () => showError('Google Maps failed to load. Check that the API key has Maps JS, Places, and Routes APIs enabled.');
+    script.src = `https://maps.googleapis.com/maps/api/js?key=${googleMapsApiKey}&libraries=places,visualization&callback=initMap&loading=async`;
+    script.async = true;
+    script.onerror = () => {
+      console.error('[SafeWalk] Google Maps script failed to load (network error or CSP block).');
+      showError('Google Maps failed to load. Check your network connection and that the API key is valid.');
+    };
     document.head.appendChild(script);
   } catch (err) {
+    console.error('[SafeWalk] Bootstrap error:', err.message);
     showError('Could not connect to server: ' + err.message);
   }
 });

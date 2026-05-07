@@ -1,6 +1,5 @@
 const Database = require('better-sqlite3');
 const path = require('path');
-const { estimateRisk } = require('./claude-score');
 
 const DB_PATH = path.join(__dirname, '..', 'data', 'safewalk.db');
 
@@ -88,7 +87,7 @@ function timeWeights(hour) {
   };
 }
 
-async function safetyCost(lat, lng, hour) {
+function safetyCost(lat, lng, hour) {
   // Incident scoring — 500m bounding box
   const incidents = nearbyIncidents.all(
     lat - 0.0045, lat + 0.0045,
@@ -137,22 +136,8 @@ async function safetyCost(lat, lng, hour) {
     incidentSum += distanceWeight * recencyWeight * severity;
   }
 
-  // When police data is sparse, use Claude to fill the gap.
   // Normalization: 25 weighted-equivalent incidents = max score, calibrated to Toronto's density.
-  const dbIncidentScore = Math.min(incidentSum / 25, 1.0);
-
-  let incidentScore;
-  if (incidents.length < 3) {
-    const aiEstimate = await estimateRisk(lat, lng, hour);
-    if (aiEstimate !== null) {
-      // Blend: weight DB data 30%, AI estimate 70% when data is sparse
-      incidentScore = 0.3 * dbIncidentScore + 0.7 * aiEstimate;
-    } else {
-      incidentScore = dbIncidentScore;
-    }
-  } else {
-    incidentScore = dbIncidentScore;
-  }
+  const incidentScore = Math.min(incidentSum / 25, 1.0);
 
   // Lighting scoring — 100m bounding box
   const { n: lightCount } = nearbyLightCount.get(
@@ -168,9 +153,9 @@ async function safetyCost(lat, lng, hour) {
   return Math.max(0, Math.min(1, cost));
 }
 
-async function scoreRoute(points, hour) {
+function scoreRoute(points, hour) {
   if (!points || points.length === 0) return { score: 0, dangerousSegments: 0 };
-  const costs = await Promise.all(points.map(p => safetyCost(p.lat, p.lng, hour)));
+  const costs = points.map(p => safetyCost(p.lat, p.lng, hour));
   const score = costs.reduce((sum, c) => sum + c, 0) / costs.length;
   const dangerousSegments = costs.filter(c => c > 0.5).length;
   return { score, dangerousSegments };

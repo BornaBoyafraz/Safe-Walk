@@ -46,8 +46,10 @@
       background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
       background-size: 256px 256px;
     }
-    .gs-reveal { opacity: 0; }
-    .gs-reveal-hero { opacity: 0; }
+    .gs-reveal { opacity: 0; transition: opacity 0.6s ease; }
+    .gs-reveal-hero { opacity: 0; transition: opacity 0.6s ease; }
+    .gs-loaded .gs-reveal { opacity: 1; }
+    .gs-loaded .gs-reveal-hero { opacity: 1; }
     @keyframes bob {
       0%, 100% { transform: translateY(0); opacity: 0.3; }
       50% { transform: translateY(8px); opacity: 0.6; }
@@ -128,13 +130,13 @@
   <section class="py-20 px-6 border-y border-brd">
     <div class="max-w-5xl mx-auto flex flex-col md:flex-row items-center justify-center gap-12 md:gap-0">
       <div class="flex-1 text-center px-8">
-        <p class="text-5xl font-bold text-white"><span>1 in </span><span class="stat-num" data-target="3">0</span></p>
+        <p class="text-5xl font-bold text-white"><span>1 in </span><span class="stat-num" data-target="3">3</span></p>
         <p class="text-txt-secondary mt-3 text-sm">Canadian women feel unsafe walking alone at night</p>
         <p class="text-txt-muted text-xs mt-1">StatsCan General Social Survey</p>
       </div>
       <div class="stat-divider hidden md:block"></div>
       <div class="flex-1 text-center px-8">
-        <p class="text-5xl font-bold text-white"><span class="stat-num" data-target="1500">0</span><span>+</span></p>
+        <p class="text-5xl font-bold text-white"><span class="stat-num" data-target="1500">1,500</span><span>+</span></p>
         <p class="text-txt-secondary mt-3 text-sm">Safety incidents reported on the TTC in 2024</p>
         <p class="text-txt-muted text-xs mt-1">Toronto Transit Commission</p>
       </div>
@@ -494,6 +496,9 @@
     ScrollTrigger.create({ trigger: '.stat-zero', start: 'top 90%', once: true, onEnter: () => {
       gsap.fromTo('.stat-zero', { color: '#e8e8ed' }, { color: '#ef4444', duration: 0.6, ease: 'power2.out', yoyo: true, repeat: 1 });
     }});
+
+    // Fallback: ensure all content is visible even if GSAP partially fails
+    setTimeout(() => { document.body.classList.add('gs-loaded'); }, 3000);
   </script>
 </body>
 </html>

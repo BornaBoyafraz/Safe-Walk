@@ -1,66 +1,49 @@
-const Anthropic = require('@anthropic-ai/sdk');
+const fs = require('fs');
+const path = require('path');
 
 const ROUTES_API_URL = 'https://routes.googleapis.com/directions/v2:computeRoutes';
 
-// ─── Claude client ────────────────────────────────────────────────────────────
-let client = null;
-if (process.env.ANTHROPIC_API_KEY) {
-  client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
-}
+// Loaded once and cached in warm function instances
+let incidentPoints = null;
 
-const riskCache = new Map();
-
-async function estimateRisk(lat, lng, hour) {
-  if (!client) return 0.5;
-
-  const key = `${lat.toFixed(3)},${lng.toFixed(3)},${hour}`;
-  if (riskCache.has(key)) return riskCache.get(key);
-
-  const timeLabel =
-    hour >= 21 || hour < 5  ? 'late night (high-risk hours)' :
-    hour >= 5  && hour < 7  ? 'early morning' :
-    hour >= 7  && hour < 19 ? 'daytime' : 'evening';
+function loadIncidents() {
+  if (incidentPoints !== null) return incidentPoints;
 
   try {
-    const response = await Promise.race([
-      client.messages.create({
-        model: 'claude-haiku-4-5-20251001',
-        max_tokens: 8,
-        messages: [{
-          role: 'user',
-          content: `You are a pedestrian safety scoring engine for Toronto, Canada.\n\nRate the pedestrian safety risk for this location:\n- Latitude: ${lat.toFixed(4)}, Longitude: ${lng.toFixed(4)}\n- Time: ${hour}:00 (${timeLabel})\n\nReturn ONLY a single decimal number between 0.00 and 1.00 where:\n  0.00 = very safe\n  1.00 = high risk\n\nBase your estimate on your knowledge of Toronto. Output the number only.`,
-        }],
-      }),
-      new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), 4000)),
-    ]);
-
-    const raw = response.content[0]?.text?.trim();
-    const score = parseFloat(raw);
-    if (!isFinite(score) || score < 0 || score > 1) return 0.5;
-    riskCache.set(key, score);
-    return score;
-  } catch {
-    return 0.5;
+    const jsonPath = path.join(process.cwd(), 'public', 'data', 'heatmap.json');
+    const raw = fs.readFileSync(jsonPath, 'utf8');
+    incidentPoints = JSON.parse(raw);
+    console.log(`[route] loaded ${incidentPoints.length} incidents for scoring`);
+  } catch (err) {
+    incidentPoints = [];
+    console.warn('[route] could not load heatmap.json — scoring will use 0:', err.message);
   }
+
+  return incidentPoints;
 }
 
-async function scoreRoute(points, hour) {
+// Bounding-box incident count within ~500m of a point
+function scorePoint(lat, lng) {
+  const incidents = loadIncidents();
+  let count = 0;
+  for (const p of incidents) {
+    if (Math.abs(p.lat - lat) < 0.0045 && Math.abs(p.lng - lng) < 0.006) {
+      count++;
+    }
+  }
+  // 25 incidents in ~500m radius = max score, calibrated to Toronto's density
+  return Math.min(count / 25, 1.0);
+}
+
+function scoreRoute(points) {
   if (!points || points.length === 0) return { score: 0, dangerousSegments: 0 };
-
-  const step = Math.max(1, Math.floor(points.length / 6));
-  const sampled = [];
-  for (let i = 0; i < points.length; i += step) sampled.push(points[i]);
-
-  const costs = await Promise.all(
-    sampled.map(p => estimateRisk(p.lat, p.lng, hour))
-  );
-
+  const costs = points.map(p => scorePoint(p.lat, p.lng));
   const score = costs.reduce((sum, c) => sum + c, 0) / costs.length;
   const dangerousSegments = costs.filter(c => c > 0.5).length;
   return { score, dangerousSegments };
 }
 
-// ─── Google encoded polyline algorithm ────────────────────────────────────────
+// Google encoded polyline algorithm
 function decodePolyline(encoded) {
   const points = [];
   let index = 0;
@@ -157,7 +140,6 @@ async function callGoogleRoutesWithWaypoint(origin, destination, waypoint) {
   });
 }
 
-// Two routes overlap if 90%+ of sampledA's points are within ~50m of any point in sampledB
 function routesAreDuplicate(sampledA, sampledB) {
   if (sampledA.length === 0 || sampledB.length === 0) return false;
   let matches = 0;
@@ -176,7 +158,6 @@ async function generateAlternatives(origin, destination) {
   const directPoints = decodePolyline(directRoutes[0].polyline.encodedPolyline);
   const mid = directPoints[Math.floor(directPoints.length / 2)];
 
-  // ~450m north/south, ~380m east/west at Toronto's latitude
   const offsets = [
     { lat: mid.lat + 0.004, lng: mid.lng },
     { lat: mid.lat - 0.004, lng: mid.lng },
@@ -198,11 +179,11 @@ async function generateAlternatives(origin, destination) {
   return allRoutes;
 }
 
-async function scoreRawRoutes(rawRoutes, hour) {
-  return Promise.all(rawRoutes.map(async (route, index) => {
+function scoreRawRoutes(rawRoutes) {
+  return rawRoutes.map((route, index) => {
     const allPoints = decodePolyline(route.polyline.encodedPolyline);
     const sampled = allPoints.length > 5 ? samplePoints(allPoints, 5) : allPoints;
-    const { score, dangerousSegments } = await scoreRoute(sampled, hour);
+    const { score, dangerousSegments } = scoreRoute(sampled);
 
     return {
       polyline: route.polyline.encodedPolyline,
@@ -213,7 +194,7 @@ async function scoreRawRoutes(rawRoutes, hour) {
       google_rank: index,
       _sampled: sampled,
     };
-  }));
+  });
 }
 
 function deduplicateRoutes(routes) {
@@ -229,21 +210,20 @@ function deduplicateRoutes(routes) {
 }
 
 async function computeRoutes(origin, destination) {
-  const hour = new Date().getHours();
   let rawRoutes = await callGoogleRoutes(origin, destination);
 
   if (rawRoutes.length === 0) {
     throw new Error('Google Routes could not find a route between these addresses.');
   }
 
-  let scored = await scoreRawRoutes(rawRoutes, hour);
+  let scored = scoreRawRoutes(rawRoutes);
 
   const scoreRange = Math.max(...scored.map(r => r.safety_score))
                    - Math.min(...scored.map(r => r.safety_score));
 
   if (scored.length <= 1 || scoreRange < 0.05) {
     const altRaw = await generateAlternatives(origin, destination);
-    const altScored = await scoreRawRoutes(altRaw, hour);
+    const altScored = scoreRawRoutes(altRaw);
     const merged = deduplicateRoutes(altScored);
     if (merged.length > scored.length) {
       scored = merged;
@@ -271,7 +251,7 @@ async function computeRoutes(origin, destination) {
   };
 }
 
-// ─── Vercel handler ────────────────────────────────────────────────────────────
+// Vercel handler
 module.exports = async (req, res) => {
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'POST only' });
@@ -287,6 +267,7 @@ module.exports = async (req, res) => {
     const result = await computeRoutes(origin, destination);
     res.json(result);
   } catch (err) {
+    console.error('[route] computeRoutes failed:', err.message);
     if (err.message.includes('could not find a route')) {
       return res.status(422).json({ error: err.message });
     }
