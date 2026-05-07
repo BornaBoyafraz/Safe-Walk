@@ -71,7 +71,12 @@ export async function fetchStreetlights(bounds: {
   })).filter((point: StreetlightPoint) => Number.isFinite(point.lat) && Number.isFinite(point.lng));
 }
 
-export async function fetchConfig(): Promise<{ googleMapsApiKey: string }> {
+export interface MapsConfig {
+  googleMapsApiKey: string;
+  source?: 'NEXT_PUBLIC_GOOGLE_MAPS_API_KEY' | 'GOOGLE_MAPS_API_KEY_DEV_FALLBACK' | 'missing';
+}
+
+export async function fetchConfig(): Promise<MapsConfig> {
   const res = await fetch(`${BASE}/api/config`);
   if (!res.ok) throw new Error(`Config API error ${res.status}`);
   return res.json();

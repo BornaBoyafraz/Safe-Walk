@@ -7,9 +7,12 @@ import { DemoSidebar } from '@/components/demo/sidebar';
 import { GoogleMap, type MapLayers, type RouteMode } from '@/components/map/google-map';
 import { BeamsBackground } from '@/components/ui/beams-background';
 import { fetchConfig, type RouteResult } from '@/lib/api-client';
+import { browserKeyMissingMessage } from '@/lib/google-maps-errors';
+
+const bundledBrowserKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY?.trim() || '';
 
 export default function DemoPage() {
-  const [apiKey, setApiKey] = useState('');
+  const [apiKey, setApiKey] = useState<string | null>(bundledBrowserKey || null);
   const [routeData, setRouteData] = useState<RouteResult | null>(null);
   const [activeMode, setActiveMode] = useState<RouteMode>('safest');
   const [layers, setLayers] = useState<MapLayers>({
@@ -21,13 +24,26 @@ export default function DemoPage() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    if (bundledBrowserKey) return;
+
     let cancelled = false;
     fetchConfig()
-      .then(({ googleMapsApiKey }) => {
-        if (!cancelled) setApiKey(googleMapsApiKey);
+      .then(({ googleMapsApiKey, source }) => {
+        if (cancelled) return;
+        const key = googleMapsApiKey?.trim() || '';
+        setApiKey(key);
+
+        if (!key) {
+          setError(browserKeyMissingMessage());
+        } else if (source === 'GOOGLE_MAPS_API_KEY_DEV_FALLBACK') {
+          console.warn('[Safe Walk] Using GOOGLE_MAPS_API_KEY as a local-only browser map fallback. Set NEXT_PUBLIC_GOOGLE_MAPS_API_KEY before production deploy.');
+        }
       })
       .catch((err) => {
-        if (!cancelled) setError(err instanceof Error ? err.message : 'Could not load map configuration.');
+        if (!cancelled) {
+          setApiKey('');
+          setError(err instanceof Error ? err.message : 'Could not load map configuration.');
+        }
       });
 
     return () => {
@@ -36,7 +52,7 @@ export default function DemoPage() {
   }, []);
 
   return (
-    <main className="relative h-[100svh] overflow-hidden bg-background text-foreground">
+    <main className="relative h-[100svh] w-screen max-w-[100vw] overflow-hidden bg-background text-foreground">
       <BeamsBackground intensity="subtle" className="opacity-50" />
 
       <div className="absolute left-4 top-4 z-30 hidden items-center gap-3 md:flex">
@@ -62,7 +78,7 @@ export default function DemoPage() {
         className="h-full"
       />
 
-      <div className="absolute inset-x-0 bottom-0 z-20 max-h-[72svh] md:inset-y-4 md:left-4 md:right-auto md:max-h-none md:w-[390px]">
+      <div className="absolute inset-x-0 bottom-0 z-20 max-h-[72svh] min-w-0 max-w-[100vw] overflow-hidden md:inset-y-4 md:left-4 md:right-auto md:max-h-none md:w-[390px]">
         <div className="mx-auto h-1.5 w-12 rounded-full bg-white/20 md:hidden" />
         <DemoSidebar
           apiKey={apiKey}

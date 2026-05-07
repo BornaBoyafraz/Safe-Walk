@@ -27,11 +27,18 @@ export function HeatmapLayer({ map, visible, onError }: HeatmapLayerProps) {
         if (!pointsRef.current) {
           const points = await fetchHeatmapData();
           if (cancelled) return;
+          if (!Array.isArray(points)) {
+            throw new Error('Heatmap API returned an invalid payload.');
+          }
           pointsRef.current = points.map((point) => new google.maps.LatLng(point.lat, point.lng));
         }
 
         const tier = heatmapTierForZoom(currentMap.getZoom() ?? 12);
         if (!layerRef.current) {
+          if (!google.maps.visualization?.HeatmapLayer) {
+            throw new Error('Google Maps visualization library is unavailable. Check Maps JavaScript API restrictions.');
+          }
+
           layerRef.current = new google.maps.visualization.HeatmapLayer({
             data: pointsRef.current,
             map: currentMap,
@@ -63,7 +70,9 @@ export function HeatmapLayer({ map, visible, onError }: HeatmapLayerProps) {
         }
       } catch (error) {
         if (!cancelled) {
-          onError?.(error instanceof Error ? error.message : 'Heatmap failed to load.');
+          const message = error instanceof Error ? error.message : 'Heatmap failed to load.';
+          console.error('[Safe Walk] Heatmap layer failed:', error);
+          onError?.(message);
         }
       }
     }

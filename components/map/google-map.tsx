@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { AlertTriangle, MapPinned } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { fetchStreetlights, type RouteResult, type StreetlightPoint } from '@/lib/api-client';
+import { browserKeyMissingMessage } from '@/lib/google-maps-errors';
 import { loadGoogleMaps } from '@/lib/google-maps-loader';
 import { darkMapStyles } from '@/lib/map-style';
 import { decodePolyline } from '@/lib/polyline';
@@ -18,7 +19,7 @@ export interface MapLayers {
 }
 
 interface GoogleMapProps {
-  apiKey: string;
+  apiKey: string | null;
   routeData: RouteResult | null;
   activeMode: RouteMode;
   layers: MapLayers;
@@ -67,7 +68,7 @@ export function GoogleMap({ apiKey, routeData, activeMode, layers, className, on
   const idleListenerRef = useRef<google.maps.MapsEventListener | null>(null);
   const [map, setMap] = useState<google.maps.Map | null>(null);
   const [status, setStatus] = useState<'loading' | 'ready' | 'error'>('loading');
-  const [statusMessage, setStatusMessage] = useState('Loading spatial intelligence...');
+  const [statusMessage, setStatusMessage] = useState('Loading map configuration...');
 
   const clearStreetlights = useCallback(() => {
     streetlightMarkersRef.current.forEach((marker) => marker.setMap(null));
@@ -120,12 +121,32 @@ export function GoogleMap({ apiKey, routeData, activeMode, layers, className, on
   }, [clearStreetlights, layers.streetlights, onError]);
 
   useEffect(() => {
-    if (!containerRef.current || !apiKey) return;
+    if (!containerRef.current) return;
+
+    if (apiKey === null) {
+      setStatus('loading');
+      setStatusMessage('Loading map configuration...');
+      return;
+    }
+
+    const browserKey = apiKey.trim();
+
+    if (!browserKey) {
+      const message = browserKeyMissingMessage();
+      setStatus('error');
+      setStatusMessage(message);
+      onError?.(message);
+      console.error('[Safe Walk] Google Maps configuration missing:', message);
+      return;
+    }
+
     let cancelled = false;
 
     async function bootMap() {
       try {
-        await loadGoogleMaps(apiKey);
+        setStatus('loading');
+        setStatusMessage('Loading Google Maps...');
+        await loadGoogleMaps(browserKey);
         if (cancelled || !containerRef.current) return;
 
         const instance = new google.maps.Map(containerRef.current, {
@@ -143,10 +164,12 @@ export function GoogleMap({ apiKey, routeData, activeMode, layers, className, on
         mapRef.current = instance;
         setMap(instance);
         setStatus('ready');
+        setStatusMessage('Map ready.');
       } catch (error) {
         const message = error instanceof Error ? error.message : 'Google Maps failed to load.';
         setStatus('error');
         setStatusMessage(message);
+        console.error('[Safe Walk] Map initialization failed:', error);
         onError?.(message);
       }
     }
@@ -197,8 +220,22 @@ export function GoogleMap({ apiKey, routeData, activeMode, layers, className, on
     originMarkerRef.current?.setMap(null);
     destinationMarkerRef.current?.setMap(null);
 
-    const fastestPoints = decodePolyline(routeData.fastest.polyline);
-    const safestPoints = decodePolyline(routeData.safest.polyline);
+    let fastestPoints;
+    let safestPoints;
+    try {
+      fastestPoints = decodePolyline(routeData.fastest.polyline);
+      safestPoints = decodePolyline(routeData.safest.polyline);
+    } catch (error) {
+      const message = 'Route polyline could not be decoded.';
+      console.error('[Safe Walk] Route rendering failed:', error);
+      onError?.(message);
+      return;
+    }
+
+    if (fastestPoints.length === 0 || safestPoints.length === 0) {
+      onError?.('Route API returned an empty route polyline.');
+      return;
+    }
 
     fastestPolylineRef.current = new google.maps.Polyline({
       map: currentMap,

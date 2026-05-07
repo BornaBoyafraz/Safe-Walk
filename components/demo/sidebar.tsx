@@ -14,7 +14,7 @@ import { dangerToSafetyPercent, durationToMinutes, metersToKm } from '@/lib/poly
 import type { MapLayers, RouteMode } from '@/components/map/google-map';
 
 interface DemoSidebarProps {
-  apiKey: string;
+  apiKey: string | null;
   routeData: RouteResult | null;
   activeMode: RouteMode;
   layers: MapLayers;
@@ -28,14 +28,19 @@ interface DemoSidebarProps {
   className?: string;
 }
 
-function usePlacesAutocomplete(apiKey: string, inputRef: RefObject<HTMLInputElement | null>) {
+function usePlacesAutocomplete(
+  apiKey: string | null,
+  inputRef: RefObject<HTMLInputElement | null>,
+  onError: (message: string | null) => void,
+) {
   useEffect(() => {
     if (!apiKey || !inputRef.current) return;
+    const browserKey = apiKey;
     let autocomplete: google.maps.places.Autocomplete | null = null;
     let cancelled = false;
 
     async function attachAutocomplete() {
-      await loadGoogleMaps(apiKey);
+      await loadGoogleMaps(browserKey);
       if (cancelled || !inputRef.current) return;
 
       const bounds = new google.maps.LatLngBounds(
@@ -50,7 +55,11 @@ function usePlacesAutocomplete(apiKey: string, inputRef: RefObject<HTMLInputElem
       });
     }
 
-    attachAutocomplete().catch(() => undefined);
+    attachAutocomplete().catch((error) => {
+      const message = error instanceof Error ? error.message : 'Places Autocomplete failed to initialize.';
+      console.error('[Safe Walk] Places Autocomplete failed:', error);
+      onError(message);
+    });
 
     return () => {
       cancelled = true;
@@ -58,7 +67,7 @@ function usePlacesAutocomplete(apiKey: string, inputRef: RefObject<HTMLInputElem
         google.maps.event.clearInstanceListeners(autocomplete);
       }
     };
-  }, [apiKey, inputRef]);
+  }, [apiKey, inputRef, onError]);
 }
 
 function formatDelta(routeData: RouteResult) {
@@ -113,8 +122,8 @@ export function DemoSidebar({
   const originRef = useRef<HTMLInputElement | null>(null);
   const destinationRef = useRef<HTMLInputElement | null>(null);
 
-  usePlacesAutocomplete(apiKey, originRef);
-  usePlacesAutocomplete(apiKey, destinationRef);
+  usePlacesAutocomplete(apiKey, originRef, onError);
+  usePlacesAutocomplete(apiKey, destinationRef, onError);
 
   const activeRoute = routeData?.[activeMode];
   const activeSafety = useMemo(
@@ -150,8 +159,8 @@ export function DemoSidebar({
   }
 
   return (
-    <aside className={cn('glass flex h-full flex-col overflow-hidden rounded-none border-white/10 bg-background/76', className)}>
-      <div className="border-b border-border/80 px-5 py-5">
+    <aside className={cn('glass flex h-full w-full max-w-[100vw] min-w-0 flex-col overflow-hidden rounded-none border-white/10 bg-background/76', className)}>
+      <div className="border-b border-border/80 px-4 py-5 sm:px-5">
         <div className="flex items-center gap-3">
           <div className="flex h-9 w-9 items-center justify-center rounded-lg border border-safe/25 bg-safe/10">
             <Shield className="h-4 w-4 text-safe" />
@@ -163,8 +172,8 @@ export function DemoSidebar({
         </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto px-5 py-5">
-        <form className="space-y-3" onSubmit={handleSubmit}>
+      <div className="min-w-0 flex-1 overflow-y-auto px-4 py-5 sm:px-5">
+        <form className="max-w-[342px] space-y-3" onSubmit={handleSubmit}>
           <label className="block">
             <span className="sr-only">Starting point</span>
             <div className="relative">
@@ -204,30 +213,30 @@ export function DemoSidebar({
         </form>
 
         {error && (
-          <div className="mt-4 rounded-xl border border-danger/25 bg-danger/10 px-3 py-2 text-xs leading-relaxed text-red-200">
+          <div className="mt-4 max-w-[342px] rounded-xl border border-danger/25 bg-danger/10 px-3 py-2 text-xs leading-relaxed text-red-200">
             {error}
           </div>
         )}
 
         {!routeData && !loading && (
-          <div className="mt-10 rounded-2xl border border-border/80 bg-card/40 p-5">
+          <div className="mt-10 min-w-0 max-w-[342px] rounded-2xl border border-border/80 bg-card/40 p-5">
             <Navigation className="mb-4 h-5 w-5 text-safe" />
             <p className="text-base font-medium text-foreground">Where are you walking?</p>
-            <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
+            <p className="mt-2 max-w-full break-words text-sm leading-relaxed text-muted-foreground">
               Compare speed, lighting, incident density, and time-of-day risk on a single Toronto route.
             </p>
           </div>
         )}
 
         {loading && (
-          <div className="mt-6 space-y-3">
+          <div className="mt-6 max-w-[342px] space-y-3">
             <div className="h-28 rounded-2xl border border-border/80 shimmer-bg" />
             <div className="h-28 rounded-2xl border border-border/80 shimmer-bg" />
           </div>
         )}
 
         {routeData && (
-          <div className="mt-6 space-y-4">
+          <div className="mt-6 max-w-[342px] space-y-4">
             <div className="rounded-2xl border border-border/80 bg-card/40 p-4">
               <div className="flex items-center justify-between gap-4">
                 <div>
@@ -261,29 +270,29 @@ export function DemoSidebar({
         )}
       </div>
 
-      <div className="border-t border-border/80 px-5 py-4">
-        <div className="grid grid-cols-3 gap-2">
+      <div className="min-w-0 border-t border-border/80 px-4 py-4 sm:px-5">
+        <div className="grid w-full max-w-[342px] min-w-0 grid-cols-3 gap-2">
           {layerOptions.map(({ key, label, icon: Icon }) => (
             <button
               key={key}
               type="button"
               onClick={() => toggleLayer(key)}
               className={cn(
-                'flex h-10 items-center justify-center gap-1.5 rounded-lg border text-xs transition',
+                'flex h-10 min-w-0 items-center justify-center gap-1.5 rounded-lg border px-1 text-xs transition',
                 layers[key]
                   ? 'border-safe/30 bg-safe/12 text-foreground'
                   : 'border-border/80 bg-white/[0.035] text-muted-foreground hover:text-foreground',
               )}
             >
               <Icon className="h-3.5 w-3.5" />
-              {label}
+              <span className="truncate max-[420px]:sr-only">{label}</span>
             </button>
           ))}
         </div>
 
-        <div className="mt-3 flex items-center gap-2 text-[11px] leading-relaxed text-muted-foreground">
-          <span className="h-1.5 w-10 rounded-full bg-gradient-to-r from-amber-300/20 via-orange-400/50 to-red-700/75" />
-          Warmer density means more recent nearby incidents, not a blocked route.
+        <div className="mt-3 flex w-full max-w-[342px] min-w-0 items-start gap-2 text-[11px] leading-relaxed text-muted-foreground">
+          <span className="mt-1 h-1.5 w-10 shrink-0 rounded-full bg-gradient-to-r from-amber-300/20 via-orange-400/50 to-red-700/75" />
+          <span className="min-w-0 break-words">Warmer density means more recent nearby incidents, not a blocked route.</span>
         </div>
       </div>
     </aside>
