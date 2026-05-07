@@ -94,9 +94,9 @@ function samplePoints(points, every) {
 }
 
 function getApiKey() {
-  const apiKey = process.env.GOOGLE_MAPS_API_KEY;
+  const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
   if (!apiKey || apiKey === 'placeholder_add_key_later') {
-    throw new Error('Google Maps API key not configured. Set GOOGLE_MAPS_API_KEY in Vercel environment variables.');
+    throw new Error('Google Maps API key not configured. Set NEXT_PUBLIC_GOOGLE_MAPS_API_KEY in Vercel environment variables.');
   }
   return apiKey;
 }

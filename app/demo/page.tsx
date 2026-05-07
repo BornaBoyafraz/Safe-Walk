@@ -31,8 +31,6 @@ export default function DemoPage() {
 
         if (!key) {
           setError(browserKeyMissingMessage());
-        } else if (source === 'GOOGLE_MAPS_API_KEY_DEV_FALLBACK') {
-          console.warn('[Safe Walk] Using GOOGLE_MAPS_API_KEY as a local-only browser map fallback. Set NEXT_PUBLIC_GOOGLE_MAPS_API_KEY before production deploy.');
         }
       })
       .catch((err) => {
