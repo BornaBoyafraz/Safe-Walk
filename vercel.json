@@ -1,13 +1,5 @@
 {
-  "buildCommand": "mkdir -p dist && cp -r website/* dist/ && mkdir -p dist/demo && cp -r public/* dist/demo/",
-  "outputDirectory": "dist",
-  "installCommand": "npm install",
-  "cleanUrls": true,
-  "rewrites": [
-    { "source": "/js/:path*", "destination": "/demo/js/:path*" },
-    { "source": "/demo", "destination": "/demo/index.html" },
-    { "source": "/demo/:path*", "destination": "/demo/:path*" }
-  ],
+  "framework": "nextjs",
   "headers": [
     {
       "source": "/(.*)",
