@@ -3,15 +3,16 @@ import { Shield } from 'lucide-react';
 
 export function SiteFooter() {
   return (
-    <footer className="border-t border-border/80 bg-background px-6 py-10">
+    <footer className="relative border-t border-border/60 bg-background px-6 py-10">
+      <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-border/80 to-transparent" />
       <div className="mx-auto flex max-w-6xl flex-col gap-8 md:flex-row md:items-center md:justify-between">
         <div className="flex items-center gap-3">
-          <div className="flex h-9 w-9 items-center justify-center rounded-lg border border-safe/25 bg-safe/10">
-            <Shield className="h-4 w-4 text-safe" />
+          <div className="flex h-8 w-8 items-center justify-center rounded-lg border border-safe/20 bg-safe/8">
+            <Shield className="h-3.5 w-3.5 text-safe" />
           </div>
           <div>
-            <p className="text-sm font-semibold text-foreground">Safe Walk</p>
-            <p className="text-xs text-muted-foreground">Built for TKS Moonshot 2026.</p>
+            <p className="text-sm font-semibold tracking-[-0.01em] text-foreground">Safe Walk</p>
+            <p className="text-xs text-muted-foreground">Pedestrian safety intelligence for Toronto.</p>
           </div>
         </div>
 
@@ -21,6 +22,10 @@ export function SiteFooter() {
           <Link className="transition hover:text-foreground" href="/about">About</Link>
           <Link className="transition hover:text-foreground" href="/partners">Partners</Link>
         </nav>
+
+        <div className="rounded-full border border-border/50 bg-card/40 px-3 py-1 text-[11px] text-muted-foreground/60">
+          TKS Moonshot 2026
+        </div>
       </div>
     </footer>
   );
