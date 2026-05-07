@@ -288,6 +288,15 @@ export function GoogleMap({ apiKey, routeData, activeMode, layers, className, on
       <div ref={containerRef} className="absolute inset-0" />
       <HeatmapLayer map={map} visible={layers.heatmap} onError={onError} />
 
+      {/* Data attribution — bottom-right */}
+      {status === 'ready' && (
+        <div className="pointer-events-none absolute bottom-3 right-3 z-10 hidden md:block">
+          <div className="glass rounded-lg px-2.5 py-1 text-[10px] text-muted-foreground/60">
+            Safety data: Toronto Police Open Data
+          </div>
+        </div>
+      )}
+
       {status !== 'ready' && (
         <div className="absolute inset-0 z-10 flex items-center justify-center bg-background/95 backdrop-blur-sm">
           <div className="glass mx-6 max-w-xs rounded-2xl p-5 text-center">

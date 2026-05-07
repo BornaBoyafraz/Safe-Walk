@@ -1,4 +1,5 @@
 import { Clock, Database, GitBranch, Lightbulb, MapPinned, Route, Shield } from 'lucide-react';
+import { BeamsBackground } from '@/components/ui/beams-background';
 import { Card, CardContent } from '@/components/ui/card';
 import { Reveal } from '@/components/ui/reveal';
 import { Section, SectionInner } from '@/components/ui/section';
@@ -40,8 +41,9 @@ export default function HowItWorksPage() {
     <main className="min-h-screen bg-background text-foreground">
       <SiteNav />
 
-      <section className="px-6 pb-16 pt-32 md:pt-40">
-        <div className="mx-auto max-w-5xl">
+      <section className="relative overflow-hidden px-6 pb-16 pt-32 md:pt-40">
+        <BeamsBackground intensity="subtle" className="opacity-45" />
+        <div className="relative z-10 mx-auto max-w-5xl">
           <Reveal>
             <p className="text-xs font-semibold uppercase tracking-[0.2em] text-safe">How it works</p>
             <h1 className="mt-5 max-w-4xl text-4xl font-semibold leading-tight tracking-tight md:text-6xl">

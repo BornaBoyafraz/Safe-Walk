@@ -93,6 +93,13 @@ function formatDelta(routeData: RouteResult) {
   return `${extraMinutes > 0 ? `${extraMinutes} min longer` : 'Same walk time'} with a different safety profile.`;
 }
 
+function routeConfidence(routeData: RouteResult): { label: string; color: string } {
+  const diff = Math.abs(routeData.safest.safety_score - routeData.fastest.safety_score);
+  if (diff >= 0.18) return { label: 'Strong signal', color: 'text-safe' };
+  if (diff >= 0.07) return { label: 'Moderate signal', color: 'text-amber-400' };
+  return { label: 'Similar profiles', color: 'text-muted-foreground' };
+}
+
 const layerOptions: Array<{
   key: keyof MapLayers;
   label: string;
@@ -239,8 +246,31 @@ export function DemoSidebar({
 
         {loading && (
           <div className="mt-6 max-w-[342px] space-y-3">
-            <div className="h-28 rounded-2xl border border-border/80 shimmer-bg" />
-            <div className="h-28 rounded-2xl border border-border/80 shimmer-bg" />
+            {/* Summary card skeleton */}
+            <div className="rounded-2xl border border-border/50 bg-card/30 p-4">
+              <div className="flex items-start justify-between gap-4">
+                <div className="space-y-2.5 pt-0.5">
+                  <div className="h-2.5 w-16 rounded-full shimmer-bg" />
+                  <div className="h-4 w-24 rounded-full shimmer-bg" />
+                </div>
+                <div className="h-14 w-14 rounded-full shimmer-bg" />
+              </div>
+              <div className="mt-4 h-2.5 w-4/5 rounded-full shimmer-bg" />
+              <div className="mt-2 h-2.5 w-3/5 rounded-full shimmer-bg" />
+            </div>
+            {/* Route card skeletons */}
+            {[0, 1].map((i) => (
+              <div key={i} className="rounded-xl border border-border/40 bg-card/20 p-4">
+                <div className="flex items-center gap-2">
+                  <div className="h-4 w-4 rounded shimmer-bg" />
+                  <div className="h-3.5 w-20 rounded-full shimmer-bg" />
+                </div>
+                <div className="mt-4 flex gap-4">
+                  <div className="h-2.5 w-14 rounded-full shimmer-bg" />
+                  <div className="h-2.5 w-12 rounded-full shimmer-bg" />
+                </div>
+              </div>
+            ))}
           </div>
         )}
 
@@ -259,16 +289,19 @@ export function DemoSidebar({
               variants={{ hidden: { opacity: 0, y: 8 }, visible: { opacity: 1, y: 0, transition: { duration: 0.4, ease: [0.22, 1, 0.36, 1] } } }}
               className="rounded-2xl border border-border/60 bg-card/50 p-4"
             >
-              <div className="flex items-center justify-between gap-4">
+              <div className="flex items-start justify-between gap-4">
                 <div>
-                  <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">Active route</p>
+                  <p className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground">Active route</p>
                   <p className="mt-1 text-base font-semibold text-foreground">
                     {activeMode === 'safest' ? 'Safest path' : 'Fastest path'}
                   </p>
+                  <span className={cn('mt-1.5 inline-block text-[11px] font-medium', routeConfidence(routeData).color)}>
+                    {routeConfidence(routeData).label}
+                  </span>
                 </div>
                 <SafetyMeter score={activeSafety} size="md" />
               </div>
-              <p className="mt-3 text-sm leading-relaxed text-muted-foreground">{formatDelta(routeData)}</p>
+              <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{formatDelta(routeData)}</p>
             </motion.div>
 
             <motion.div
@@ -320,9 +353,20 @@ export function DemoSidebar({
           ))}
         </div>
 
-        <div className="mt-3 flex w-full max-w-[342px] min-w-0 items-start gap-2 text-[11px] leading-relaxed text-muted-foreground">
-          <span className="mt-1 h-1.5 w-10 shrink-0 rounded-full bg-gradient-to-r from-amber-200/20 via-orange-400/40 to-orange-700/55" />
-          <span className="min-w-0 break-words">Warmer density means more recent nearby incidents, not a blocked route.</span>
+        {/* Legend */}
+        <div className="mt-3 w-full max-w-[342px] min-w-0 space-y-1.5">
+          <div className="flex items-center justify-between text-[10px] text-muted-foreground/60">
+            <span>Incident density</span>
+            <span>Toronto Police open data</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="text-[10px] text-muted-foreground/50">Low</span>
+            <div className="h-1.5 flex-1 rounded-full bg-gradient-to-r from-amber-200/15 via-orange-400/38 to-orange-700/52" />
+            <span className="text-[10px] text-muted-foreground/50">High</span>
+          </div>
+          <p className="text-[11px] leading-relaxed text-muted-foreground/55">
+            Warmer areas reflect higher incident concentration — not blocked routes.
+          </p>
         </div>
       </div>
     </aside>
