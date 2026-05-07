@@ -1,15 +1,11 @@
 {
-  "buildCommand": "node scripts/export-heatmap.js || true",
+  "buildCommand": "mkdir -p dist && cp -r website/* dist/ && mkdir -p dist/demo && cp -r public/* dist/demo/",
+  "outputDirectory": "dist",
   "installCommand": "npm install",
   "cleanUrls": true,
   "rewrites": [
-    { "source": "/demo", "destination": "/public/index.html" },
-    { "source": "/demo/:path*", "destination": "/public/:path*" },
-    { "source": "/js/:path*", "destination": "/public/js/:path*" },
-    { "source": "/how-it-works", "destination": "/website/how-it-works.html" },
-    { "source": "/about", "destination": "/website/about.html" },
-    { "source": "/partners", "destination": "/website/partners.html" },
-    { "source": "/", "destination": "/website/index.html" }
+    { "source": "/demo", "destination": "/demo/index.html" },
+    { "source": "/demo/:path*", "destination": "/demo/:path*" }
   ],
   "headers": [
     {
