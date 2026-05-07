@@ -4,6 +4,7 @@
   "installCommand": "npm install",
   "cleanUrls": true,
   "rewrites": [
+    { "source": "/js/:path*", "destination": "/demo/js/:path*" },
     { "source": "/demo", "destination": "/demo/index.html" },
     { "source": "/demo/:path*", "destination": "/demo/:path*" }
   ],
