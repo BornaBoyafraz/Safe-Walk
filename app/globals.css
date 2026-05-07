@@ -4,47 +4,32 @@
 
 @layer base {
   :root {
-    /* Background & surface */
     --background: 220 13% 4%;
     --foreground: 0 0% 96%;
     --card: 220 10% 7%;
     --card-foreground: 0 0% 94%;
     --popover: 220 10% 7%;
     --popover-foreground: 0 0% 94%;
-
-    /* Muted surfaces */
     --muted: 220 6% 13%;
     --muted-foreground: 220 4% 58%;
-
-    /* Primary — subtle white-ish for CTAs */
     --primary: 0 0% 96%;
     --primary-foreground: 220 13% 6%;
-
-    /* Secondary — slightly lighter surface */
     --secondary: 220 8% 11%;
     --secondary-foreground: 0 0% 82%;
-
-    /* Accent — warm amber, used sparingly */
     --accent: 32 95% 58%;
     --accent-foreground: 0 0% 6%;
-
-    /* Semantic */
     --safe: 152 55% 44%;
     --danger: 8 75% 54%;
     --destructive: 0 72% 51%;
     --destructive-foreground: 0 0% 98%;
-
-    /* Borders */
     --border: 220 8% 13%;
     --input: 220 8% 13%;
     --ring: 220 8% 28%;
-
-    /* Radius */
     --radius: 10px;
   }
 
   * {
-    @apply border-border;
+    @apply border-border outline-ring/50;
     box-sizing: border-box;
   }
 
@@ -52,6 +37,7 @@
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     text-rendering: optimizeLegibility;
+    @apply font-sans;
   }
 
   body {
