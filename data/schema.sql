@@ -3,21 +3,21 @@
 
 CREATE TABLE IF NOT EXISTS incidents (
   id            INTEGER PRIMARY KEY AUTOINCREMENT,
-  event_id      TEXT UNIQUE,          -- Toronto Police event unique ID, for upsert dedup
+  event_id      TEXT UNIQUE,          -- source event unique ID, for upsert dedup
   lat           REAL NOT NULL,
   lng           REAL NOT NULL,
   category      TEXT NOT NULL,        -- e.g. Assault, Robbery, Break and Enter
-  offence       TEXT,                 -- specific offence description
+  offence       TEXT,
   occurred_at   TEXT,                 -- ISO 8601 datetime
-  reported_at   TEXT,                 -- when it was reported to police
-  premise_type  TEXT,                 -- Outside, Apartment, House, Commercial, etc.
-  neighbourhood TEXT,                 -- Toronto neighbourhood name
+  reported_at   TEXT,
+  premise_type  TEXT,
+  neighbourhood TEXT,
   source        TEXT DEFAULT 'toronto_police'
 );
 
 CREATE TABLE IF NOT EXISTS streetlights (
   id            INTEGER PRIMARY KEY AUTOINCREMENT,
-  asset_id      TEXT UNIQUE,          -- City of Toronto asset ID, for upsert dedup
+  asset_id      TEXT UNIQUE,          -- source asset ID, for upsert dedup
   lat           REAL NOT NULL,
   lng           REAL NOT NULL,
   type          TEXT,                 -- LED, HPS, etc.
@@ -32,11 +32,56 @@ CREATE TABLE IF NOT EXISTS user_reports (
   category      TEXT NOT NULL,        -- harassment, poor_lighting, suspicious_activity, other
   note          TEXT,
   created_at    TEXT DEFAULT (datetime('now')),
-  verified      INTEGER DEFAULT 0     -- 0 = unverified, 1 = corroborated
+  verified      INTEGER DEFAULT 0
 );
 
--- Spatial lookups happen constantly during scoring, so index on lat/lng
-CREATE INDEX IF NOT EXISTS idx_incidents_lat_lng ON incidents(lat, lng);
-CREATE INDEX IF NOT EXISTS idx_incidents_occurred ON incidents(occurred_at);
-CREATE INDEX IF NOT EXISTS idx_streetlights_lat_lng ON streetlights(lat, lng);
-CREATE INDEX IF NOT EXISTS idx_user_reports_lat_lng ON user_reports(lat, lng);
+CREATE TABLE IF NOT EXISTS transit_stops (
+  id            INTEGER PRIMARY KEY AUTOINCREMENT,
+  stop_id       TEXT NOT NULL,
+  stop_name     TEXT,
+  lat           REAL NOT NULL,
+  lng           REAL NOT NULL,
+  agency        TEXT NOT NULL,
+  UNIQUE(stop_id, agency)
+);
+
+CREATE TABLE IF NOT EXISTS census_density (
+  id            INTEGER PRIMARY KEY AUTOINCREMENT,
+  da_id         TEXT UNIQUE,          -- StatsCan dissemination area ID
+  lat           REAL NOT NULL,        -- DA centroid
+  lng           REAL NOT NULL,
+  population    INTEGER,
+  area_sqkm     REAL,
+  density       REAL                  -- people per km²
+);
+
+CREATE TABLE IF NOT EXISTS road_segments (
+  id            INTEGER PRIMARY KEY AUTOINCREMENT,
+  osm_id        TEXT UNIQUE,
+  lat           REAL NOT NULL,        -- midpoint of segment
+  lng           REAL NOT NULL,
+  highway       TEXT,                 -- OSM highway tag value
+  name          TEXT
+);
+
+CREATE TABLE IF NOT EXISTS service_calls (
+  id            INTEGER PRIMARY KEY AUTOINCREMENT,
+  call_id       TEXT UNIQUE,
+  lat           REAL NOT NULL,
+  lng           REAL NOT NULL,
+  category      TEXT,
+  occurred_at   TEXT,
+  source        TEXT DEFAULT 'toronto_311'
+);
+
+-- Spatial lookups happen constantly during scoring
+CREATE INDEX IF NOT EXISTS idx_incidents_lat_lng      ON incidents(lat, lng);
+CREATE INDEX IF NOT EXISTS idx_incidents_occurred     ON incidents(occurred_at);
+CREATE INDEX IF NOT EXISTS idx_incidents_source       ON incidents(source);
+CREATE INDEX IF NOT EXISTS idx_streetlights_lat_lng   ON streetlights(lat, lng);
+CREATE INDEX IF NOT EXISTS idx_user_reports_lat_lng   ON user_reports(lat, lng);
+CREATE INDEX IF NOT EXISTS idx_transit_lat_lng        ON transit_stops(lat, lng);
+CREATE INDEX IF NOT EXISTS idx_census_lat_lng         ON census_density(lat, lng);
+CREATE INDEX IF NOT EXISTS idx_roads_lat_lng          ON road_segments(lat, lng);
+CREATE INDEX IF NOT EXISTS idx_service_calls_lat_lng  ON service_calls(lat, lng);
+CREATE INDEX IF NOT EXISTS idx_service_calls_occurred ON service_calls(occurred_at);
