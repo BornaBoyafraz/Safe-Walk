@@ -9,5 +9,7 @@ tsconfig.tsbuildinfo
 .DS_Store
 data/toronto-graph.json
 CLAUDE.md
+AGENTS.md
 prompt.MD
+.Codex/
 .claude/
