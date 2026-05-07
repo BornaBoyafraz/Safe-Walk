@@ -1,0 +1,92 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* Background & surface */
+    --background: 220 13% 4%;
+    --foreground: 0 0% 96%;
+    --card: 220 10% 7%;
+    --card-foreground: 0 0% 94%;
+    --popover: 220 10% 7%;
+    --popover-foreground: 0 0% 94%;
+
+    /* Muted surfaces */
+    --muted: 220 6% 13%;
+    --muted-foreground: 220 4% 58%;
+
+    /* Primary — subtle white-ish for CTAs */
+    --primary: 0 0% 96%;
+    --primary-foreground: 220 13% 6%;
+
+    /* Secondary — slightly lighter surface */
+    --secondary: 220 8% 11%;
+    --secondary-foreground: 0 0% 82%;
+
+    /* Accent — warm amber, used sparingly */
+    --accent: 32 95% 58%;
+    --accent-foreground: 0 0% 6%;
+
+    /* Semantic */
+    --safe: 152 55% 44%;
+    --danger: 8 75% 54%;
+    --destructive: 0 72% 51%;
+    --destructive-foreground: 0 0% 98%;
+
+    /* Borders */
+    --border: 220 8% 13%;
+    --input: 220 8% 13%;
+    --ring: 220 8% 28%;
+
+    /* Radius */
+    --radius: 10px;
+  }
+
+  * {
+    @apply border-border;
+    box-sizing: border-box;
+  }
+
+  html {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+    font-feature-settings: "ss01", "cv11", "rlig" 1, "calt" 1;
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* Scrollbar styling */
+  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: hsl(var(--muted)); border-radius: 3px; }
+  ::-webkit-scrollbar-thumb:hover { background: hsl(var(--muted-foreground) / 0.5); }
+}
+
+@layer utilities {
+  .glass {
+    background: hsl(var(--card) / 0.7);
+    backdrop-filter: blur(20px) saturate(180%);
+    -webkit-backdrop-filter: blur(20px) saturate(180%);
+    border: 1px solid hsl(var(--border) / 0.6);
+  }
+
+  .text-balance {
+    text-wrap: balance;
+  }
+
+  .shimmer-bg {
+    background: linear-gradient(
+      90deg,
+      hsl(var(--muted)) 0%,
+      hsl(var(--muted-foreground) / 0.1) 50%,
+      hsl(var(--muted)) 100%
+    );
+    background-size: 200% 100%;
+    animation: shimmer 1.8s linear infinite;
+  }
+}
