@@ -31,14 +31,17 @@ app.use(express.json());
 
 app.get('/api/config', (req, res) => {
   const browserKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || '';
-  const localFallback =
-    process.env.NODE_ENV !== 'production'
-      ? process.env.GOOGLE_MAPS_API_KEY || ''
-      : '';
+  const oneKeyFallback = process.env.GOOGLE_MAPS_API_KEY || '';
+  const key = browserKey || oneKeyFallback;
 
+  res.set('Cache-Control', 'no-store, max-age=0');
   res.json({
-    googleMapsApiKey: browserKey || localFallback,
-    source: browserKey ? 'NEXT_PUBLIC_GOOGLE_MAPS_API_KEY' : localFallback ? 'GOOGLE_MAPS_API_KEY_DEV_FALLBACK' : 'missing',
+    googleMapsApiKey: key,
+    source: browserKey
+      ? 'NEXT_PUBLIC_GOOGLE_MAPS_API_KEY'
+      : oneKeyFallback
+        ? 'GOOGLE_MAPS_API_KEY_ONE_KEY_FALLBACK'
+        : 'missing',
   });
 });
 

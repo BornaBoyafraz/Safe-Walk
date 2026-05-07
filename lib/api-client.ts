@@ -46,7 +46,7 @@ export async function fetchHeatmapData(): Promise<HeatmapPoint[]> {
 
 export interface MapsConfig {
   googleMapsApiKey: string;
-  source?: 'NEXT_PUBLIC_GOOGLE_MAPS_API_KEY' | 'missing';
+  source?: 'NEXT_PUBLIC_GOOGLE_MAPS_API_KEY' | 'GOOGLE_MAPS_API_KEY_ONE_KEY_FALLBACK' | 'missing';
 }
 
 export async function fetchConfig(): Promise<MapsConfig> {
