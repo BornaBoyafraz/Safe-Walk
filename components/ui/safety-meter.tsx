@@ -73,7 +73,10 @@ export function SafetyMeter({ score, size = 'md', className, animate = true }: S
           strokeWidth={strokeW}
           strokeLinecap="round"
           strokeDasharray={`${dash} ${gap}`}
-          style={{ transition: 'stroke-dasharray 0.05s linear', filter: `drop-shadow(0 0 4px ${color})` }}
+          style={{
+            transition: 'stroke-dasharray 0.6s cubic-bezier(0.22, 1, 0.36, 1)',
+            filter: `drop-shadow(0 0 6px ${color}80)`,
+          }}
         />
       </svg>
       <div className="flex flex-col items-center -mt-1">

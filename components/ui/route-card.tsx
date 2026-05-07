@@ -29,25 +29,25 @@ export function RouteCard({ type, durationMin, distanceKm, safetyScore, active, 
     <button
       onClick={onClick}
       className={cn(
-        'w-full rounded-xl border p-4 text-left transition-all duration-200',
+        'w-full cursor-pointer rounded-xl border p-4 text-left transition-all duration-200',
         'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
         active
-          ? 'border-border/40 bg-card shadow-[0_0_0_1px_oklch(1_0_0/8%)] ring-1 ring-inset ring-white/5'
-          : 'border-border/20 bg-card/40 hover:bg-card/60 opacity-60 hover:opacity-80',
+          ? 'border-border/60 bg-card ring-1 ring-inset ring-white/[0.06] shadow-sm scale-[1.005]'
+          : 'border-border/25 bg-card/35 hover:bg-card/55 hover:border-border/45',
       )}
       aria-pressed={active}
     >
       <div className="flex items-start justify-between gap-3">
         <div className="flex items-center gap-2 min-w-0">
           {isSafest
-            ? <Shield className="h-4 w-4 shrink-0" style={{ color: 'var(--safe)' }} />
+            ? <Shield className="h-4 w-4 shrink-0" style={{ color: 'hsl(var(--safe))' }} />
             : <Zap    className="h-4 w-4 shrink-0 text-blue-400" />
           }
-          <span className="text-sm font-medium text-foreground">
+          <span className={cn('text-sm font-medium', active ? 'text-foreground' : 'text-muted-foreground')}>
             {isSafest ? 'Safest route' : 'Fastest route'}
           </span>
         </div>
-        {active && <SafetyMeter score={safetyScore} size="sm" animate />}
+        <SafetyMeter score={safetyScore} size="sm" animate={active} />
       </div>
 
       <div className="mt-3 flex items-center gap-4 text-sm text-muted-foreground">

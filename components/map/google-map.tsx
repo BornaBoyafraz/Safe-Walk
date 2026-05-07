@@ -30,18 +30,25 @@ interface GoogleMapProps {
 function polylineStyle(isActive: boolean, type: RouteMode): google.maps.PolylineOptions {
   if (!isActive) {
     return {
-      strokeColor: '#747884',
-      strokeOpacity: 0.32,
-      strokeWeight: 3,
+      strokeColor: '#5a5e6a',
+      strokeOpacity: 0.22,
+      strokeWeight: 2.5,
       zIndex: 1,
     };
   }
 
   return {
-    strokeColor: type === 'safest' ? '#32c47c' : '#6aa4ff',
-    strokeOpacity: 0.96,
-    strokeWeight: type === 'safest' ? 7 : 6,
+    strokeColor: type === 'safest' ? '#2fb872' : '#5a9ef8',
+    strokeOpacity: 0.95,
+    strokeWeight: type === 'safest' ? 8 : 6,
     zIndex: 3,
+    icons: [
+      {
+        icon: { path: 'M 0,-1 0,1', strokeOpacity: 0.55, scale: 3 },
+        offset: '0',
+        repeat: '16px',
+      },
+    ],
   };
 }
 
@@ -282,23 +289,20 @@ export function GoogleMap({ apiKey, routeData, activeMode, layers, className, on
       <HeatmapLayer map={map} visible={layers.heatmap} onError={onError} />
 
       {status !== 'ready' && (
-        <div className="absolute inset-0 z-10 flex items-center justify-center bg-background">
-          <div className="glass mx-6 max-w-sm rounded-xl p-5 text-center">
+        <div className="absolute inset-0 z-10 flex items-center justify-center bg-background/95 backdrop-blur-sm">
+          <div className="glass mx-6 max-w-xs rounded-2xl p-5 text-center">
             {status === 'error' ? (
               <AlertTriangle className="mx-auto mb-3 h-5 w-5 text-danger" />
             ) : (
               <MapPinned className="mx-auto mb-3 h-5 w-5 text-safe" />
             )}
-            <p className="text-sm font-medium text-foreground">
+            <p className="text-sm font-semibold text-foreground">
               {status === 'error' ? 'Map unavailable' : 'Preparing map'}
             </p>
             <p className="mt-1 text-xs leading-relaxed text-muted-foreground">{statusMessage}</p>
           </div>
         </div>
       )}
-
-      <div className="pointer-events-none absolute inset-x-0 top-0 h-32 bg-gradient-to-b from-background/80 to-transparent" />
-      <div className="pointer-events-none absolute inset-x-0 bottom-0 h-40 bg-gradient-to-t from-background/80 to-transparent" />
     </div>
   );
 }

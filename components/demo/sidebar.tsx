@@ -219,12 +219,21 @@ export function DemoSidebar({
         )}
 
         {!routeData && !loading && (
-          <div className="mt-10 min-w-0 max-w-[342px] rounded-2xl border border-border/80 bg-card/40 p-5">
-            <Navigation className="mb-4 h-5 w-5 text-safe" />
-            <p className="text-base font-medium text-foreground">Where are you walking?</p>
+          <div className="mt-8 min-w-0 max-w-[342px] rounded-2xl border border-border/60 bg-card/30 p-5">
+            <div className="mb-4 flex h-9 w-9 items-center justify-center rounded-lg border border-safe/20 bg-safe/8">
+              <Navigation className="h-4 w-4 text-safe" />
+            </div>
+            <p className="text-sm font-semibold text-foreground">Where are you walking?</p>
             <p className="mt-2 max-w-full break-words text-sm leading-relaxed text-muted-foreground">
-              Compare speed, lighting, incident density, and time-of-day risk on a single Toronto route.
+              Enter a start and destination to compare the fastest route against the safest path in Toronto.
             </p>
+            <div className="mt-4 flex flex-wrap gap-2">
+              {['U of T → Union Station', 'Spadina → CN Tower'].map((example) => (
+                <span key={example} className="rounded-md border border-border/50 bg-white/[0.03] px-2 py-1 text-[11px] text-muted-foreground">
+                  {example}
+                </span>
+              ))}
+            </div>
           </div>
         )}
 
@@ -236,37 +245,58 @@ export function DemoSidebar({
         )}
 
         {routeData && (
-          <div className="mt-6 max-w-[342px] space-y-4">
-            <div className="rounded-2xl border border-border/80 bg-card/40 p-4">
+          <motion.div
+            key={routeData.safest.polyline}
+            className="mt-6 max-w-[342px] space-y-3"
+            initial="hidden"
+            animate="visible"
+            variants={{
+              hidden: {},
+              visible: { transition: { staggerChildren: 0.07 } },
+            }}
+          >
+            <motion.div
+              variants={{ hidden: { opacity: 0, y: 8 }, visible: { opacity: 1, y: 0, transition: { duration: 0.4, ease: [0.22, 1, 0.36, 1] } } }}
+              className="rounded-2xl border border-border/60 bg-card/50 p-4"
+            >
               <div className="flex items-center justify-between gap-4">
                 <div>
                   <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">Active route</p>
-                  <p className="mt-1 text-lg font-semibold text-foreground">
+                  <p className="mt-1 text-base font-semibold text-foreground">
                     {activeMode === 'safest' ? 'Safest path' : 'Fastest path'}
                   </p>
                 </div>
                 <SafetyMeter score={activeSafety} size="md" />
               </div>
-              <p className="mt-4 text-sm leading-relaxed text-muted-foreground">{formatDelta(routeData)}</p>
-            </div>
+              <p className="mt-3 text-sm leading-relaxed text-muted-foreground">{formatDelta(routeData)}</p>
+            </motion.div>
 
-            <RouteCard
-              type="safest"
-              active={activeMode === 'safest'}
-              durationMin={durationToMinutes(routeData.safest.duration)}
-              distanceKm={metersToKm(routeData.safest.distanceMeters)}
-              safetyScore={dangerToSafetyPercent(routeData.safest.safety_score)}
-              onClick={() => onActiveMode('safest')}
-            />
-            <RouteCard
-              type="fastest"
-              active={activeMode === 'fastest'}
-              durationMin={durationToMinutes(routeData.fastest.duration)}
-              distanceKm={metersToKm(routeData.fastest.distanceMeters)}
-              safetyScore={dangerToSafetyPercent(routeData.fastest.safety_score)}
-              onClick={() => onActiveMode('fastest')}
-            />
-          </div>
+            <motion.div
+              variants={{ hidden: { opacity: 0, y: 8 }, visible: { opacity: 1, y: 0, transition: { duration: 0.4, ease: [0.22, 1, 0.36, 1] } } }}
+            >
+              <RouteCard
+                type="safest"
+                active={activeMode === 'safest'}
+                durationMin={durationToMinutes(routeData.safest.duration)}
+                distanceKm={metersToKm(routeData.safest.distanceMeters)}
+                safetyScore={dangerToSafetyPercent(routeData.safest.safety_score)}
+                onClick={() => onActiveMode('safest')}
+              />
+            </motion.div>
+
+            <motion.div
+              variants={{ hidden: { opacity: 0, y: 8 }, visible: { opacity: 1, y: 0, transition: { duration: 0.4, ease: [0.22, 1, 0.36, 1] } } }}
+            >
+              <RouteCard
+                type="fastest"
+                active={activeMode === 'fastest'}
+                durationMin={durationToMinutes(routeData.fastest.duration)}
+                distanceKm={metersToKm(routeData.fastest.distanceMeters)}
+                safetyScore={dangerToSafetyPercent(routeData.fastest.safety_score)}
+                onClick={() => onActiveMode('fastest')}
+              />
+            </motion.div>
+          </motion.div>
         )}
       </div>
 
@@ -278,13 +308,13 @@ export function DemoSidebar({
               type="button"
               onClick={() => toggleLayer(key)}
               className={cn(
-                'flex h-10 min-w-0 items-center justify-center gap-1.5 rounded-lg border px-1 text-xs transition',
+                'flex h-10 min-w-0 cursor-pointer items-center justify-center gap-1.5 rounded-lg border px-1 text-xs transition-all duration-150',
                 layers[key]
-                  ? 'border-safe/30 bg-safe/12 text-foreground'
-                  : 'border-border/80 bg-white/[0.035] text-muted-foreground hover:text-foreground',
+                  ? 'border-safe/35 bg-safe/10 text-foreground ring-1 ring-inset ring-safe/15'
+                  : 'border-border/60 bg-white/[0.03] text-muted-foreground hover:border-border/80 hover:bg-white/[0.06] hover:text-foreground',
               )}
             >
-              <Icon className="h-3.5 w-3.5" />
+              <Icon className="h-3.5 w-3.5 shrink-0" />
               <span className="truncate max-[420px]:sr-only">{label}</span>
             </button>
           ))}
