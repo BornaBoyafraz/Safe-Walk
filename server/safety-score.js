@@ -606,7 +606,9 @@ function computeDangerousSegments({ sampleCount, crime, lighting, community, pro
     if (pointRisk * profile.timeOfDayMultiplier > 0.55) dangerous++;
   }
 
-  return dangerous;
+  // Keep the legacy field comparable across routes by reporting a normalized
+  // 0-10 high-risk segment index instead of a raw sample count.
+  return Math.round((dangerous / Math.max(sampleCount, 1)) * 10);
 }
 
 function confidenceLabel(score) {

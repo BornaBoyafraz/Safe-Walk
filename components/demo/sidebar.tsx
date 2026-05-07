@@ -152,6 +152,11 @@ function normalizeTorontoSearch(value: string) {
   return `${trimmed}, Toronto`;
 }
 
+const exampleRoutes = [
+  { label: 'U of T -> Union Station', origin: 'University of Toronto', destination: 'Union Station' },
+  { label: 'Spadina -> CN Tower', origin: 'Spadina Avenue', destination: 'CN Tower' },
+];
+
 export function DemoSidebar({
   apiKey,
   routeData,
@@ -242,6 +247,14 @@ export function DemoSidebar({
     onLayers({ ...layers, [key]: !layers[key] });
   }
 
+  function selectExample(originValue: string, destinationValue: string) {
+    setOrigin(originValue);
+    setDestination(destinationValue);
+    onError(null);
+    onPlaceSelection?.({ role: 'origin', label: originValue, location: null });
+    onPlaceSelection?.({ role: 'destination', label: destinationValue, location: null });
+  }
+
   return (
     <aside className={cn('glass flex h-full w-full max-w-[100vw] min-w-0 flex-col overflow-hidden rounded-none border-white/10 bg-background/76', className)}>
       <div className="border-b border-border/80 px-4 py-5 sm:px-5">
@@ -312,10 +325,15 @@ export function DemoSidebar({
               Enter a start and destination to compare the fastest route against the safest path in Toronto.
             </p>
             <div className="mt-4 flex flex-wrap gap-2">
-              {['U of T → Union Station', 'Spadina → CN Tower'].map((example) => (
-                <span key={example} className="rounded-md border border-border/50 bg-white/[0.03] px-2 py-1 text-[11px] text-muted-foreground">
-                  {example}
-                </span>
+              {exampleRoutes.map((example) => (
+                <button
+                  key={example.label}
+                  type="button"
+                  onClick={() => selectExample(example.origin, example.destination)}
+                  className="cursor-pointer rounded-md border border-border/50 bg-white/[0.03] px-2 py-1 text-left text-[11px] text-muted-foreground transition hover:border-border/80 hover:bg-white/[0.06] hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-safe/50"
+                >
+                  {example.label}
+                </button>
               ))}
             </div>
           </div>
@@ -438,7 +456,7 @@ export function DemoSidebar({
             <div className="h-1.5 flex-1 rounded-full bg-gradient-to-r from-green-400/20 via-yellow-400/35 to-red-600/55" />
             <span className="text-[10px] text-muted-foreground/50">High</span>
           </div>
-          <p className="text-[11px] leading-relaxed text-muted-foreground/55">
+          <p className="hidden text-[11px] leading-relaxed text-muted-foreground/55 sm:block">
             Green = low incident density. Red = genuine hotspot. Routes still use all streets.
           </p>
         </div>

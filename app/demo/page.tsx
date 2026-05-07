@@ -54,7 +54,7 @@ export default function DemoPage() {
     <main className="relative h-[100svh] w-screen max-w-[100vw] overflow-hidden bg-background text-foreground">
       <BeamsBackground intensity="subtle" className="opacity-50" />
 
-      <div className="absolute left-4 top-4 z-30 hidden items-center gap-3 md:flex">
+      <div className="absolute left-4 top-4 z-30 hidden items-center gap-3 md:left-[430px] md:flex">
         <Link
           href="/"
           className="glass inline-flex h-10 items-center gap-2 rounded-xl px-3 text-sm text-muted-foreground transition hover:text-foreground"
@@ -78,7 +78,7 @@ export default function DemoPage() {
         className="h-full"
       />
 
-      <div className="absolute inset-x-0 bottom-0 z-20 max-h-[72svh] min-w-0 max-w-[100vw] overflow-hidden md:inset-y-4 md:left-4 md:right-auto md:max-h-none md:w-[390px]">
+      <div className="absolute inset-x-0 bottom-0 z-20 max-h-[88svh] min-w-0 max-w-[100vw] overflow-hidden md:inset-y-4 md:left-4 md:right-auto md:max-h-none md:w-[390px]">
         <div className="mx-auto h-1.5 w-12 rounded-full bg-white/20 md:hidden" />
         <DemoSidebar
           apiKey={apiKey}
@@ -93,7 +93,7 @@ export default function DemoPage() {
           onLoading={setLoading}
           onError={setError}
           onPlaceSelection={handlePlaceSelection}
-          className="h-[calc(72svh-6px)] rounded-t-3xl md:h-full md:rounded-2xl"
+          className="h-[calc(88svh-6px)] rounded-t-3xl md:h-full md:rounded-2xl"
         />
       </div>
     </main>
