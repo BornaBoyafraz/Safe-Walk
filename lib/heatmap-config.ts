@@ -2,13 +2,13 @@
 // without flooding the map. Tighter radii keep clusters from bleeding together.
 export const HEATMAP_GRADIENT = [
   'rgba(0,0,0,0)',
-  'rgba(255,230,160,0)',
-  'rgba(255,210,120,0.03)',
-  'rgba(255,185,80,0.08)',
-  'rgba(250,155,45,0.14)',
-  'rgba(235,120,20,0.22)',
-  'rgba(210,80,10,0.30)',
-  'rgba(175,50,5,0.36)',
+  'rgba(80,200,100,0)',
+  'rgba(100,210,80,0.05)',
+  'rgba(180,220,60,0.12)',
+  'rgba(240,220,40,0.20)',
+  'rgba(245,170,30,0.30)',
+  'rgba(235,100,15,0.40)',
+  'rgba(210,40,10,0.50)',
 ];
 
 export interface HeatmapTier {

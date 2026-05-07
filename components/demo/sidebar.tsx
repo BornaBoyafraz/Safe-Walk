@@ -349,11 +349,11 @@ export function DemoSidebar({
           </div>
           <div className="flex items-center gap-2">
             <span className="text-[10px] text-muted-foreground/50">Low</span>
-            <div className="h-1.5 flex-1 rounded-full bg-gradient-to-r from-amber-200/15 via-orange-400/38 to-orange-700/52" />
+            <div className="h-1.5 flex-1 rounded-full bg-gradient-to-r from-green-400/20 via-yellow-400/35 to-red-600/55" />
             <span className="text-[10px] text-muted-foreground/50">High</span>
           </div>
           <p className="text-[11px] leading-relaxed text-muted-foreground/55">
-            Warmer areas reflect higher incident concentration — not blocked routes.
+            Green = low incident density. Red = genuine hotspot. Routes still use all streets.
           </p>
         </div>
       </div>
