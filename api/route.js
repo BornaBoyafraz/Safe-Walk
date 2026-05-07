@@ -1,5 +1,4 @@
-const fs = require('fs');
-const path = require('path');
+const { getTorontoHour, scoreRoute } = require('../server/safety-score');
 
 const ROUTES_API_URL = 'https://routes.googleapis.com/directions/v2:computeRoutes';
 const FIELD_MASK = 'routes.duration,routes.distanceMeters,routes.polyline.encodedPolyline';
@@ -127,46 +126,6 @@ function googleErrorToClientError(summary) {
   );
 }
 
-// Loaded once and cached in warm function instances
-let incidentPoints = null;
-
-function loadIncidents() {
-  if (incidentPoints !== null) return incidentPoints;
-
-  try {
-    const jsonPath = path.join(process.cwd(), 'public', 'data', 'heatmap.json');
-    const raw = fs.readFileSync(jsonPath, 'utf8');
-    incidentPoints = JSON.parse(raw);
-    console.log(`[route] loaded ${incidentPoints.length} incidents for scoring`);
-  } catch (err) {
-    incidentPoints = [];
-    console.warn('[route] could not load heatmap.json — scoring will use 0:', err.message);
-  }
-
-  return incidentPoints;
-}
-
-// Bounding-box incident count within ~500m of a point
-function scorePoint(lat, lng) {
-  const incidents = loadIncidents();
-  let count = 0;
-  for (const p of incidents) {
-    if (Math.abs(p.lat - lat) < 0.0045 && Math.abs(p.lng - lng) < 0.006) {
-      count++;
-    }
-  }
-  // 25 incidents in ~500m radius = max score, calibrated to Toronto's density
-  return Math.min(count / 25, 1.0);
-}
-
-function scoreRoute(points) {
-  if (!points || points.length === 0) return { score: 0, dangerousSegments: 0 };
-  const costs = points.map(p => scorePoint(p.lat, p.lng));
-  const score = costs.reduce((sum, c) => sum + c, 0) / costs.length;
-  const dangerousSegments = costs.filter(c => c > 0.5).length;
-  return { score, dangerousSegments };
-}
-
 // Google encoded polyline algorithm
 function decodePolyline(encoded) {
   const points = [];
@@ -206,15 +165,34 @@ function decodePolyline(encoded) {
   return points;
 }
 
-function samplePoints(points, every) {
-  const sampled = [];
-  for (let i = 0; i < points.length; i += every) {
-    sampled.push(points[i]);
-  }
-  if (points.length > 0 && sampled[sampled.length - 1] !== points[points.length - 1]) {
-    sampled.push(points[points.length - 1]);
-  }
-  return sampled;
+function neutralScoring() {
+  return {
+    score: 0.5,
+    dangerousSegments: 0,
+    crimeRisk: 0,
+    lightingRisk: 0.5,
+    communityRisk: 0,
+    timeOfDayMultiplier: 1,
+    confidenceScore: 0.2,
+    explanation: {
+      mainFactors: ['Scoring data was unavailable for this route.'],
+      confidence: 'low',
+    },
+    breakdown: {
+      crimeRisk: 0,
+      lightingRisk: 0.5,
+      communityRisk: 0,
+      timeWindow: 'unknown',
+      incidentsConsidered: 0,
+      streetlightsConsidered: 0,
+      communityReportsConsidered: 0,
+    },
+    sampledPoints: [],
+  };
+}
+
+function roundRouteScore(value) {
+  return parseFloat(Math.max(0, Math.min(1, value)).toFixed(4));
 }
 
 async function callGoogleRoutesRequest(body) {
@@ -302,36 +280,43 @@ async function generateAlternatives(origin, destination) {
   return allRoutes;
 }
 
-function scoreRawRoutes(rawRoutes) {
+function scoreRawRoutes(rawRoutes, hour) {
   return rawRoutes.map((route, index) => {
     if (!route?.polyline?.encodedPolyline) {
       throw new RouteApiError('Google returned a route without an encoded polyline.', 502, 'GOOGLE_ROUTE_POLYLINE_MISSING');
     }
 
     const allPoints = decodePolyline(route.polyline.encodedPolyline);
-    const sampled = allPoints.length > 5 ? samplePoints(allPoints, 5) : allPoints;
-    let score;
-    let dangerousSegments;
+    let scoring;
 
     try {
-      ({ score, dangerousSegments } = scoreRoute(sampled));
+      scoring = scoreRoute(allPoints, { hour });
     } catch (err) {
       logSafeError('database-backed scoring failed, using neutral score', {
         routeIndex: index,
         message: err.message,
       });
-      score = 0.5;
-      dangerousSegments = 0;
+      scoring = neutralScoring();
     }
+
+    const safetyScore = roundRouteScore(scoring.score);
 
     return {
       polyline: route.polyline.encodedPolyline,
       distanceMeters: route.distanceMeters,
       duration: route.duration,
-      safety_score: parseFloat(score.toFixed(4)),
-      dangerous_segments: dangerousSegments,
+      safety_score: safetyScore,
+      safetyScore,
+      dangerous_segments: scoring.dangerousSegments,
+      crimeRisk: roundRouteScore(scoring.crimeRisk),
+      lightingRisk: roundRouteScore(scoring.lightingRisk),
+      communityRisk: roundRouteScore(scoring.communityRisk),
+      timeOfDayMultiplier: Number(scoring.timeOfDayMultiplier.toFixed(2)),
+      confidenceScore: roundRouteScore(scoring.confidenceScore),
+      explanation: scoring.explanation,
+      score_breakdown: scoring.breakdown,
       google_rank: index,
-      _sampled: sampled,
+      _sampled: scoring.sampledPoints.length > 0 ? scoring.sampledPoints : allPoints,
     };
   });
 }
@@ -349,13 +334,14 @@ function deduplicateRoutes(routes) {
 }
 
 async function computeRoutes(origin, destination) {
+  const hour = getTorontoHour();
   let rawRoutes = await callGoogleRoutes(origin, destination);
 
   if (rawRoutes.length === 0) {
     throw new RouteApiError('Google Routes could not find a route between these addresses.', 422, 'GOOGLE_ROUTES_EMPTY');
   }
 
-  let scored = scoreRawRoutes(rawRoutes);
+  let scored = scoreRawRoutes(rawRoutes, hour);
   logSafe('scored direct routes', { count: scored.length });
 
   const scoreRange = Math.max(...scored.map(r => r.safety_score))
@@ -365,7 +351,7 @@ async function computeRoutes(origin, destination) {
     try {
       const altRaw = await generateAlternatives(origin, destination);
       logSafe('alternative routes returned', { count: altRaw.length });
-      const altScored = scoreRawRoutes(altRaw);
+      const altScored = scoreRawRoutes(altRaw, hour);
       const merged = deduplicateRoutes(altScored);
       if (merged.length > scored.length) {
         scored = merged;

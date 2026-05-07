@@ -1,4 +1,4 @@
-const { scoreRoute } = require('./safety-score');
+const { getTorontoHour, scoreRoute } = require('./safety-score');
 
 const ROUTES_API_URL = 'https://routes.googleapis.com/directions/v2:computeRoutes';
 const FIELD_MASK = 'routes.duration,routes.distanceMeters,routes.polyline.encodedPolyline';
@@ -127,15 +127,34 @@ function decodePolyline(encoded) {
   return points;
 }
 
-function samplePoints(points, every) {
-  const sampled = [];
-  for (let i = 0; i < points.length; i += every) {
-    sampled.push(points[i]);
-  }
-  if (points.length > 0 && sampled[sampled.length - 1] !== points[points.length - 1]) {
-    sampled.push(points[points.length - 1]);
-  }
-  return sampled;
+function neutralScoring() {
+  return {
+    score: 0.5,
+    dangerousSegments: 0,
+    crimeRisk: 0,
+    lightingRisk: 0.5,
+    communityRisk: 0,
+    timeOfDayMultiplier: 1,
+    confidenceScore: 0.2,
+    explanation: {
+      mainFactors: ['Scoring data was unavailable for this route.'],
+      confidence: 'low',
+    },
+    breakdown: {
+      crimeRisk: 0,
+      lightingRisk: 0.5,
+      communityRisk: 0,
+      timeWindow: 'unknown',
+      incidentsConsidered: 0,
+      streetlightsConsidered: 0,
+      communityReportsConsidered: 0,
+    },
+    sampledPoints: [],
+  };
+}
+
+function roundRouteScore(value) {
+  return parseFloat(Math.max(0, Math.min(1, value)).toFixed(4));
 }
 
 function getApiKey() {
@@ -257,29 +276,36 @@ async function scoreRawRoutes(rawRoutes, hour) {
     }
 
     const allPoints = decodePolyline(route.polyline.encodedPolyline);
-    const sampled = allPoints.length > 5 ? samplePoints(allPoints, 5) : allPoints;
-    let score;
-    let dangerousSegments;
+    let scoring;
 
     try {
-      ({ score, dangerousSegments } = scoreRoute(sampled, hour));
+      scoring = scoreRoute(allPoints, { hour });
     } catch (err) {
       logSafeError('database-backed scoring failed, using neutral score', {
         routeIndex: index,
         message: err.message,
       });
-      score = 0.5;
-      dangerousSegments = 0;
+      scoring = neutralScoring();
     }
+
+    const safetyScore = roundRouteScore(scoring.score);
 
     return {
       polyline: route.polyline.encodedPolyline,
       distanceMeters: route.distanceMeters,
       duration: route.duration,
-      safety_score: parseFloat(score.toFixed(4)),
-      dangerous_segments: dangerousSegments,
+      safety_score: safetyScore,
+      safetyScore,
+      dangerous_segments: scoring.dangerousSegments,
+      crimeRisk: roundRouteScore(scoring.crimeRisk),
+      lightingRisk: roundRouteScore(scoring.lightingRisk),
+      communityRisk: roundRouteScore(scoring.communityRisk),
+      timeOfDayMultiplier: Number(scoring.timeOfDayMultiplier.toFixed(2)),
+      confidenceScore: roundRouteScore(scoring.confidenceScore),
+      explanation: scoring.explanation,
+      score_breakdown: scoring.breakdown,
       google_rank: index,
-      _sampled: sampled, // used for dedup, stripped before response
+      _sampled: scoring.sampledPoints.length > 0 ? scoring.sampledPoints : allPoints,
     };
   }));
 }
@@ -297,7 +323,7 @@ function deduplicateRoutes(routes) {
 }
 
 async function computeRoutes(origin, destination) {
-  const hour = new Date().getHours();
+  const hour = getTorontoHour();
   let rawRoutes = await callGoogleRoutes(origin, destination);
 
   if (rawRoutes.length === 0) {

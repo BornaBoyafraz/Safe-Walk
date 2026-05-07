@@ -11,7 +11,33 @@ export interface RouteOption {
   duration: string;
   distanceMeters: number;
   safety_score: number;
+  safetyScore?: number;
   dangerous_segments?: number;
+  crimeRisk?: number;
+  lightingRisk?: number;
+  communityRisk?: number;
+  timeOfDayMultiplier?: number;
+  confidenceScore?: number;
+  explanation?: {
+    mainFactors: string[];
+    confidence: 'low' | 'medium' | 'high';
+  };
+  score_breakdown?: {
+    crimeRisk: number;
+    lightingRisk: number;
+    communityRisk: number;
+    rawLightingRisk?: number;
+    timeWindow?: string;
+    routeMeters?: number;
+    sampleCount?: number;
+    incidentsConsidered?: number;
+    streetlightsConsidered?: number;
+    communityReportsConsidered?: number;
+    incidentSource?: string;
+    weightedIncidentsPerKm?: number;
+    weightedLightsPer100m?: number;
+    weightedReportsPerKm?: number;
+  };
   google_rank?: number;
 }
 
