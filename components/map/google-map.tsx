@@ -1,9 +1,9 @@
 'use client';
 
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { AlertTriangle, MapPinned } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { fetchStreetlights, type RouteResult, type StreetlightPoint } from '@/lib/api-client';
+import { type RouteResult } from '@/lib/api-client';
 import { browserKeyMissingMessage } from '@/lib/google-maps-errors';
 import { loadGoogleMaps } from '@/lib/google-maps-loader';
 import { darkMapStyles } from '@/lib/map-style';
@@ -14,8 +14,6 @@ export type RouteMode = 'safest' | 'fastest';
 
 export interface MapLayers {
   heatmap: boolean;
-  streetlights: boolean;
-  transit: boolean;
 }
 
 interface GoogleMapProps {
@@ -70,62 +68,9 @@ export function GoogleMap({ apiKey, routeData, activeMode, layers, className, on
   const fastestPolylineRef = useRef<google.maps.Polyline | null>(null);
   const originMarkerRef = useRef<google.maps.Marker | null>(null);
   const destinationMarkerRef = useRef<google.maps.Marker | null>(null);
-  const transitLayerRef = useRef<google.maps.TransitLayer | null>(null);
-  const streetlightMarkersRef = useRef<google.maps.Circle[]>([]);
-  const idleListenerRef = useRef<google.maps.MapsEventListener | null>(null);
   const [map, setMap] = useState<google.maps.Map | null>(null);
   const [status, setStatus] = useState<'loading' | 'ready' | 'error'>('loading');
   const [statusMessage, setStatusMessage] = useState('Loading map configuration...');
-
-  const clearStreetlights = useCallback(() => {
-    streetlightMarkersRef.current.forEach((marker) => marker.setMap(null));
-    streetlightMarkersRef.current = [];
-  }, []);
-
-  const refreshStreetlights = useCallback(async () => {
-    const currentMap = mapRef.current;
-    if (!currentMap || !layers.streetlights) {
-      clearStreetlights();
-      return;
-    }
-
-    if ((currentMap.getZoom() ?? 0) < 15) {
-      clearStreetlights();
-      return;
-    }
-
-    const bounds = currentMap.getBounds();
-    if (!bounds) return;
-
-    const ne = bounds.getNorthEast();
-    const sw = bounds.getSouthWest();
-    try {
-      const lights = await fetchStreetlights({
-        minLat: sw.lat(),
-        maxLat: ne.lat(),
-        minLng: sw.lng(),
-        maxLng: ne.lng(),
-      });
-
-      clearStreetlights();
-      streetlightMarkersRef.current = lights.slice(0, 1800).map((light: StreetlightPoint) => (
-        new google.maps.Circle({
-          map: currentMap,
-          center: { lat: light.lat, lng: light.lng },
-          radius: 7,
-          fillColor: '#ffd166',
-          fillOpacity: 0.48,
-          strokeColor: '#ffefb0',
-          strokeOpacity: 0.35,
-          strokeWeight: 1,
-          clickable: false,
-        })
-      ));
-    } catch (error) {
-      clearStreetlights();
-      onError?.(error instanceof Error ? error.message : 'Streetlights failed to load.');
-    }
-  }, [clearStreetlights, layers.streetlights, onError]);
 
   useEffect(() => {
     if (!containerRef.current) return;
@@ -185,30 +130,9 @@ export function GoogleMap({ apiKey, routeData, activeMode, layers, className, on
 
     return () => {
       cancelled = true;
-      idleListenerRef.current?.remove();
       mapRef.current = null;
     };
   }, [apiKey, onError]);
-
-  useEffect(() => {
-    const currentMap = mapRef.current;
-    if (!currentMap) return;
-
-    transitLayerRef.current ??= new google.maps.TransitLayer();
-    transitLayerRef.current.setMap(layers.transit ? currentMap : null);
-  }, [layers.transit]);
-
-  useEffect(() => {
-    idleListenerRef.current?.remove();
-    if (!mapRef.current || !layers.streetlights) {
-      clearStreetlights();
-      return;
-    }
-
-    refreshStreetlights();
-    idleListenerRef.current = mapRef.current.addListener('idle', refreshStreetlights);
-    return () => idleListenerRef.current?.remove();
-  }, [clearStreetlights, layers.streetlights, refreshStreetlights]);
 
   useEffect(() => {
     const currentMap = mapRef.current;
@@ -288,7 +212,7 @@ export function GoogleMap({ apiKey, routeData, activeMode, layers, className, on
       <div ref={containerRef} className="absolute inset-0" />
       <HeatmapLayer map={map} visible={layers.heatmap} onError={onError} />
 
-      {/* Data attribution — bottom-right */}
+      {/* Data attribution */}
       {status === 'ready' && (
         <div className="pointer-events-none absolute bottom-3 right-3 z-10 hidden md:block">
           <div className="glass rounded-lg px-2.5 py-1 text-[10px] text-muted-foreground/60">

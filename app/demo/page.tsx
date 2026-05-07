@@ -15,11 +15,7 @@ export default function DemoPage() {
   const [apiKey, setApiKey] = useState<string | null>(bundledBrowserKey || null);
   const [routeData, setRouteData] = useState<RouteResult | null>(null);
   const [activeMode, setActiveMode] = useState<RouteMode>('safest');
-  const [layers, setLayers] = useState<MapLayers>({
-    heatmap: false,
-    streetlights: false,
-    transit: false,
-  });
+  const [layers, setLayers] = useState<MapLayers>({ heatmap: false });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 

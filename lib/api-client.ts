@@ -20,13 +20,6 @@ export interface HeatmapPoint {
   lng: number;
 }
 
-export interface StreetlightPoint {
-  lat: number;
-  lng: number;
-  type?: string;
-  wattage?: number;
-  status?: string;
-}
 
 export async function fetchRoute(origin: string, destination: string): Promise<RouteResult> {
   const res = await fetch(`${BASE}/api/route`, {
@@ -47,29 +40,6 @@ export async function fetchHeatmapData(): Promise<HeatmapPoint[]> {
   return res.json();
 }
 
-export async function fetchStreetlights(bounds: {
-  minLat: number; maxLat: number; minLng: number; maxLng: number;
-}): Promise<StreetlightPoint[]> {
-  const params = new URLSearchParams({
-    minLat: String(bounds.minLat),
-    maxLat: String(bounds.maxLat),
-    minLng: String(bounds.minLng),
-    maxLng: String(bounds.maxLng),
-  });
-  const res = await fetch(`${BASE}/api/streetlights?${params}`);
-  if (!res.ok) throw new Error(`Streetlights API error ${res.status}`);
-  const data = await res.json();
-  return (data.features || []).map((feature: {
-    geometry?: { coordinates?: [number, number] };
-    properties?: Record<string, unknown>;
-  }) => ({
-    lng: feature.geometry?.coordinates?.[0] ?? 0,
-    lat: feature.geometry?.coordinates?.[1] ?? 0,
-    type: feature.properties?.type as string | undefined,
-    wattage: feature.properties?.wattage as number | undefined,
-    status: feature.properties?.status as string | undefined,
-  })).filter((point: StreetlightPoint) => Number.isFinite(point.lat) && Number.isFinite(point.lng));
-}
 
 export interface MapsConfig {
   googleMapsApiKey: string;

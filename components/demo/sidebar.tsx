@@ -2,7 +2,7 @@
 
 import { FormEvent, RefObject, useEffect, useMemo, useRef, useState } from 'react';
 import { motion } from 'motion/react';
-import { Flame, Lightbulb, Loader2, MapPin, Navigation, Search, Shield, TrainFront } from 'lucide-react';
+import { Flame, Loader2, MapPin, Navigation, Search, Shield } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { RouteCard } from '@/components/ui/route-card';
@@ -100,15 +100,6 @@ function routeConfidence(routeData: RouteResult): { label: string; color: string
   return { label: 'Similar profiles', color: 'text-muted-foreground' };
 }
 
-const layerOptions: Array<{
-  key: keyof MapLayers;
-  label: string;
-  icon: typeof Flame;
-}> = [
-  { key: 'heatmap', label: 'Heatmap', icon: Flame },
-  { key: 'streetlights', label: 'Lights', icon: Lightbulb },
-  { key: 'transit', label: 'Transit', icon: TrainFront },
-];
 
 export function DemoSidebar({
   apiKey,
@@ -334,23 +325,20 @@ export function DemoSidebar({
       </div>
 
       <div className="min-w-0 border-t border-border/80 px-4 py-4 sm:px-5">
-        <div className="grid w-full max-w-[342px] min-w-0 grid-cols-3 gap-2">
-          {layerOptions.map(({ key, label, icon: Icon }) => (
-            <button
-              key={key}
-              type="button"
-              onClick={() => toggleLayer(key)}
-              className={cn(
-                'flex h-10 min-w-0 cursor-pointer items-center justify-center gap-1.5 rounded-lg border px-1 text-xs transition-all duration-150',
-                layers[key]
-                  ? 'border-safe/35 bg-safe/10 text-foreground ring-1 ring-inset ring-safe/15'
-                  : 'border-border/60 bg-white/[0.03] text-muted-foreground hover:border-border/80 hover:bg-white/[0.06] hover:text-foreground',
-              )}
-            >
-              <Icon className="h-3.5 w-3.5 shrink-0" />
-              <span className="truncate max-[420px]:sr-only">{label}</span>
-            </button>
-          ))}
+        <div className="flex w-full max-w-[342px] justify-center">
+          <button
+            type="button"
+            onClick={() => toggleLayer('heatmap')}
+            className={cn(
+              'flex h-10 cursor-pointer items-center gap-2 rounded-lg border px-4 text-xs transition-all duration-150',
+              layers.heatmap
+                ? 'border-safe/35 bg-safe/10 text-foreground ring-1 ring-inset ring-safe/15'
+                : 'border-border/60 bg-white/[0.03] text-muted-foreground hover:border-border/80 hover:bg-white/[0.06] hover:text-foreground',
+            )}
+          >
+            <Flame className="h-3.5 w-3.5 shrink-0" />
+            Incident heatmap
+          </button>
         </div>
 
         {/* Legend */}
