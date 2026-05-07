@@ -123,25 +123,38 @@ app.get('/api/streetlights', (req, res) => {
 });
 
 app.post('/api/route', async (req, res) => {
-  const { origin, destination } = req.body;
-
-  if (!origin || !destination) {
-    return res.status(400).json({ error: 'Both origin and destination are required.' });
-  }
-
   try {
+    const origin = typeof req.body?.origin === 'string' ? req.body.origin.trim() : '';
+    const destination = typeof req.body?.destination === 'string' ? req.body.destination.trim() : '';
+
+    if (!origin || !destination) {
+      return res.status(400).json({
+        error: 'Both origin and destination are required as strings.',
+        code: 'INVALID_ROUTE_REQUEST',
+      });
+    }
+
+    console.log('[route] route request received', {
+      originChars: origin.length,
+      destinationChars: destination.length,
+    });
+
     const result = await computeRoutes(origin, destination);
     res.json(result);
   } catch (err) {
-    console.error('Route computation failed:', err.message);
+    const statusCode = err.statusCode || 500;
+    console.error('[route] route request failed', {
+      code: err.code || 'UNHANDLED_ROUTE_ERROR',
+      statusCode,
+      message: err.message,
+      details: err.details,
+    });
 
-    if (err.message.includes('could not find a route')) {
-      return res.status(422).json({ error: err.message });
-    }
-    if (err.message.includes('API key not configured')) {
-      return res.status(503).json({ error: err.message });
-    }
-    res.status(502).json({ error: `Route computation failed: ${err.message}` });
+    res.status(statusCode).json({
+      error: err.message || 'Route computation failed.',
+      code: err.code || 'UNHANDLED_ROUTE_ERROR',
+      details: err.details,
+    });
   }
 });
 
