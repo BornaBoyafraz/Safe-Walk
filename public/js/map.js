@@ -357,6 +357,10 @@ function setupHeatmapToggle() {
   toggle.addEventListener('change', async e => {
     if (!e.target.checked) {
       if (heatmapLayer) heatmapLayer.setMap(null);
+      if (heatmapZoomListener) {
+        google.maps.event.removeListener(heatmapZoomListener);
+        heatmapZoomListener = null;
+      }
       return;
     }
 
@@ -386,28 +390,55 @@ function setupHeatmapToggle() {
   });
 }
 
+// Ambient amber → deep red gradient — avoids pure-red saturation that reads as "entire city is dangerous"
+const HEATMAP_GRADIENT = [
+  'rgba(0,0,0,0)',
+  'rgba(255,200,100,0)',
+  'rgba(255,170,60,0.10)',
+  'rgba(255,140,20,0.22)',
+  'rgba(255,100,0,0.38)',
+  'rgba(225,55,0,0.55)',
+  'rgba(185,20,0,0.72)',
+  'rgba(140,0,0,0.85)',
+];
+
+// Returns density rendering parameters scaled to the current map zoom level.
+// At city scale only major hotspots register; at street scale precise clusters emerge.
+function heatmapOptionsForZoom(z) {
+  if (z <= 11) return { radius: 14, maxIntensity: 150, opacity: 0.40 };
+  if (z <= 13) return { radius: 18, maxIntensity:  80, opacity: 0.48 };
+  if (z <= 15) return { radius: 16, maxIntensity:  38, opacity: 0.56 };
+  return               { radius: 11, maxIntensity:  16, opacity: 0.65 };
+}
+
+let heatmapZoomListener = null;
+
 function showHeatmap(points) {
   if (heatmapLayer) {
     heatmapLayer.setMap(map);
     return;
   }
 
+  const opts = heatmapOptionsForZoom(map.getZoom());
   heatmapLayer = new google.maps.visualization.HeatmapLayer({
     data: points,
     map: map,
-    radius: 25,
-    maxIntensity: 20,
+    radius: opts.radius,
+    maxIntensity: opts.maxIntensity,
     dissipating: true,
-    opacity: 0.75,
-    gradient: [
-      'rgba(0, 0, 0, 0)',
-      'rgba(255, 160, 160, 0.2)',
-      'rgba(255, 120, 100, 0.35)',
-      'rgba(255, 80, 60, 0.5)',
-      'rgba(230, 50, 30, 0.65)',
-      'rgba(200, 20, 10, 0.8)',
-      'rgba(160, 0, 0, 0.95)',
-    ],
+    opacity: opts.opacity,
+    gradient: HEATMAP_GRADIENT,
+  });
+
+  // Re-tune density parameters whenever the user zooms in or out
+  let rafPending = false;
+  heatmapZoomListener = map.addListener('zoom_changed', () => {
+    if (rafPending || !heatmapLayer || !heatmapLayer.getMap()) return;
+    rafPending = true;
+    requestAnimationFrame(() => {
+      rafPending = false;
+      heatmapLayer.setOptions(heatmapOptionsForZoom(map.getZoom()));
+    });
   });
 }
 
