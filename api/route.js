@@ -268,12 +268,19 @@ module.exports = async (req, res) => {
     res.json(result);
   } catch (err) {
     console.error('[route] computeRoutes failed:', err.message);
-    if (err.message.includes('could not find a route')) {
-      return res.status(422).json({ error: err.message });
+    const msg = err.message || '';
+    if (msg.includes('API key not configured')) {
+      return res.status(503).json({ error: msg });
     }
-    if (err.message.includes('API key not configured')) {
-      return res.status(503).json({ error: err.message });
+    if (msg.includes('403') || msg.toLowerCase().includes('permission_denied')) {
+      return res.status(503).json({ error: 'Google Routes API key is restricted. Verify Application Restrictions and API Restrictions in Google Cloud Console.' });
     }
-    res.status(502).json({ error: `Route computation failed: ${err.message}` });
+    if (msg.includes('could not find a route') || msg.includes('No route found')) {
+      return res.status(422).json({ error: 'No walking route found between those addresses. Try a more specific location.' });
+    }
+    if (msg.includes('400') || msg.toLowerCase().includes('invalid_argument')) {
+      return res.status(422).json({ error: 'Could not parse one of the addresses. Try adding a city name (e.g. "Union Station, Toronto").' });
+    }
+    res.status(502).json({ error: `Route computation failed: ${msg}` });
   }
 };

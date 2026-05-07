@@ -44,8 +44,8 @@ function usePlacesAutocomplete(
       if (cancelled || !inputRef.current) return;
 
       const bounds = new google.maps.LatLngBounds(
-        new google.maps.LatLng(43.58, -79.64),
-        new google.maps.LatLng(43.86, -79.12),
+        new google.maps.LatLng(43.40, -80.10),
+        new google.maps.LatLng(44.30, -78.70),
       );
 
       autocomplete = new google.maps.places.Autocomplete(inputRef.current, {
