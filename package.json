@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "description": "",
   "main": "index.js",
+  "private": true,
   "scripts": {
     "start": "node server/app.js",
     "dev": "next dev -p 3001",
@@ -24,7 +25,7 @@
   },
   "keywords": [],
   "author": "",
-  "license": "ISC",
+  "license": "UNLICENSED",
   "dependencies": {
     "@base-ui/react": "^1.4.1",
     "@googlemaps/js-api-loader": "^2.0.2",
