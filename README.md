@@ -2,6 +2,8 @@
 
 Safe Walk is a safety layer for pedestrian navigation. It compares the fastest walking route with the safest walking route using Google Maps routing plus a custom safety engine built from incident density, streetlight coverage, community reports, and time-of-day weighting.
 
+Live website: https://safewalk-two.vercel.app/
+
 The product is designed as calm urban mobility infrastructure, not a crime app, police dashboard, or emergency alert tool.
 
 ## What Safe Walk Does
