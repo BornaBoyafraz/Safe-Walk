@@ -173,7 +173,7 @@ function getApiKey() {
 
   if (!match) {
     throw new RouteApiError(
-      'Google Routes API key not configured. Set GOOGLE_MAPS_API_KEY or NEXT_PUBLIC_GOOGLE_MAPS_API_KEY.',
+      'Google Routes API key not configured. Set GOOGLE_MAPS_API_KEY or NEXT_PUBLIC_GOOGLE_MAPS_API_KEY in Vercel environment variables.',
       503,
       'GOOGLE_ROUTES_KEY_MISSING',
     );
@@ -269,8 +269,8 @@ async function generateAlternatives(origin, destination) {
   return allRoutes;
 }
 
-async function scoreRawRoutes(rawRoutes, hour) {
-  return Promise.all(rawRoutes.map(async (route, index) => {
+function scoreRawRoutes(rawRoutes, hour) {
+  return rawRoutes.map((route, index) => {
     if (!route?.polyline?.encodedPolyline) {
       throw new RouteApiError('Google returned a route without an encoded polyline.', 502, 'GOOGLE_ROUTE_POLYLINE_MISSING');
     }
@@ -307,7 +307,7 @@ async function scoreRawRoutes(rawRoutes, hour) {
       google_rank: index,
       _sampled: scoring.sampledPoints.length > 0 ? scoring.sampledPoints : allPoints,
     };
-  }));
+  });
 }
 
 function deduplicateRoutes(routes) {
@@ -330,7 +330,7 @@ async function computeRoutes(origin, destination) {
     throw new RouteApiError('Google Routes could not find a route between these addresses.', 422, 'GOOGLE_ROUTES_EMPTY');
   }
 
-  let scored = await scoreRawRoutes(rawRoutes, hour);
+  let scored = scoreRawRoutes(rawRoutes, hour);
   logSafe('scored direct routes', { count: scored.length });
 
   const scoreRange = Math.max(...scored.map(r => r.safety_score))
@@ -340,7 +340,7 @@ async function computeRoutes(origin, destination) {
     try {
       const altRaw = await generateAlternatives(origin, destination);
       logSafe('alternative routes returned', { count: altRaw.length });
-      const altScored = await scoreRawRoutes(altRaw, hour);
+      const altScored = scoreRawRoutes(altRaw, hour);
       const merged = deduplicateRoutes(altScored);
       if (merged.length > scored.length) {
         scored = merged;
@@ -357,9 +357,10 @@ async function computeRoutes(origin, destination) {
   let fastest = scored.find(r => r.google_rank === 0) || scored[0];
   let safest = bySafety[0];
 
-  // Guarantee two visually different routes for the demo
-  if (fastest.polyline === safest.polyline && bySafety.length > 1) {
-    fastest = bySafety[1];
+  if (fastest.polyline === safest.polyline && scored.length > 1) {
+    // fastest and safest converged on the same polyline; pick the next distinct route by travel time
+    const byDuration = [...scored].sort((a, b) => (parseInt(a.duration, 10) || Infinity) - (parseInt(b.duration, 10) || Infinity));
+    fastest = byDuration.find(r => r.polyline !== safest.polyline) || bySafety[bySafety.length - 1];
   }
 
   // Strip internal field before sending to client

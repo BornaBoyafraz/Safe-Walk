@@ -128,6 +128,9 @@ function formatDelta(routeData: RouteResult) {
   }
 
   if (extraMinutes <= 0 && safetyGain > 0) {
+    if (extraMinutes < 0) {
+      return `${Math.abs(extraMinutes)} min faster, ${safetyGain}% safer than the fastest path.`;
+    }
     return `No extra time, ${safetyGain}% safer than the fastest path.`;
   }
 

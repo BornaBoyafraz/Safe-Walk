@@ -58,8 +58,12 @@ export function SafetyMeter({ score, size = 'md', className, animate = true }: S
   const color   = scoreColor(score);
 
   return (
-    <div className={cn('flex flex-col items-center gap-1', className)}>
-      <svg width={svgSize} height={svgSize} className="-rotate-90">
+    <div
+      className={cn('flex flex-col items-center gap-1', className)}
+      role="img"
+      aria-label={`Safety score: ${displayed}% — ${scoreLabel(score)}`}
+    >
+      <svg width={svgSize} height={svgSize} className="-rotate-90" aria-hidden="true">
         <circle
           cx={center} cy={center} r={r}
           fill="none"
