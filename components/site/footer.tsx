@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { Shield } from 'lucide-react';
+import { Logo } from '@/components/brand/logo';
 
 export function SiteFooter() {
   return (
@@ -8,10 +8,10 @@ export function SiteFooter() {
       <div className="mx-auto flex max-w-6xl flex-col gap-8 md:flex-row md:items-center md:justify-between">
         <div className="flex items-center gap-3">
           <div className="flex h-8 w-8 items-center justify-center rounded-lg border border-safe/20 bg-safe/8">
-            <Shield className="h-3.5 w-3.5 text-safe" />
+            <Logo variant="mark" size="sm" />
           </div>
           <div>
-            <p className="text-sm font-semibold tracking-[-0.01em] text-foreground">Safe Walk</p>
+            <p className="text-sm font-semibold tracking-[-0.015em] text-foreground">Safe Walk</p>
             <p className="text-xs text-muted-foreground">Pedestrian safety intelligence for Toronto.</p>
           </div>
         </div>

@@ -2,7 +2,8 @@
 
 import Link from 'next/link';
 import { useCallback, useEffect, useState } from 'react';
-import { ArrowLeft, Shield } from 'lucide-react';
+import { ArrowLeft } from 'lucide-react';
+import { Logo } from '@/components/brand/logo';
 import { DemoSidebar, type PlaceSelection } from '@/components/demo/sidebar';
 import { GoogleMap, type MapFocusLocation, type MapLayers, type RouteMode } from '@/components/map/google-map';
 import { BeamsBackground } from '@/components/ui/beams-background';
@@ -63,7 +64,7 @@ export default function DemoPage() {
           Back
         </Link>
         <div className="glass inline-flex h-10 items-center gap-2 rounded-xl px-3 text-sm">
-          <Shield className="h-4 w-4 text-safe" />
+          <Logo variant="mark" size="sm" />
           Safe Walk demo
         </div>
       </div>

@@ -24,6 +24,7 @@ const config: Config = {
         },
         safe:        'hsl(var(--safe) / <alpha-value>)',
         danger:      'hsl(var(--danger) / <alpha-value>)',
+        'route-fast': 'hsl(var(--route-fast) / <alpha-value>)',
         card:        {
           DEFAULT: 'hsl(var(--card) / <alpha-value>)',
           foreground: 'hsl(var(--card-foreground) / <alpha-value>)',

@@ -4,7 +4,8 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { motion } from 'motion/react';
-import { Menu, Shield, X } from 'lucide-react';
+import { Menu, X } from 'lucide-react';
+import { Logo } from '@/components/brand/logo';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 
@@ -45,9 +46,13 @@ export function SiteNav() {
               'flex h-7 w-7 items-center justify-center rounded-lg border border-safe/20 bg-safe/8 transition-all duration-200',
               scrolled && 'ring-1 ring-safe/10',
             )}>
-              <Shield className="h-3.5 w-3.5 text-safe transition-transform duration-200 group-hover:scale-110" />
+              <Logo
+                variant="mark"
+                size="sm"
+                className="transition-transform duration-200 group-hover:scale-110"
+              />
             </div>
-            <span className="text-sm font-semibold tracking-[-0.01em] text-foreground">Safe Walk</span>
+            <span className="text-sm font-semibold tracking-[-0.015em] text-foreground">Safe Walk</span>
           </Link>
 
           {/* Desktop nav */}

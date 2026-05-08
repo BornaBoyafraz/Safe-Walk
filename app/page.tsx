@@ -151,7 +151,7 @@ export default function Home() {
               {/* Fastest route — blue, thin */}
               <path
                 d="M 60 310 L 60 200 Q 60 180 80 175 L 200 170 Q 220 168 230 155 L 310 130 Q 330 125 340 115 L 360 100"
-                stroke="#5a9ef8"
+                style={{ stroke: 'hsl(var(--route-fast))' }}
                 strokeWidth="2.5"
                 strokeOpacity="0.45"
                 strokeLinecap="round"
@@ -160,22 +160,22 @@ export default function Home() {
               {/* Safest route — green, thicker */}
               <path
                 d="M 60 310 L 60 240 Q 60 220 75 210 L 130 205 Q 155 203 165 190 L 200 180 Q 220 175 240 165 L 300 148 Q 320 142 340 130 L 360 100"
-                stroke="#2fb872"
+                style={{ stroke: 'hsl(var(--safe))' }}
                 strokeWidth="4"
                 strokeOpacity="0.9"
                 strokeLinecap="round"
                 strokeLinejoin="round"
               />
               {/* Origin dot */}
-              <circle cx="60" cy="310" r="6" fill="#f7f7f8" />
-              <circle cx="60" cy="310" r="10" fill="#f7f7f8" fillOpacity="0.12" />
+              <circle cx="60" cy="310" r="6" style={{ fill: 'hsl(var(--foreground))' }} />
+              <circle cx="60" cy="310" r="10" style={{ fill: 'hsl(var(--foreground))' }} fillOpacity="0.12" />
               {/* Destination dot */}
-              <circle cx="360" cy="100" r="6" fill="#2fb872" />
-              <circle cx="360" cy="100" r="10" fill="#2fb872" fillOpacity="0.18" />
+              <circle cx="360" cy="100" r="6" style={{ fill: 'hsl(var(--safe))' }} />
+              <circle cx="360" cy="100" r="10" style={{ fill: 'hsl(var(--safe))' }} fillOpacity="0.18" />
               {/* Glow on safest route */}
               <path
                 d="M 60 310 L 60 240 Q 60 220 75 210 L 130 205 Q 155 203 165 190 L 200 180 Q 220 175 240 165 L 300 148 Q 320 142 340 130 L 360 100"
-                stroke="#2fb872"
+                style={{ stroke: 'hsl(var(--safe))' }}
                 strokeWidth="12"
                 strokeOpacity="0.08"
                 strokeLinecap="round"

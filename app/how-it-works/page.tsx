@@ -118,13 +118,13 @@ export default function HowItWorksPage() {
               <div className="absolute inset-0 bg-[linear-gradient(90deg,hsl(var(--border)/0.4)_1px,transparent_1px),linear-gradient(0deg,hsl(var(--border)/0.4)_1px,transparent_1px)] bg-[size:48px_48px] opacity-20" />
               <div className="relative h-[280px]">
                 <svg className="absolute inset-0 h-full w-full" viewBox="0 0 400 260" fill="none" preserveAspectRatio="xMidYMid slice">
-                  <path d="M 55 220 L 55 145 Q 55 130 70 124 L 175 118 Q 195 116 205 106 L 270 92 Q 290 88 300 80 L 340 68" stroke="#5a9ef8" strokeWidth="2" strokeOpacity="0.4" strokeLinecap="round" strokeLinejoin="round" />
-                  <path d="M 55 220 L 55 160 Q 55 145 68 138 L 115 134 Q 138 132 148 122 L 185 112 Q 205 108 218 100 L 275 84 Q 295 78 310 70 L 340 68" stroke="#2fb872" strokeWidth="3.5" strokeOpacity="0.9" strokeLinecap="round" strokeLinejoin="round" />
-                  <path d="M 55 220 L 55 160 Q 55 145 68 138 L 115 134 Q 138 132 148 122 L 185 112 Q 205 108 218 100 L 275 84 Q 295 78 310 70 L 340 68" stroke="#2fb872" strokeWidth="14" strokeOpacity="0.06" strokeLinecap="round" strokeLinejoin="round" />
-                  <circle cx="55" cy="220" r="5" fill="#f7f7f8" />
-                  <circle cx="55" cy="220" r="9" fill="#f7f7f8" fillOpacity="0.1" />
-                  <circle cx="340" cy="68" r="5" fill="#2fb872" />
-                  <circle cx="340" cy="68" r="9" fill="#2fb872" fillOpacity="0.15" />
+                  <path d="M 55 220 L 55 145 Q 55 130 70 124 L 175 118 Q 195 116 205 106 L 270 92 Q 290 88 300 80 L 340 68" style={{ stroke: 'hsl(var(--route-fast))' }} strokeWidth="2" strokeOpacity="0.4" strokeLinecap="round" strokeLinejoin="round" />
+                  <path d="M 55 220 L 55 160 Q 55 145 68 138 L 115 134 Q 138 132 148 122 L 185 112 Q 205 108 218 100 L 275 84 Q 295 78 310 70 L 340 68" style={{ stroke: 'hsl(var(--safe))' }} strokeWidth="3.5" strokeOpacity="0.9" strokeLinecap="round" strokeLinejoin="round" />
+                  <path d="M 55 220 L 55 160 Q 55 145 68 138 L 115 134 Q 138 132 148 122 L 185 112 Q 205 108 218 100 L 275 84 Q 295 78 310 70 L 340 68" style={{ stroke: 'hsl(var(--safe))' }} strokeWidth="14" strokeOpacity="0.06" strokeLinecap="round" strokeLinejoin="round" />
+                  <circle cx="55" cy="220" r="5" style={{ fill: 'hsl(var(--foreground))' }} />
+                  <circle cx="55" cy="220" r="9" style={{ fill: 'hsl(var(--foreground))' }} fillOpacity="0.1" />
+                  <circle cx="340" cy="68" r="5" style={{ fill: 'hsl(var(--safe))' }} />
+                  <circle cx="340" cy="68" r="9" style={{ fill: 'hsl(var(--safe))' }} fillOpacity="0.15" />
                 </svg>
                 <div className="absolute left-10 top-12 rounded-xl border border-border/60 bg-background/80 px-3 py-2 text-xs text-muted-foreground backdrop-blur-sm">
                   Fastest: 18 min

@@ -2,7 +2,8 @@
 
 import { FormEvent, RefObject, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { motion } from 'motion/react';
-import { Flame, Loader2, MapPin, Navigation, Search, Shield } from 'lucide-react';
+import { Flame, Loader2, MapPin, Navigation, Search } from 'lucide-react';
+import { Logo } from '@/components/brand/logo';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { RouteCard } from '@/components/ui/route-card';
@@ -263,10 +264,10 @@ export function DemoSidebar({
       <div className="border-b border-border/80 px-4 py-5 sm:px-5">
         <div className="flex items-center gap-3">
           <div className="flex h-9 w-9 items-center justify-center rounded-lg border border-safe/25 bg-safe/10">
-            <Shield className="h-4 w-4 text-safe" />
+            <Logo variant="mark" size="sm" />
           </div>
           <div>
-            <p className="text-sm font-semibold tracking-tight text-foreground">Safe Walk</p>
+            <p className="text-sm font-semibold tracking-[-0.015em] text-foreground">Safe Walk</p>
             <p className="text-xs text-muted-foreground">Pedestrian safety intelligence</p>
           </div>
         </div>
