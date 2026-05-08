@@ -22,6 +22,12 @@ export const metadata: Metadata = {
   title: 'Safe Walk — Pedestrian Safety Intelligence',
   description:
     'Navigate Toronto with confidence. Safe Walk finds the safest walking route using real crime data, streetlight coverage, and community reports.',
+  manifest: '/manifest.webmanifest',
+  icons: {
+    icon: [{ url: '/favicon.svg?v=2', type: 'image/svg+xml', sizes: 'any' }],
+    shortcut: [{ url: '/favicon.svg?v=2', type: 'image/svg+xml' }],
+    apple: [{ url: '/apple-icon', sizes: '180x180', type: 'image/png' }],
+  },
   openGraph: {
     title: 'Safe Walk — Pedestrian Safety Intelligence',
     description: 'Pedestrian safety intelligence for Toronto.',
