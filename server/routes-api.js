@@ -288,7 +288,7 @@ function scoreRawRoutes(rawRoutes, hour) {
       scoring = neutralScoring();
     }
 
-    const safetyScore = roundRouteScore(scoring.score);
+    const safetyScore = roundRouteScore(1 - scoring.score);
 
     return {
       polyline: route.polyline.encodedPolyline,
@@ -352,7 +352,7 @@ async function computeRoutes(origin, destination) {
     }
   }
 
-  const bySafety = [...scored].sort((a, b) => a.safety_score - b.safety_score);
+  const bySafety = [...scored].sort((a, b) => b.safety_score - a.safety_score);
 
   let fastest = scored.find(r => r.google_rank === 0) || scored[0];
   let safest = bySafety[0];
