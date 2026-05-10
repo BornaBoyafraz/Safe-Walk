@@ -7,7 +7,7 @@ const DB_PATH = path.join(__dirname, '..', 'data', 'safewalk.db');
 // Fetches road segment midpoints and highway tags for the GTA
 const OVERPASS_URL = 'https://overpass-api.de/api/interpreter';
 
-// Highway types relevant to pedestrian safety scoring
+// Highway types relevant to pedestrian route context
 const ROAD_TYPES = [
   'motorway', 'trunk', 'primary', 'secondary', 'tertiary',
   'residential', 'service', 'path', 'footway', 'track',

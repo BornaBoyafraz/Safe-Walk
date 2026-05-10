@@ -10,30 +10,30 @@ const layers = [
   {
     icon: Database,
     title: 'Incident density',
-    body: 'Reported assaults, robberies, break-and-enters, and other incidents are geocoded, severity-weighted, and recency-decayed.',
+    body: 'Reported assaults, robberies, break-and-enters, and other incidents are geocoded for calm map context.',
   },
   {
     icon: Lightbulb,
     title: 'Streetlight coverage',
-    body: 'Nearby streetlights reduce route risk, with lighting weighted more heavily after sunset and before sunrise.',
+    body: 'Streetlight records can be layered onto the map so partners can understand visibility conditions.',
   },
   {
     icon: Clock,
-    title: 'Time of day',
-    body: 'The same street can score differently at 2 p.m. and 11 p.m. because context changes when visibility changes.',
+    title: 'Route alternatives',
+    body: 'Google Routes returns walking options that Safe Walk displays without assigning a numeric safety rating.',
   },
   {
     icon: Shield,
     title: 'Community reports',
-    body: 'Reports for harassment, poor lighting, and suspicious activity add short-lived signals that official data can miss.',
+    body: 'The schema can support community reports as contextual overlays without turning them into a rating.',
   },
 ];
 
 const steps = [
   ['01', 'Request routes', 'Safe Walk asks Google Routes for walking alternatives between the origin and destination.'],
-  ['02', 'Sample each path', 'Every polyline is decoded and sampled so the scoring engine can evaluate points along the route.'],
-  ['03', 'Score danger cost', 'Each point receives a cost from 0 to 1 using incidents, lighting, reports, road context, and time of day.'],
-  ['04', 'Compare options', 'The API returns the fastest route and the safest route so users can choose the tradeoff.'],
+  ['02', 'Decode each path', 'Every polyline is decoded so the map can draw route options cleanly and fit the camera around them.'],
+  ['03', 'Remove duplicates', 'Overlapping paths are filtered so the demo shows meaningful alternatives instead of repeated lines.'],
+  ['04', 'Compare options', 'The API returns the fastest route and a distinct comparison route when one is available.'],
 ];
 
 export default function HowItWorksPage() {
@@ -47,10 +47,10 @@ export default function HowItWorksPage() {
           <Reveal>
             <p className="text-xs font-semibold uppercase tracking-[0.2em] text-safe">How it works</p>
             <h1 className="mt-5 max-w-4xl text-4xl font-semibold leading-tight tracking-tight md:text-6xl">
-              A route is not one line. It is hundreds of safety decisions.
+              A route is not one line. It is a set of choices.
             </h1>
             <p className="mt-6 max-w-3xl text-lg leading-8 text-muted-foreground">
-              Safe Walk keeps Google Maps as the routing foundation, then adds a safety graph that evaluates the real-world conditions around each walking path.
+              Safe Walk keeps Google Maps as the routing foundation, then adds civic data layers that help people understand the real-world conditions around each walking path.
             </p>
           </Reveal>
         </div>
@@ -75,14 +75,14 @@ export default function HowItWorksPage() {
         </SectionInner>
       </Section>
 
-      {/* Scoring flow */}
+      {/* Routing flow */}
       <Section className="relative overflow-hidden bg-card/30">
         <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-border/60 to-transparent" />
         <SectionInner className="grid gap-12 lg:grid-cols-[0.9fr_1.1fr]">
           <Reveal>
-            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-safe">Scoring flow</p>
+            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-safe">Routing flow</p>
             <h2 className="mt-4 text-3xl font-semibold tracking-tight md:text-5xl">
-              Fastest stays visible. Safest becomes computable.
+              Fastest stays visible. Alternatives stay explainable.
             </h2>
           </Reveal>
 
@@ -130,7 +130,7 @@ export default function HowItWorksPage() {
                   Fastest: 18 min
                 </div>
                 <div className="absolute bottom-8 right-6 rounded-xl border border-safe/25 bg-safe/10 px-3 py-2 text-xs text-safe">
-                  Safest: 21 min · 32% safer
+                  Alternate: 21 min
                 </div>
                 <MapPinned className="absolute left-8 top-28 h-4 w-4 text-muted-foreground/60" />
                 <Route className="absolute right-10 top-20 h-4 w-4 text-safe/60" />
@@ -151,7 +151,7 @@ export default function HowItWorksPage() {
 
 {
   "fastest": { "duration": "1040s" },
-  "safest":  { "safety_score": 0.18 }
+  "alternate": { "duration": "1210s" }
 }`}
             </pre>
           </Reveal>

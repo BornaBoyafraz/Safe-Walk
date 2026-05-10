@@ -10,7 +10,7 @@ import { darkMapStyles } from '@/lib/map-style';
 import { decodePolyline } from '@/lib/polyline';
 import { HeatmapLayer } from './heatmap-layer';
 
-export type RouteMode = 'safest' | 'fastest';
+export type RouteMode = 'alternate' | 'fastest';
 
 export interface MapLayers {
   heatmap: boolean;
@@ -43,9 +43,9 @@ function polylineStyle(isActive: boolean, type: RouteMode): google.maps.Polyline
   }
 
   return {
-    strokeColor: type === 'safest' ? '#2fb872' : '#5a9ef8',
+    strokeColor: type === 'alternate' ? '#2fb872' : '#5a9ef8',
     strokeOpacity: 0.95,
-    strokeWeight: type === 'safest' ? 8 : 6,
+    strokeWeight: type === 'alternate' ? 8 : 6,
     zIndex: 3,
     icons: [
       {
@@ -79,7 +79,7 @@ function routeBoundsPadding(): google.maps.Padding {
 export function GoogleMap({ apiKey, routeData, activeMode, layers, focusLocation, className, onError }: GoogleMapProps) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<google.maps.Map | null>(null);
-  const safestPolylineRef = useRef<google.maps.Polyline | null>(null);
+  const alternatePolylineRef = useRef<google.maps.Polyline | null>(null);
   const fastestPolylineRef = useRef<google.maps.Polyline | null>(null);
   const originMarkerRef = useRef<google.maps.Marker | null>(null);
   const destinationMarkerRef = useRef<google.maps.Marker | null>(null);
@@ -178,7 +178,7 @@ export function GoogleMap({ apiKey, routeData, activeMode, layers, focusLocation
     if (!currentMap) return;
 
     fastestPolylineRef.current?.setOptions(polylineStyle(activeMode === 'fastest', 'fastest'));
-    safestPolylineRef.current?.setOptions(polylineStyle(activeMode === 'safest', 'safest'));
+    alternatePolylineRef.current?.setOptions(polylineStyle(activeMode === 'alternate', 'alternate'));
   }, [activeMode]);
 
   useEffect(() => {
@@ -186,22 +186,22 @@ export function GoogleMap({ apiKey, routeData, activeMode, layers, focusLocation
     if (!currentMap) return;
 
     fastestPolylineRef.current?.setMap(null);
-    safestPolylineRef.current?.setMap(null);
+    alternatePolylineRef.current?.setMap(null);
     originMarkerRef.current?.setMap(null);
     destinationMarkerRef.current?.setMap(null);
 
     fastestPolylineRef.current = null;
-    safestPolylineRef.current = null;
+    alternatePolylineRef.current = null;
     originMarkerRef.current = null;
     destinationMarkerRef.current = null;
 
     if (!routeData) return;
 
     let fastestPoints;
-    let safestPoints;
+    let alternatePoints;
     try {
       fastestPoints = decodePolyline(routeData.fastest.polyline);
-      safestPoints = decodePolyline(routeData.safest.polyline);
+      alternatePoints = decodePolyline(routeData.alternate.polyline);
     } catch (error) {
       const message = 'Route polyline could not be decoded.';
       console.error('[Safe Walk] Route rendering failed:', error);
@@ -209,7 +209,7 @@ export function GoogleMap({ apiKey, routeData, activeMode, layers, focusLocation
       return;
     }
 
-    if (fastestPoints.length === 0 || safestPoints.length === 0) {
+    if (fastestPoints.length === 0 || alternatePoints.length === 0) {
       onError?.('Route API returned an empty route polyline.');
       return;
     }
@@ -220,14 +220,14 @@ export function GoogleMap({ apiKey, routeData, activeMode, layers, focusLocation
       ...polylineStyle(activeMode === 'fastest', 'fastest'),
     });
 
-    safestPolylineRef.current = new google.maps.Polyline({
+    alternatePolylineRef.current = new google.maps.Polyline({
       map: currentMap,
-      path: safestPoints,
-      ...polylineStyle(activeMode === 'safest', 'safest'),
+      path: alternatePoints,
+      ...polylineStyle(activeMode === 'alternate', 'alternate'),
     });
 
     const bounds = new google.maps.LatLngBounds();
-    [...fastestPoints, ...safestPoints].forEach((point) => bounds.extend(point));
+    [...fastestPoints, ...alternatePoints].forEach((point) => bounds.extend(point));
     if (!bounds.isEmpty()) {
       currentMap.fitBounds(bounds, routeBoundsPadding());
     }
@@ -272,7 +272,7 @@ export function GoogleMap({ apiKey, routeData, activeMode, layers, focusLocation
   useEffect(() => {
     return () => {
       fastestPolylineRef.current?.setMap(null);
-      safestPolylineRef.current?.setMap(null);
+      alternatePolylineRef.current?.setMap(null);
       originMarkerRef.current?.setMap(null);
       destinationMarkerRef.current?.setMap(null);
     };

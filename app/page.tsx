@@ -14,13 +14,13 @@ import { SiteNav } from '@/components/site/nav';
 const features = [
   {
     icon: Layers3,
-    title: 'Multi-layer scoring',
-    body: 'Incident density, lighting coverage, community reports, and time of day combine into a single route safety cost.',
+    title: 'Multi-layer context',
+    body: 'Incident density, lighting coverage, and community reports stay visible as map context without becoming a numeric rating.',
   },
   {
     icon: Map,
     title: 'Built on Google Maps',
-    body: 'Safe Walk requests walking alternatives from Google Routes, then ranks each path with its own safety graph.',
+    body: 'Safe Walk requests walking alternatives from Google Routes, then displays distinct paths in a focused comparison flow.',
   },
   {
     icon: ShieldCheck,
@@ -120,7 +120,7 @@ export default function Home() {
             </motion.div>
 
             <motion.p variants={itemVariants} className="mt-6 max-w-xl text-lg leading-8 text-muted-foreground">
-              Safe Walk adds pedestrian safety intelligence to Google Maps. Compare the fastest route with the safest using incident data, streetlight coverage, and time-of-day scoring.
+              Safe Walk adds pedestrian safety context to Google Maps. Compare the fastest route with a distinct alternative using incident data and streetlight coverage.
             </motion.p>
 
             <motion.div variants={itemVariants} className="mt-9 flex flex-col gap-3 sm:flex-row">
@@ -172,7 +172,7 @@ export default function Home() {
               {/* Destination dot */}
               <circle cx="360" cy="100" r="6" style={{ fill: 'hsl(var(--safe))' }} />
               <circle cx="360" cy="100" r="10" style={{ fill: 'hsl(var(--safe))' }} fillOpacity="0.18" />
-              {/* Glow on safest route */}
+              {/* Glow on alternate route */}
               <path
                 d="M 60 310 L 60 240 Q 60 220 75 210 L 130 205 Q 155 203 165 190 L 200 180 Q 220 175 240 165 L 300 148 Q 320 142 340 130 L 360 100"
                 style={{ stroke: 'hsl(var(--safe))' }}
@@ -189,21 +189,16 @@ export default function Home() {
               <p className="text-xs font-medium text-blue-400">18 min</p>
             </div>
 
-            {/* Safety score pill — bottom right */}
+            {/* Recommended route pill — bottom right */}
             <div className="glass absolute bottom-6 left-5 right-5 rounded-2xl p-4">
               <div className="flex items-center justify-between gap-4">
                 <div>
                   <p className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground">Recommended</p>
-                  <p className="mt-0.5 text-base font-semibold text-foreground">Safest route</p>
-                </div>
-                <div className="flex items-center gap-2">
-                  <div className="rounded-full border border-safe/25 bg-safe/10 px-2.5 py-1 text-xs font-semibold text-safe">
-                    84% safe
-                  </div>
+                  <p className="mt-0.5 text-base font-semibold text-foreground">Alternate route</p>
                 </div>
               </div>
               <p className="mt-2.5 text-xs leading-relaxed text-muted-foreground">
-                3 min longer · 27% safer than the fastest path.
+                3 min longer · shown with nearby incident context.
               </p>
             </div>
           </motion.div>
@@ -292,7 +287,7 @@ export default function Home() {
             transition={{ duration: 0.5, delay: 0.1, ease }}
           >
             <p>
-              Safe Walk samples points along each route and scores them against police incidents, streetlight density, community reports, road context, transit proximity, and time of day.
+              Safe Walk displays route alternatives against police incident data, streetlight records, community reports, road context, and transit proximity.
             </p>
             <p>
               The product is intentionally calm: it does not tell users the whole city is dangerous. It helps them compare options with precise, believable spatial intelligence.
@@ -300,7 +295,7 @@ export default function Home() {
             <div className="pt-2">
               <Button asChild variant="outline" className="h-10 rounded-xl px-4 text-sm">
                 <Link href="/how-it-works">
-                  See the scoring model
+                  See the routing model
                   <ArrowRight className="h-3.5 w-3.5" />
                 </Link>
               </Button>

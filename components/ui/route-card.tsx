@@ -2,13 +2,11 @@
 
 import { cn } from '@/lib/utils';
 import { Clock, MapPin, Shield, Zap } from 'lucide-react';
-import { SafetyMeter } from './safety-meter';
 
 interface RouteCardProps {
-  type: 'safest' | 'fastest';
+  type: 'alternate' | 'fastest';
   durationMin: number;
   distanceKm: number;
-  safetyScore: number; // 0–100
   active?: boolean;
   onClick?: () => void;
 }
@@ -22,8 +20,8 @@ function formatDistance(km: number) {
   return km < 1 ? `${Math.round(km * 1000)} m` : `${km.toFixed(1)} km`;
 }
 
-export function RouteCard({ type, durationMin, distanceKm, safetyScore, active, onClick }: RouteCardProps) {
-  const isSafest = type === 'safest';
+export function RouteCard({ type, durationMin, distanceKm, active, onClick }: RouteCardProps) {
+  const isAlternate = type === 'alternate';
 
   return (
     <button
@@ -37,17 +35,14 @@ export function RouteCard({ type, durationMin, distanceKm, safetyScore, active, 
       )}
       aria-pressed={active}
     >
-      <div className="flex items-start justify-between gap-3">
-        <div className="flex items-center gap-2 min-w-0">
-          {isSafest
-            ? <Shield className="h-4 w-4 shrink-0" style={{ color: 'hsl(var(--safe))' }} />
-            : <Zap    className="h-4 w-4 shrink-0 text-blue-400" />
-          }
-          <span className={cn('text-sm font-medium', active ? 'text-foreground' : 'text-muted-foreground')}>
-            {isSafest ? 'Safest route' : 'Fastest route'}
-          </span>
-        </div>
-        <SafetyMeter score={safetyScore} size="sm" animate={active} />
+      <div className="flex items-center gap-2 min-w-0">
+        {isAlternate
+          ? <Shield className="h-4 w-4 shrink-0" style={{ color: 'hsl(var(--safe))' }} />
+          : <Zap    className="h-4 w-4 shrink-0 text-blue-400" />
+        }
+        <span className={cn('text-sm font-medium', active ? 'text-foreground' : 'text-muted-foreground')}>
+          {isAlternate ? 'Alternate route' : 'Fastest route'}
+        </span>
       </div>
 
       <div className="mt-3 flex items-center gap-4 text-sm text-muted-foreground">

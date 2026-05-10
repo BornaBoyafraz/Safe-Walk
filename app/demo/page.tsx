@@ -15,7 +15,7 @@ const bundledBrowserKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY?.trim() ||
 export default function DemoPage() {
   const [apiKey, setApiKey] = useState<string | null>(bundledBrowserKey || null);
   const [routeData, setRouteData] = useState<RouteResult | null>(null);
-  const [activeMode, setActiveMode] = useState<RouteMode>('safest');
+  const [activeMode, setActiveMode] = useState<RouteMode>('alternate');
   const [layers, setLayers] = useState<MapLayers>({ heatmap: false });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);

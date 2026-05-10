@@ -46,7 +46,3 @@ export function durationToMinutes(duration: string): number {
 export function metersToKm(meters: number): number {
   return meters / 1000;
 }
-
-export function dangerToSafetyPercent(safetyScore: number): number {
-  return Math.max(0, Math.min(100, Math.round(safetyScore * 100)));
-}

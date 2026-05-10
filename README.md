@@ -1,6 +1,6 @@
 # Safe Walk
 
-Safe Walk is a safety layer for pedestrian navigation. It compares the fastest walking route with the safest walking route using Google Maps routing plus a custom safety engine built from incident density, streetlight coverage, community reports, and time-of-day weighting.
+Safe Walk is a safety layer for pedestrian navigation. It compares walking route alternatives using Google Maps routing plus civic data layers such as incident density and streetlight coverage.
 
 Live website: https://safewalk-two.vercel.app/
 
@@ -8,23 +8,22 @@ The product is designed as calm urban mobility infrastructure, not a crime app, 
 
 ## What Safe Walk Does
 
-Safe Walk adds route safety intelligence on top of Google Maps:
+Safe Walk adds route safety context on top of Google Maps:
 
 - Requests walking route alternatives from the Google Routes API.
-- Samples each route polyline into points along the path.
-- Scores those points using nearby incidents, lighting coverage, reports, road context, and time of day.
-- Returns both the fastest route and the safest route so users can compare the tradeoff.
-- Shows the comparison in a polished demo with route switching, safety scoring, and an incident heatmap.
+- Returns the fastest route plus a distinct comparison route when Google can provide one.
+- Shows the comparison in a polished demo with route switching and an incident heatmap.
+- Keeps open data visible without assigning a numeric rating to a path.
 
 ## Current App
 
-The repository contains a Next.js website and demo frontend, plus Node/Vercel API handlers backed by the same route scoring engine used by the Express server.
+The repository contains a Next.js website and demo frontend, plus Node/Vercel API handlers backed by Google Routes and local civic data endpoints.
 
 Key pages:
 
 - `/` - product overview
 - `/demo` - interactive route comparison demo
-- `/how-it-works` - scoring flow and API shape
+- `/how-it-works` - routing flow and API shape
 - `/about` - project context
 - `/partners` - partner positioning
 
@@ -38,15 +37,13 @@ Key pages:
 - Database: SQLite with `better-sqlite3`
 - Data: Toronto Police open data, City of Toronto streetlights, regional incident sync scripts, community report schema
 
-## Safety Scoring
+## Safety Context
 
-Each route is decoded, sampled, and scored using:
+The demo presents route options alongside supporting map context:
 
-- Incident density with distance weighting, recency decay, and severity weighting
-- Streetlight density, weighted more heavily at night
-- Community safety report signals
-- Time-of-day adjustments
-- Route-level aggregation into a safety score and risk breakdown
+- Incident heatmap data from local records
+- Streetlight and civic data endpoints for map overlays
+- Google walking route alternatives
 
 Safe Walk is safety-informed navigation. It does not guarantee personal safety and should not be treated as emergency, legal, policing, or security advice.
 
@@ -101,7 +98,7 @@ Open `http://localhost:3000`.
 ## API Endpoints
 
 - `GET /api/config` - returns the browser Google Maps key configuration
-- `POST /api/route` - returns fastest and safest walking routes
+- `POST /api/route` - returns fastest and alternate walking routes
 - `GET /api/incidents/heatmap` - returns incident heatmap points
 - `GET /api/incidents` - Express endpoint for incidents as GeoJSON
 - `GET /api/streetlights` - streetlights endpoint; the Vercel handler currently returns an empty GeoJSON collection
@@ -126,7 +123,7 @@ Example route request:
 
 This project is proprietary and all rights are reserved. No license is granted to use, copy, modify, publish, distribute, sublicense, sell, or create derivative works from this repository or its contents.
 
-Public visibility of the repository does not grant permission to copy or reuse the code, design, data pipeline, safety scoring logic, brand assets, documentation, or any other project material. See [LICENSE](LICENSE) for the full terms.
+Public visibility of the repository does not grant permission to copy or reuse the code, design, data pipeline, brand assets, documentation, or any other project material. See [LICENSE](LICENSE) for the full terms.
 
 ## Author
 

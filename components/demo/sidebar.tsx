@@ -1,17 +1,16 @@
 'use client';
 
-import { FormEvent, RefObject, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { FormEvent, RefObject, useCallback, useEffect, useRef, useState } from 'react';
 import { motion } from 'motion/react';
 import { Flame, Loader2, MapPin, Navigation, Search } from 'lucide-react';
 import { Logo } from '@/components/brand/logo';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { RouteCard } from '@/components/ui/route-card';
-import { SafetyMeter } from '@/components/ui/safety-meter';
 import { fetchRoute, type RouteResult } from '@/lib/api-client';
 import { loadGoogleMaps } from '@/lib/google-maps-loader';
 import { cn } from '@/lib/utils';
-import { dangerToSafetyPercent, durationToMinutes, metersToKm } from '@/lib/polyline';
+import { durationToMinutes, metersToKm } from '@/lib/polyline';
 import type { MapLayers, RouteMode } from '@/components/map/google-map';
 
 export interface PlaceSelection {
@@ -117,36 +116,18 @@ function usePlacesAutocomplete(
 }
 
 function formatDelta(routeData: RouteResult) {
-  const safestMinutes = durationToMinutes(routeData.safest.duration);
+  const alternateMinutes = durationToMinutes(routeData.alternate.duration);
   const fastestMinutes = durationToMinutes(routeData.fastest.duration);
-  const safestPct = dangerToSafetyPercent(routeData.safest.safety_score);
-  const fastestPct = dangerToSafetyPercent(routeData.fastest.safety_score);
-  const extraMinutes = safestMinutes - fastestMinutes;
-  const safetyGain = safestPct - fastestPct;
+  const extraMinutes = alternateMinutes - fastestMinutes;
 
-  if (Math.abs(routeData.fastest.safety_score - routeData.safest.safety_score) < 0.05) {
-    return 'The route options have a similar safety profile for this walk.';
-  }
-
-  if (extraMinutes <= 0 && safetyGain > 0) {
+  if (extraMinutes <= 0) {
     if (extraMinutes < 0) {
-      return `${Math.abs(extraMinutes)} min faster, ${safetyGain}% safer than the fastest path.`;
+      return `${Math.abs(extraMinutes)} min faster than the fastest path returned by Google.`;
     }
-    return `No extra time, ${safetyGain}% safer than the fastest path.`;
+    return 'Same walk time with a distinct route option.';
   }
 
-  if (extraMinutes > 0 && safetyGain > 0) {
-    return `${extraMinutes} min longer, ${safetyGain}% safer than the fastest path.`;
-  }
-
-  return `${extraMinutes > 0 ? `${extraMinutes} min longer` : 'Same walk time'} with a different safety profile.`;
-}
-
-function routeConfidence(routeData: RouteResult): { label: string; color: string } {
-  const diff = Math.abs(routeData.safest.safety_score - routeData.fastest.safety_score);
-  if (diff >= 0.18) return { label: 'Strong signal', color: 'text-safe' };
-  if (diff >= 0.07) return { label: 'Moderate signal', color: 'text-amber-400' };
-  return { label: 'Similar profiles', color: 'text-muted-foreground' };
+  return `${extraMinutes} min longer than the fastest path.`;
 }
 
 function normalizeTorontoSearch(value: string) {
@@ -212,12 +193,6 @@ export function DemoSidebar({
     onError,
   );
 
-  const activeRoute = routeData?.[activeMode];
-  const activeSafety = useMemo(
-    () => dangerToSafetyPercent(activeRoute?.safety_score ?? 0.5),
-    [activeRoute],
-  );
-
   async function handleSubmit(event: FormEvent) {
     event.preventDefault();
 
@@ -239,7 +214,7 @@ export function DemoSidebar({
       });
       const data = await fetchRoute(routeOrigin, routeDestination);
       onRouteData(data);
-      onActiveMode('safest');
+      onActiveMode('alternate');
     } catch (err) {
       onError(err instanceof Error ? err.message : 'Route computation failed.');
     } finally {
@@ -308,7 +283,7 @@ export function DemoSidebar({
           <motion.div whileTap={{ scale: 0.99 }}>
             <Button type="submit" disabled={loading} className="h-11 w-full rounded-xl bg-primary text-primary-foreground hover:bg-primary/90">
               {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
-              Find safest route
+              Find routes
             </Button>
           </motion.div>
         </form>
@@ -326,7 +301,7 @@ export function DemoSidebar({
             </div>
             <p className="text-sm font-semibold text-foreground">Where are you walking?</p>
             <p className="mt-2 max-w-full break-words text-sm leading-relaxed text-muted-foreground">
-              Enter a start and destination to compare the fastest route against the safest path in Toronto.
+              Enter a start and destination to compare the fastest route against an alternate path in Toronto.
             </p>
             <div className="mt-4 flex flex-wrap gap-2">
               {exampleRoutes.map((example) => (
@@ -375,7 +350,7 @@ export function DemoSidebar({
 
         {routeData && (
           <motion.div
-            key={routeData.safest.polyline}
+            key={routeData.alternate.polyline}
             className="mt-6 max-w-[342px] space-y-3"
             initial="hidden"
             animate="visible"
@@ -392,13 +367,9 @@ export function DemoSidebar({
                 <div>
                   <p className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground">Active route</p>
                   <p className="mt-1 text-base font-semibold text-foreground">
-                    {activeMode === 'safest' ? 'Safest path' : 'Fastest path'}
+                    {activeMode === 'alternate' ? 'Alternate path' : 'Fastest path'}
                   </p>
-                  <span className={cn('mt-1.5 inline-block text-[11px] font-medium', routeConfidence(routeData).color)}>
-                    {routeConfidence(routeData).label}
-                  </span>
                 </div>
-                <SafetyMeter score={activeSafety} size="md" />
               </div>
               <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{formatDelta(routeData)}</p>
             </motion.div>
@@ -407,12 +378,11 @@ export function DemoSidebar({
               variants={{ hidden: { opacity: 0, y: 8 }, visible: { opacity: 1, y: 0, transition: { duration: 0.4, ease: [0.22, 1, 0.36, 1] } } }}
             >
               <RouteCard
-                type="safest"
-                active={activeMode === 'safest'}
-                durationMin={durationToMinutes(routeData.safest.duration)}
-                distanceKm={metersToKm(routeData.safest.distanceMeters)}
-                safetyScore={dangerToSafetyPercent(routeData.safest.safety_score)}
-                onClick={() => onActiveMode('safest')}
+                type="alternate"
+                active={activeMode === 'alternate'}
+                durationMin={durationToMinutes(routeData.alternate.duration)}
+                distanceKm={metersToKm(routeData.alternate.distanceMeters)}
+                onClick={() => onActiveMode('alternate')}
               />
             </motion.div>
 
@@ -424,7 +394,6 @@ export function DemoSidebar({
                 active={activeMode === 'fastest'}
                 durationMin={durationToMinutes(routeData.fastest.duration)}
                 distanceKm={metersToKm(routeData.fastest.distanceMeters)}
-                safetyScore={dangerToSafetyPercent(routeData.fastest.safety_score)}
                 onClick={() => onActiveMode('fastest')}
               />
             </motion.div>

@@ -74,7 +74,7 @@ CREATE TABLE IF NOT EXISTS service_calls (
   source        TEXT DEFAULT 'toronto_311'
 );
 
--- Spatial lookups happen constantly during scoring
+-- Spatial lookups happen constantly for map overlays and route context
 CREATE INDEX IF NOT EXISTS idx_incidents_lat_lng      ON incidents(lat, lng);
 CREATE INDEX IF NOT EXISTS idx_incidents_occurred     ON incidents(occurred_at);
 CREATE INDEX IF NOT EXISTS idx_incidents_source       ON incidents(source);

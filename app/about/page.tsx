@@ -60,7 +60,7 @@ export default function AboutPage() {
               That misses the reality of walking. A route can be technically faster while being poorly lit, isolated, or routed through an area with a higher incident pattern at night.
             </p>
             <blockquote className="border-l-2 border-safe pl-6 text-2xl font-semibold leading-9 text-foreground">
-              Safe Walk exists so the safest path can be visible before someone has to choose it from instinct.
+              Safe Walk exists so safety context can be visible before someone has to choose a path from instinct.
             </blockquote>
             <p>
               The first version focuses on Toronto because the city has rich open data: police incident records, streetlight locations, road context, and transit geography. The bigger vision is a safety API that can sit underneath any urban mobility product.

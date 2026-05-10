@@ -1,5 +1,3 @@
-const { getTorontoHour, scoreRoute } = require('./safety-score');
-
 const ROUTES_API_URL = 'https://routes.googleapis.com/directions/v2:computeRoutes';
 const FIELD_MASK = 'routes.duration,routes.distanceMeters,routes.polyline.encodedPolyline';
 
@@ -127,36 +125,6 @@ function decodePolyline(encoded) {
   return points;
 }
 
-function neutralScoring() {
-  return {
-    score: 0.5,
-    dangerousSegments: 0,
-    crimeRisk: 0,
-    lightingRisk: 0.5,
-    communityRisk: 0,
-    timeOfDayMultiplier: 1,
-    confidenceScore: 0.2,
-    explanation: {
-      mainFactors: ['Scoring data was unavailable for this route.'],
-      confidence: 'low',
-    },
-    breakdown: {
-      crimeRisk: 0,
-      lightingRisk: 0.5,
-      communityRisk: 0,
-      timeWindow: 'unknown',
-      incidentsConsidered: 0,
-      streetlightsConsidered: 0,
-      communityReportsConsidered: 0,
-    },
-    sampledPoints: [],
-  };
-}
-
-function roundRouteScore(value) {
-  return parseFloat(Math.max(0, Math.min(1, value)).toFixed(4));
-}
-
 function getApiKey() {
   const candidates = [
     ['GOOGLE_MAPS_API_KEY', process.env.GOOGLE_MAPS_API_KEY],
@@ -269,43 +237,20 @@ async function generateAlternatives(origin, destination) {
   return allRoutes;
 }
 
-function scoreRawRoutes(rawRoutes, hour) {
+function normalizeRawRoutes(rawRoutes) {
   return rawRoutes.map((route, index) => {
     if (!route?.polyline?.encodedPolyline) {
       throw new RouteApiError('Google returned a route without an encoded polyline.', 502, 'GOOGLE_ROUTE_POLYLINE_MISSING');
     }
 
     const allPoints = decodePolyline(route.polyline.encodedPolyline);
-    let scoring;
-
-    try {
-      scoring = scoreRoute(allPoints, { hour });
-    } catch (err) {
-      logSafeError('database-backed scoring failed, using neutral score', {
-        routeIndex: index,
-        message: err.message,
-      });
-      scoring = neutralScoring();
-    }
-
-    const safetyScore = roundRouteScore(1 - scoring.score);
 
     return {
       polyline: route.polyline.encodedPolyline,
       distanceMeters: route.distanceMeters,
       duration: route.duration,
-      safety_score: safetyScore,
-      safetyScore,
-      dangerous_segments: scoring.dangerousSegments,
-      crimeRisk: roundRouteScore(scoring.crimeRisk),
-      lightingRisk: roundRouteScore(scoring.lightingRisk),
-      communityRisk: roundRouteScore(scoring.communityRisk),
-      timeOfDayMultiplier: Number(scoring.timeOfDayMultiplier.toFixed(2)),
-      confidenceScore: roundRouteScore(scoring.confidenceScore),
-      explanation: scoring.explanation,
-      score_breakdown: scoring.breakdown,
       google_rank: index,
-      _sampled: scoring.sampledPoints.length > 0 ? scoring.sampledPoints : allPoints,
+      _sampled: allPoints,
     };
   });
 }
@@ -323,27 +268,22 @@ function deduplicateRoutes(routes) {
 }
 
 async function computeRoutes(origin, destination) {
-  const hour = getTorontoHour();
   let rawRoutes = await callGoogleRoutes(origin, destination);
 
   if (rawRoutes.length === 0) {
     throw new RouteApiError('Google Routes could not find a route between these addresses.', 422, 'GOOGLE_ROUTES_EMPTY');
   }
 
-  let scored = scoreRawRoutes(rawRoutes, hour);
-  logSafe('scored direct routes', { count: scored.length });
+  let routes = deduplicateRoutes(normalizeRawRoutes(rawRoutes));
+  logSafe('normalized direct routes', { count: routes.length });
 
-  const scoreRange = Math.max(...scored.map(r => r.safety_score))
-                   - Math.min(...scored.map(r => r.safety_score));
-
-  if (scored.length <= 1 || scoreRange < 0.05) {
+  if (routes.length <= 1) {
     try {
       const altRaw = await generateAlternatives(origin, destination);
       logSafe('alternative routes returned', { count: altRaw.length });
-      const altScored = scoreRawRoutes(altRaw, hour);
-      const merged = deduplicateRoutes(altScored);
-      if (merged.length > scored.length) {
-        scored = merged;
+      const merged = deduplicateRoutes(normalizeRawRoutes(altRaw));
+      if (merged.length > routes.length) {
+        routes = merged;
       }
     } catch (err) {
       logSafeError('alternative route generation failed, keeping direct routes', {
@@ -352,16 +292,9 @@ async function computeRoutes(origin, destination) {
     }
   }
 
-  const bySafety = [...scored].sort((a, b) => b.safety_score - a.safety_score);
-
-  let fastest = scored.find(r => r.google_rank === 0) || scored[0];
-  let safest = bySafety[0];
-
-  if (fastest.polyline === safest.polyline && scored.length > 1) {
-    // fastest and safest converged on the same polyline; pick the next distinct route by travel time
-    const byDuration = [...scored].sort((a, b) => (parseInt(a.duration, 10) || Infinity) - (parseInt(b.duration, 10) || Infinity));
-    fastest = byDuration.find(r => r.polyline !== safest.polyline) || bySafety[bySafety.length - 1];
-  }
+  const byDuration = [...routes].sort((a, b) => (parseInt(a.duration, 10) || Infinity) - (parseInt(b.duration, 10) || Infinity));
+  const fastest = routes.find(r => r.google_rank === 0) || byDuration[0] || routes[0];
+  const alternate = routes.find(r => r.polyline !== fastest.polyline) || fastest;
 
   // Strip internal field before sending to client
   function stripInternal(r) {
@@ -371,8 +304,8 @@ async function computeRoutes(origin, destination) {
 
   return {
     fastest: stripInternal(fastest),
-    safest: stripInternal(safest),
-    all_routes: bySafety.map(stripInternal),
+    alternate: stripInternal(alternate),
+    all_routes: routes.map(stripInternal),
   };
 }
 

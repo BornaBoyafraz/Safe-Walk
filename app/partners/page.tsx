@@ -21,7 +21,7 @@ const useCases = [
   {
     icon: Map,
     title: 'Navigation platforms',
-    body: 'Expose safest-route alternatives without rebuilding a routing engine from scratch.',
+    body: 'Expose route alternatives with safety context without rebuilding a routing engine from scratch.',
   },
   {
     icon: Building2,
@@ -31,9 +31,9 @@ const useCases = [
 ];
 
 const tiers = [
-  ['Pilot', 'For demos, campus pilots, and small geographic areas.', 'Route safety scoring', 'Heatmap overlay', 'Basic analytics'],
+  ['Pilot', 'For demos, campus pilots, and small geographic areas.', 'Route comparison', 'Heatmap overlay', 'Basic analytics'],
   ['Platform', 'For organizations integrating safety into a production app.', 'Higher request volume', 'Custom data layers', 'Partner reporting'],
-  ['City', 'For municipalities and agencies managing city-scale walking safety.', 'Multi-region scoring', 'Data governance support', 'Deployment review'],
+  ['City', 'For municipalities and agencies managing city-scale walking safety.', 'Multi-region data layers', 'Data governance support', 'Deployment review'],
 ];
 
 export default function PartnersPage() {
@@ -128,7 +128,7 @@ export default function PartnersPage() {
                   </p>
                 </div>
                 <Button asChild variant="outline" className="h-11 shrink-0 rounded-xl px-5">
-                  <Link href="/how-it-works">View scoring model</Link>
+                  <Link href="/how-it-works">View routing model</Link>
                 </Button>
               </div>
             </div>
